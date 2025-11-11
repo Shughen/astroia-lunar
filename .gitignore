@@ -1,0 +1,64 @@
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# === NODE / EXPO ===
+node_modules/
+.expo/
+.expo-shared/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+*.log
+
+# === ENV ===
+.env
+.env.local
+.env.*.local
+
+# === DATABASE ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# === LOGS ===
+logs/
+*.log
+
+# === COVERAGE ===
+coverage/
+.nyc_output/
+
+# === MISC ===
+.cursor/
+.turbo/
+
