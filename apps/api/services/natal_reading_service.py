@@ -273,11 +273,14 @@ def parse_aspects(aspects_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     
     logger.info(f'[Parser] 🔍 DEBUG aspects_data keys: {list(aspects_data.keys()) if aspects_data else "None"}')
     
-    chart_data = aspects_data.get('chart_data', {})
-    aspects_list = chart_data.get('aspects', [])
+    # Les aspects sont directement dans aspects_data['aspects'] (pas dans chart_data)
+    aspects_list = aspects_data.get('aspects', [])
     
-    logger.info(f'[Parser] 🔍 DEBUG chart_data keys: {list(chart_data.keys()) if chart_data else "None"}')
     logger.info(f'[Parser] 🔍 DEBUG aspects_list length: {len(aspects_list)}')
+    
+    # DEBUG: Afficher le premier aspect si présent
+    if aspects_list and len(aspects_list) > 0:
+        logger.info(f'[Parser] 🔍 DEBUG Premier aspect: {aspects_list[0]}')
     
     for aspect in aspects_list:
         # Calculer la force de l'aspect basée sur l'orbe
