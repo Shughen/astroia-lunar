@@ -54,6 +54,13 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Erreur fermeture rapidapi_client: {e}")
     
     try:
+        # Fermeture du client natal_reading_service
+        from services import natal_reading_service
+        await natal_reading_service.close_client()
+    except Exception as e:
+        logger.warning(f"Erreur fermeture natal_reading_service: {e}")
+    
+    try:
         await engine.dispose()
     except Exception as e:
         logger.warning(f"Erreur dispose engine: {e}")

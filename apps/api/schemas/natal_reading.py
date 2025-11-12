@@ -29,6 +29,7 @@ class NatalReadingOptions(BaseModel):
     tradition: str = Field(default="psychological")
     detail_level: str = Field(default="detailed")
     include_full_report: bool = Field(default=False)
+    force_refresh: bool = Field(default=False, description="Bypass cache et force un nouvel appel API")
 
 
 class NatalReadingRequest(BaseModel):

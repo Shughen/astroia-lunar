@@ -1,0 +1,174 @@
+{
+  "subject_data": {
+    "name": "Manaus",
+    "year": 1989,
+    "month": 11,
+    "day": 1,
+    "hour": 13,
+    "minute": 20
+  },
+  "chart_data": {
+    "positions": [
+      {
+        "name": "Sun",
+        "sign": "Sco",
+        "degree": 0.0,
+        "absolute_longitude": 219.2684731153279,
+        "house": 9,
+        "is_retrograde": false,
+        "speed": 0.9856
+      },
+      {
+        "name": "Moon",
+        "sign": "Sag",
+        "degree": 0.0,
+        "absolute_longitude": 253.0219293628491,
+        "house": 10,
+        "is_retrograde": false,
+        "speed": 13.2145
+      },
+      {
+        "name": "Mercury",
+        "sign": "Sco",
+        "degree": 0.0,
+        "absolute_longitude": 213.5706413688589,
+        "house": 9,
+        "is_retrograde": false,
+        "speed": 1.1234
+      },
+      {
+        "name": "Venus",
+        "sign": "Sag",
+        "degree": 0.0,
+        "absolute_longitude": 266.1722222222222,
+        "house": 10,
+        "is_retrograde": false,
+        "speed": 1.0123
+      },
+      {
+        "name": "Mars",
+        "sign": "Lib",
+        "degree": 0.0,
+        "absolute_longitude": 208.3234567890123,
+        "house": 8,
+        "is_retrograde": false,
+        "speed": 0.5432
+      },
+      {
+        "name": "Jupiter",
+        "sign": "Can",
+        "degree": 0.0,
+        "absolute_longitude": 100.8531234567891,
+        "house": 5,
+        "is_retrograde": true,
+        "speed": -0.0532
+      },
+      {
+        "name": "Saturn",
+        "sign": "Cap",
+        "degree": 0.0,
+        "absolute_longitude": 279.3784567890123,
+        "house": 11,
+        "is_retrograde": false,
+        "speed": 0.0342
+      },
+      {
+        "name": "Uranus",
+        "sign": "Cap",
+        "degree": 0.0,
+        "absolute_longitude": 272.4801234567891,
+        "house": 11,
+        "is_retrograde": false,
+        "speed": 0.0123
+      },
+      {
+        "name": "Neptune",
+        "sign": "Cap",
+        "degree": 0.0,
+        "absolute_longitude": 280.0749234567891,
+        "house": 11,
+        "is_retrograde": false,
+        "speed": 0.0089
+      },
+      {
+        "name": "Pluto",
+        "sign": "Sco",
+        "degree": 0.0,
+        "absolute_longitude": 224.8761567890123,
+        "house": 9,
+        "is_retrograde": false,
+        "speed": 0.0045
+      },
+      {
+        "name": "Ascendant",
+        "sign": "Aqu",
+        "degree": 0.0,
+        "absolute_longitude": 329.5342567890123,
+        "house": 1,
+        "is_retrograde": false,
+        "speed": 0.0
+      },
+      {
+        "name": "Medium_Coeli",
+        "sign": "Sag",
+        "degree": 0.0,
+        "absolute_longitude": 243.0423567890123,
+        "house": 10,
+        "is_retrograde": false,
+        "speed": 0.0
+      },
+      {
+        "name": "Mean_Node",
+        "sign": "Aqu",
+        "degree": 0.0,
+        "absolute_longitude": 321.6534567890123,
+        "house": 12,
+        "is_retrograde": true,
+        "speed": -0.0529
+      },
+      {
+        "name": "Chiron",
+        "sign": "Can",
+        "degree": 0.0,
+        "absolute_longitude": 106.5734567890123,
+        "house": 5,
+        "is_retrograde": true,
+        "speed": -0.0234
+      }
+    ],
+    "aspects": [
+      {
+        "point1": "Sun",
+        "point2": "Jupiter",
+        "aspect_type": "trine",
+        "orb": 1.585
+      },
+      {
+        "point1": "Sun",
+        "point2": "Saturn",
+        "aspect_type": "sextile",
+        "orb": 0.110
+      },
+      {
+        "point1": "Sun",
+        "point2": "Neptune",
+        "aspect_type": "sextile",
+        "orb": 0.807
+      },
+      {
+        "point1": "Moon",
+        "point2": "Mars",
+        "aspect_type": "square",
+        "orb": 3.220
+      },
+      {
+        "point1": "Jupiter",
+        "point2": "Saturn",
+        "aspect_type": "opposition",
+        "orb": -1.475
+      }
+    ],
+    "house_cusps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  }
+}
+

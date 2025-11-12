@@ -50,13 +50,20 @@ async def create_natal_reading(
     
     logger.info(f"📖 Demande lecture natal - cache_key: {cache_key}")
     
-    # Chercher en cache
-    result = await db.execute(
-        select(NatalReading).where(NatalReading.cache_key == cache_key)
-    )
-    existing_reading = result.scalar_one_or_none()
+    # Vérifier force_refresh
+    force_refresh = request.options.force_refresh if request.options else False
     
-    if existing_reading:
+    if force_refresh:
+        logger.info("🔄 force_refresh=True → bypass du cache")
+        existing_reading = None
+    else:
+        # Chercher en cache
+        result = await db.execute(
+            select(NatalReading).where(NatalReading.cache_key == cache_key)
+        )
+        existing_reading = result.scalar_one_or_none()
+    
+    if existing_reading and not force_refresh:
         logger.info(f"✅ Lecture trouvée en cache (id={existing_reading.id})")
         
         # Préparer la réponse AVANT le commit (éviter greenlet issues)
