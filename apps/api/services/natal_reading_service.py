@@ -188,9 +188,19 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
         'Sag': 'Sagittaire', 'Cap': 'Capricorne', 'Aqu': 'Verseau', 'Pis': 'Poissons',
     }
     
-    # Mapping éléments
-    element_mapping = {
-        'Fire': 'Feu', 'Earth': 'Terre', 'Air': 'Air', 'Water': 'Eau'
+    # Mapping signes → éléments (RapidAPI ne fournit pas l'élément)
+    sign_to_element = {
+        'Ari': 'Feu', 'Leo': 'Feu', 'Sag': 'Feu',
+        'Tau': 'Terre', 'Vir': 'Terre', 'Cap': 'Terre',
+        'Gem': 'Air', 'Lib': 'Air', 'Aqu': 'Air',
+        'Can': 'Eau', 'Sco': 'Eau', 'Pis': 'Eau',
+    }
+    
+    # Mapping planètes → emojis (RapidAPI ne fournit pas les emojis)
+    planet_emojis = {
+        'Sun': '☀️', 'Moon': '🌙', 'Mercury': '☿️', 'Venus': '♀️', 'Mars': '♂️',
+        'Jupiter': '♃', 'Saturn': '♄', 'Uranus': '♅', 'Neptune': '♆', 'Pluto': '♇',
+        'Ascendant': '⬆️', 'Medium_Coeli': '⬆️', 'Mean_Node': '☊', 'Chiron': '⚷',
     }
     
     # Gérer l'enveloppe API (structure: { success, data: { positions: [...] } })
@@ -204,6 +214,10 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
             logger.info(f'[Parser] ✅ Utilisation data.positions (array de {len(data_content["positions"])} éléments)')
             positions_list = data_content['positions']
             
+            # DEBUG: Afficher la structure du premier élément
+            if positions_list and len(positions_list) > 0:
+                logger.info(f'[Parser] 🔍 DEBUG Premier élément: {positions_list[0]}')
+            
             # Parser chaque position de l'array
             for pos in positions_list:
                 if not pos or 'name' not in pos:
@@ -212,22 +226,28 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
                 point_name = pos.get('name', 'Unknown')
                 logger.info(f'[Parser] ✅ Parsing {point_name} depuis array')
                 
-                # Parser depuis l'array positions
+                # Extraire les données
+                sign = pos.get('sign', 'Ari')
                 house = pos.get('house', 1)
                 
+                # Calculer le degré depuis absolute_longitude (0-360°)
+                # Le degré dans le signe = absolute_longitude % 30
+                absolute_lon = pos.get('absolute_longitude', 0.0)
+                degree_in_sign = round(absolute_lon % 30, 2)
+                
                 core_point = {
-                    'name': pos.get('name', 'Unknown'),
-                    'sign': pos.get('sign', 'Ari'),
-                    'sign_fr': sign_mapping.get(pos.get('sign', 'Ari'), pos.get('sign', 'Inconnu')),
-                    'degree': pos.get('position', pos.get('degree', 0.0)),
+                    'name': point_name,
+                    'sign': sign,
+                    'sign_fr': sign_mapping.get(sign, sign),
+                    'degree': degree_in_sign,
                     'house': house,
-                    'is_retrograde': pos.get('is_retrograde', pos.get('retrograde', False)),
-                    'emoji': pos.get('emoji', '⭐'),
-                    'element': element_mapping.get(pos.get('element', 'Air'), 'Inconnu'),
+                    'is_retrograde': pos.get('is_retrograde', False),
+                    'emoji': planet_emojis.get(point_name, '⭐'),
+                    'element': sign_to_element.get(sign, 'Inconnu'),
                     'interpretations': {
-                        'in_sign': pos.get('interpretation_in_sign') or pos.get('interpretation') or '',
-                        'in_house': pos.get('interpretation_in_house') or '',
-                        'dignity': pos.get('dignity') or '',
+                        'in_sign': pos.get('interpretation_in_sign', ''),
+                        'in_house': pos.get('interpretation_in_house', ''),
+                        'dignity': pos.get('dignity', ''),
                     }
                 }
                 
@@ -251,8 +271,13 @@ def parse_aspects(aspects_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         logger.info('[Parser] Détection enveloppe API pour aspects, extraction data')
         aspects_data = aspects_data['data']
     
+    logger.info(f'[Parser] 🔍 DEBUG aspects_data keys: {list(aspects_data.keys()) if aspects_data else "None"}')
+    
     chart_data = aspects_data.get('chart_data', {})
     aspects_list = chart_data.get('aspects', [])
+    
+    logger.info(f'[Parser] 🔍 DEBUG chart_data keys: {list(chart_data.keys()) if chart_data else "None"}')
+    logger.info(f'[Parser] 🔍 DEBUG aspects_list length: {len(aspects_list)}')
     
     for aspect in aspects_list:
         # Calculer la force de l'aspect basée sur l'orbe
