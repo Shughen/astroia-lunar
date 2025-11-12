@@ -196,7 +196,18 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
     # Gérer l'enveloppe API (structure: { success, data: { subject_data, chart_data } })
     if 'data' in positions_data:
         logger.info('[Parser] Détection enveloppe API, extraction data')
-        positions_data = positions_data['data']
+        data_content = positions_data['data']
+        logger.info(f'[Parser] Keys dans data: {list(data_content.keys())}')
+        
+        # Logger un aperçu de la structure
+        if 'positions' in data_content:
+            logger.info(f'[Parser] Trouvé data.positions (type: {type(data_content["positions"])})')
+        if 'planetary_positions' in data_content:
+            logger.info(f'[Parser] Trouvé data.planetary_positions')
+        if 'subject_data' in data_content:
+            logger.info(f'[Parser] Trouvé data.subject_data (keys: {list(data_content["subject_data"].keys())[:5]})')
+        
+        positions_data = data_content
     
     subject_data = positions_data.get('subject_data', {})
     
