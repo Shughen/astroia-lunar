@@ -215,10 +215,14 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
         logger.info('[Parser] Détection structure avec enveloppe data')
         data_content = positions_data['data']
         positions_list = data_content['positions']
-    elif 'chart_data' in positions_data and 'positions' in positions_data['chart_data']:
+    elif 'chart_data' in positions_data:
         # Structure chart_data (endpoint /charts/natal)
         logger.info('[Parser] Détection structure chart_data (endpoint unique)')
-        positions_list = positions_data['chart_data']['positions']
+        if 'positions' in positions_data['chart_data']:
+            positions_list = positions_data['chart_data']['positions']
+        else:
+            logger.warning(f"[Parser] chart_data trouvé mais sans positions. Keys: {list(positions_data['chart_data'].keys())}")
+            return core_points
     elif 'positions' in positions_data:
         # Structure directe
         logger.info('[Parser] Détection structure directe')
