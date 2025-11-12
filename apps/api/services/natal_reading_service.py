@@ -324,30 +324,37 @@ def parse_interpretations_from_report(report_data: Dict[str, Any]) -> Dict[str, 
     """
     Parse les interprétations depuis /api/v3/analysis/natal-report
     
-    Structure attendue:
+    Structure réelle (RapidAPI):
     {
-      "report": {
-        "positions": {
-          "Sun": { "in_sign": "...", "in_house": "...", "overall": "..." },
-          "Moon": { ... }
-        },
-        "aspects": {
-          "Sun_Moon_opposition": "...",
-          ...
-        },
+      "success": true,
+      "data": {
+        "positions": {...},
+        "aspects": {...},
         "summary": "..."
-      }
+      },
+      "metadata": {...}
     }
     """
-    if not report_data or 'report' not in report_data:
-        logger.warning("[Parser] Pas d'interprétations disponibles")
+    if not report_data:
+        logger.warning("[Parser] Pas d'interprétations disponibles (réponse vide)")
         return {
             'positions_interpretations': {},
             'aspects_interpretations': {},
             'general_summary': None
         }
     
-    report = report_data.get('report', {})
+    # Extraire 'data' (structure RapidAPI) ou 'report' (structure alternative)
+    report = report_data.get('data') or report_data.get('report', {})
+    
+    if not report:
+        logger.warning("[Parser] Pas d'interprétations disponibles (clé 'data' ou 'report' absente)")
+        return {
+            'positions_interpretations': {},
+            'aspects_interpretations': {},
+            'general_summary': None
+        }
+    
+    logger.info(f"[DEBUG] Clés dans report/data: {list(report.keys()) if isinstance(report, dict) else type(report)}")
     
     # Interprétations des positions
     positions_interp = report.get('positions', {})
