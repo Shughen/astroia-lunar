@@ -209,10 +209,10 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
     for point_name in point_names:
         point_data = subject_data.get(point_name)
         if not point_data:
-            logger.debug(f'[Parser] {point_name} absent')
+            logger.info(f'[Parser] ⚠️ {point_name} absent dans subject_data')
             continue
         
-        logger.debug(f'[Parser] Parsing {point_name}: {point_data}')
+        logger.info(f'[Parser] ✅ Parsing {point_name}')
             
         # Extraire la maison (format: "Ninth_House" → 9)
         house_str = point_data.get('house', 'First_House')
@@ -425,10 +425,17 @@ async def generate_natal_reading(
             logger.warning(f"Erreur rapport complet (non bloquant): {e}")
     
     # Parser les données
+    logger.info(f"📊 Parsing positions_data (keys: {list(positions_data.keys())[:5]})")
     positions = parse_positions_to_core_points(positions_data)
+    logger.info(f"📊 Positions parsées: {len(positions)} points")
+    
+    logger.info(f"📊 Parsing aspects_data (keys: {list(aspects_data.keys())[:5]})")
     aspects = parse_aspects(aspects_data)
+    logger.info(f"📊 Aspects parsés: {len(aspects)} aspects")
+    
     lunar = parse_lunar_info(lunar_data)
     summary = build_summary(positions, aspects)
+    logger.info(f"📊 Summary big_three: sun={summary['big_three']['sun'] is not None}, moon={summary['big_three']['moon'] is not None}")
     
     reading = {
         'positions': positions,
