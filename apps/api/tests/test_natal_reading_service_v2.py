@@ -6,7 +6,7 @@ import json
 import pytest
 from pathlib import Path
 
-from services.natal_reading_service_v2 import (
+from services.natal_reading_service import (
     parse_positions_from_natal_chart,
     parse_aspects_from_natal_chart,
     build_summary,

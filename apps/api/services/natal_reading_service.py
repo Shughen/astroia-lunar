@@ -65,11 +65,11 @@ async def call_rapidapi_natal_chart(birth_data: Dict[str, Any]) -> Dict[str, Any
         response.raise_for_status()
         data = response.json()
         
-        # DEBUG: Logger la structure de la réponse
-        logger.info(f"🔍 DEBUG Keys racine: {list(data.keys())}")
+        # Logger les stats de la réponse
         if 'chart_data' in data:
-            logger.info(f"🔍 DEBUG Keys chart_data: {list(data['chart_data'].keys())}")
-            logger.info(f"✅ Réponse RapidAPI reçue: {len(data.get('chart_data', {}).get('positions', []))} positions, {len(data.get('chart_data', {}).get('aspects', []))} aspects")
+            num_positions = len(data.get('chart_data', {}).get('planetary_positions', []))
+            num_aspects = len(data.get('chart_data', {}).get('aspects', []))
+            logger.info(f"✅ Réponse RapidAPI reçue: {num_positions} positions, {num_aspects} aspects")
         else:
             logger.warning(f"⚠️ Pas de 'chart_data' dans la réponse ! Keys: {list(data.keys())}")
         
@@ -90,7 +90,7 @@ def parse_positions_from_natal_chart(chart_response: Dict[str, Any]) -> List[Dic
     Structure attendue:
     {
       "chart_data": {
-        "positions": [
+        "planetary_positions": [  ← NOM CORRECT !
           {
             "name": "Sun",
             "sign": "Sco",
@@ -104,10 +104,10 @@ def parse_positions_from_natal_chart(chart_response: Dict[str, Any]) -> List[Dic
     }
     """
     chart_data = chart_response.get("chart_data", {})
-    positions_list = chart_data.get("positions", [])
+    positions_list = chart_data.get("planetary_positions", [])
     
     if not positions_list:
-        logger.warning("[Parser] Aucune position trouvée dans chart_data.positions")
+        logger.warning("[Parser] Aucune position trouvée dans chart_data.planetary_positions")
         return []
     
     # Mappings signes → français et éléments
@@ -167,7 +167,7 @@ def parse_positions_from_natal_chart(chart_response: Dict[str, Any]) -> List[Dic
             }
         })
     
-    logger.info(f"[Parser] ✅ {len(parsed_positions)} positions parsées depuis chart_data.positions")
+    logger.info(f"[Parser] ✅ {len(parsed_positions)} positions parsées depuis chart_data.planetary_positions")
     return parsed_positions
 
 
