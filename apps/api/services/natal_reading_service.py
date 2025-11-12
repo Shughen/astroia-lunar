@@ -96,7 +96,7 @@ async def get_enhanced_positions(
             "active_points": [
                 "Sun", "Moon", "Mercury", "Venus", "Mars",
                 "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
-                "Ascendant", "Medium_Coeli", "Moon_Node", "Chiron"
+                "Ascendant", "Medium_Coeli", "Mean_Node", "Chiron"
             ],
             "precision": 2
         }
@@ -219,18 +219,18 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
             house = point_data.get('house', 1)
         
         core_point = {
-            'name': point_data['name'],
-            'sign': point_data['sign'],
-            'sign_fr': sign_mapping.get(point_data['sign'], point_data['sign']),
-            'degree': point_data.get('position', 0),
+            'name': point_data.get('name', 'Unknown'),
+            'sign': point_data.get('sign', 'Ari'),
+            'sign_fr': sign_mapping.get(point_data.get('sign', 'Ari'), point_data.get('sign', 'Inconnu')),
+            'degree': point_data.get('position', 0.0),
             'house': house,
             'is_retrograde': point_data.get('retrograde', False),
             'emoji': point_data.get('emoji', '⭐'),
             'element': element_mapping.get(point_data.get('element', 'Air'), 'Inconnu'),
             'interpretations': {
-                'in_sign': point_data.get('interpretation_in_sign'),
-                'in_house': point_data.get('interpretation_in_house'),
-                'dignity': point_data.get('dignity'),
+                'in_sign': point_data.get('interpretation_in_sign') or point_data.get('interpretation') or '',
+                'in_house': point_data.get('interpretation_in_house') or '',
+                'dignity': point_data.get('dignity') or '',
             }
         }
         
@@ -303,25 +303,43 @@ def build_summary(positions: List[Dict], aspects: List[Dict]) -> Dict[str, Any]:
     """
     Construit un résumé du thème
     """
+    if not positions:
+        return {
+            'big_three': {'sun': None, 'moon': None, 'ascendant': None},
+            'personality_highlights': [],
+            'dominant_element': None,
+            'dominant_mode': None
+        }
+    
     # Extraire Big 3
-    sun = next((p for p in positions if p['name'] == 'Sun'), None)
-    moon = next((p for p in positions if p['name'] == 'Moon'), None)
-    asc = next((p for p in positions if p['name'] == 'Ascendant'), None)
+    sun = next((p for p in positions if p.get('name') == 'Sun'), None)
+    moon = next((p for p in positions if p.get('name') == 'Moon'), None)
+    asc = next((p for p in positions if p.get('name') == 'Ascendant'), None)
     
     # Compter les éléments
     elements = {}
     for pos in positions:
-        elem = pos['element']
-        elements[elem] = elements.get(elem, 0) + 1
+        elem = pos.get('element', 'Inconnu')
+        if elem and elem != 'Inconnu':
+            elements[elem] = elements.get(elem, 0) + 1
     
     dominant_element = max(elements, key=elements.get) if elements else None
     
     # Highlights simples
     highlights = []
-    if sun:
-        highlights.append(f"Soleil en {sun['sign_fr']} - {sun['interpretations'].get('in_sign', '')[:50]}...")
-    if moon:
-        highlights.append(f"Lune en {moon['sign_fr']} - {moon['interpretations'].get('in_sign', '')[:50]}...")
+    if sun and sun.get('sign_fr'):
+        interp = sun.get('interpretations', {}).get('in_sign', '') or ''
+        if interp:
+            highlights.append(f"Soleil en {sun['sign_fr']} - {interp[:50]}...")
+        else:
+            highlights.append(f"Soleil en {sun['sign_fr']}")
+    
+    if moon and moon.get('sign_fr'):
+        interp = moon.get('interpretations', {}).get('in_sign', '') or ''
+        if interp:
+            highlights.append(f"Lune en {moon['sign_fr']} - {interp[:50]}...")
+        else:
+            highlights.append(f"Lune en {moon['sign_fr']}")
     
     return {
         'big_three': {
