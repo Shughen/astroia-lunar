@@ -1,0 +1,211 @@
+{
+  "info": {
+    "name": "Astroia Lunar API V1",
+    "description": "Collection Postman complète pour Astroia Lunar API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "astroia-lunar-v1",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Root Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"]
+            }
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@astroia.com\",\n  \"password\": \"DemoPass123!\",\n  \"birth_date\": \"1989-04-15\",\n  \"birth_time\": \"17:55\",\n  \"birth_latitude\": \"48.8566\",\n  \"birth_longitude\": \"2.3522\",\n  \"birth_place_name\": \"Paris\",\n  \"birth_timezone\": \"Europe/Paris\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/x-www-form-urlencoded"}],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "username", "value": "demo@astroia.com"},
+                {"key": "password", "value": "DemoPass123!"}
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Luna Pack",
+      "item": [
+        {
+          "name": "Lunar Mansion",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"datetime_location\": {\n    \"year\": 2025,\n    \"month\": 11,\n    \"day\": 11,\n    \"hour\": 12,\n    \"minute\": 0,\n    \"second\": 0,\n    \"city\": \"Paris\",\n    \"country_code\": \"FR\"\n  },\n  \"system\": \"arabian_tropical\",\n  \"days_ahead\": 28\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/lunar/mansion",
+              "host": ["{{base_url}}"],
+              "path": ["api", "lunar", "mansion"]
+            }
+          }
+        },
+        {
+          "name": "Void of Course",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"datetime_location\": {\n    \"year\": 2025,\n    \"month\": 11,\n    \"day\": 11,\n    \"hour\": 12,\n    \"minute\": 0,\n    \"second\": 0,\n    \"city\": \"Paris\",\n    \"country_code\": \"FR\"\n  },\n  \"days_ahead\": 7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/lunar/voc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "lunar", "voc"]
+            }
+          }
+        },
+        {
+          "name": "Get Current VoC",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/lunar/voc/current",
+              "host": ["{{base_url}}"],
+              "path": ["api", "lunar", "voc", "current"]
+            }
+          }
+        },
+        {
+          "name": "Get Today Mansion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/lunar/mansion/today",
+              "host": ["{{base_url}}"],
+              "path": ["api", "lunar", "mansion", "today"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transits",
+      "item": [
+        {
+          "name": "Natal Transits",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"birth_date\": \"1989-04-15\",\n  \"birth_time\": \"17:55\",\n  \"birth_latitude\": 48.8566,\n  \"birth_longitude\": 2.3522,\n  \"birth_timezone\": \"Europe/Paris\",\n  \"transit_date\": \"2025-11-11\",\n  \"user_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/transits/natal",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transits", "natal"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calendar",
+      "item": [
+        {
+          "name": "Get Month",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/calendar/month?year=2025&month=11",
+              "host": ["{{base_url}}"],
+              "path": ["api", "calendar", "month"],
+              "query": [
+                {"key": "year", "value": "2025"},
+                {"key": "month", "value": "11"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Natal Chart",
+      "item": [
+        {
+          "name": "Calculate Natal Chart",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": {\n    \"name\": \"Demo\",\n    \"birth_data\": {\n      \"year\": 1989,\n      \"month\": 4,\n      \"day\": 15,\n      \"hour\": 17,\n      \"minute\": 55,\n      \"timezone\": \"Europe/Paris\",\n      \"latitude\": 48.8566,\n      \"longitude\": 2.3522\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/natal-chart/external",
+              "host": ["{{base_url}}"],
+              "path": ["api", "natal-chart", "external"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ]
+}
+

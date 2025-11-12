@@ -15,9 +15,29 @@ class Settings(BaseSettings):
     DATABASE_POOL_SIZE: int = Field(default=10)
     DATABASE_MAX_OVERFLOW: int = Field(default=20)
     
-    # Ephemeris API
+    # Ephemeris API (legacy)
     EPHEMERIS_API_KEY: str = Field(default="")
     EPHEMERIS_API_URL: str = Field(default="https://api.astrology-api.io/v1")
+    
+    # RapidAPI - Best Astrology API
+    RAPIDAPI_KEY: str = Field(default="")
+    RAPIDAPI_HOST: str = Field(default="best-astrology-api-natal-charts-transits-synastry.p.rapidapi.com")
+    BASE_RAPID_URL: str = Field(default="https://best-astrology-api-natal-charts-transits-synastry.p.rapidapi.com")
+    NATAL_URL: str = Field(default="https://best-astrology-api-natal-charts-transits-synastry.p.rapidapi.com/api/v3/charts/natal")
+    
+    # Luna Pack endpoints (P1) - VRAIS CHEMINS VALIDÉS
+    LUNAR_RETURN_REPORT_PATH: str = Field(default="/api/v3/analysis/lunar-return-report")
+    VOID_OF_COURSE_PATH: str = Field(default="/api/v3/lunar/void-of-course")
+    LUNAR_MANSIONS_PATH: str = Field(default="/api/v3/lunar/mansions")
+    
+    # Transits endpoints (P2) - VRAIS CHEMINS VALIDÉS
+    NATAL_TRANSITS_PATH: str = Field(default="/api/v3/charts/natal-transits")
+    LUNAR_RETURN_TRANSITS_PATH: str = Field(default="/api/v3/charts/natal-transits")  # Même endpoint
+    
+    # Calendar endpoints (P3) - VRAIS CHEMINS VALIDÉS
+    LUNAR_PHASES_PATH: str = Field(default="/api/v3/lunar/phases")
+    LUNAR_EVENTS_PATH: str = Field(default="/api/v3/lunar/events")
+    LUNAR_CALENDAR_YEAR_PATH: str = Field(default="/api/v3/lunar/calendar")
     
     # API
     API_HOST: str = Field(default="0.0.0.0")

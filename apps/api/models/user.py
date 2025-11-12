@@ -30,6 +30,9 @@ class User(Base):
     # Relations
     natal_chart = relationship("NatalChart", back_populates="user", uselist=False)
     lunar_returns = relationship("LunarReturn", back_populates="user", cascade="all, delete-orphan")
+    lunar_reports = relationship("LunarReport", back_populates="user", cascade="all, delete-orphan")
+    transits_overviews = relationship("TransitsOverview", back_populates="user", cascade="all, delete-orphan")
+    transits_events = relationship("TransitsEvent", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User {self.email}>"

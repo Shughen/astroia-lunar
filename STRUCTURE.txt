@@ -1,0 +1,78 @@
+astroia-lunar/
+├── README.md                       # Documentation principale
+├── QUICKSTART.md                   # Démarrage rapide (2 min)
+├── .env.example                    # Variables d'environnement
+├── .gitignore                      # Fichiers à ignorer
+├── package.json                    # Scripts racine (npm run dev:api, dev:mobile)
+│
+├── apps/
+│   ├── api/                        # Backend FastAPI
+│   │   ├── main.py                 # Point d'entrée
+│   │   ├── config.py               # Configuration (Pydantic)
+│   │   ├── database.py             # SQLAlchemy setup
+│   │   ├── requirements.txt        # Dépendances Python
+│   │   ├── alembic.ini             # Config migrations
+│   │   ├── alembic/
+│   │   │   ├── env.py              # Alembic environment
+│   │   │   └── versions/           # Migrations SQL
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py             # Modèle User
+│   │   │   ├── natal_chart.py      # Modèle NatalChart
+│   │   │   └── lunar_return.py     # Modèle LunarReturn
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py             # Endpoints auth (register/login)
+│   │   │   ├── natal.py            # Endpoints thème natal
+│   │   │   └── lunar_returns.py    # Endpoints révolutions lunaires
+│   │   ├── services/
+│   │   │   ├── ephemeris.py        # Client Ephemeris API
+│   │   │   └── interpretations.py  # Générateur textes
+│   │   └── tests/                  # Tests unitaires
+│   │
+│   └── mobile/                     # Frontend Expo React Native
+│       ├── app.json                # Config Expo
+│       ├── package.json            # Dépendances npm
+│       ├── app/
+│       │   ├── _layout.tsx         # Layout racine (Expo Router)
+│       │   ├── index.tsx           # Écran Home (grille 12 mois)
+│       │   ├── onboarding.tsx      # Écran inscription
+│       │   └── lunar-month/
+│       │       └── [month].tsx     # Écran détail mois
+│       ├── components/             # Composants réutilisables
+│       ├── constants/
+│       │   └── theme.ts            # Design System (colors, fonts)
+│       ├── services/
+│       │   └── api.ts              # Client API (axios)
+│       ├── stores/
+│       │   ├── useAuthStore.ts     # Store auth (Zustand)
+│       │   └── useLunarStore.ts    # Store lunar returns
+│       └── utils/                  # Utilitaires
+│
+├── shared/
+│   └── types/                      # Types TypeScript partagés
+│
+└── docs/
+    └── INSTALLATION.md             # Guide installation détaillé
+
+---
+
+FICHIERS CLÉS :
+
+Backend :
+- apps/api/main.py                  # Point d'entrée FastAPI
+- apps/api/routes/lunar_returns.py  # Génération révolutions lunaires
+- apps/api/services/ephemeris.py    # Calculs astro via API externe
+- apps/api/services/interpretations.py # Templates textuels
+
+Frontend :
+- apps/mobile/app/index.tsx         # Écran principal (12 mois)
+- apps/mobile/app/onboarding.tsx    # Flow inscription
+- apps/mobile/services/api.ts       # Communication backend
+- apps/mobile/constants/theme.ts    # Design System
+
+Configuration :
+- .env.example                      # Toutes les variables nécessaires
+- README.md                         # Vision + roadmap
+- QUICKSTART.md                     # Setup en 2 min
+

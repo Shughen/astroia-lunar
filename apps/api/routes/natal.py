@@ -4,13 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
+import httpx
 
 from database import get_db
 from models.user import User
 from models.natal_chart import NatalChart
 from routes.auth import get_current_user
 from services.ephemeris import ephemeris_client
+from services.ephemeris_rapidapi import create_natal_chart
 
 router = APIRouter()
 
@@ -130,4 +132,51 @@ async def get_natal_chart(
         )
     
     return chart
+
+
+# === RAPIDAPI PASS-THROUGH ===
+@router.post("/natal-chart/external")
+async def calculate_natal_chart_external(
+    payload: Dict[str, Any]
+):
+    """
+    Endpoint pass-through vers RapidAPI pour calculer un thème natal.
+    Accepte n'importe quel payload JSON et le transmet directement à RapidAPI.
+    
+    Exemple de payload:
+    {
+        "name": "John Doe",
+        "date": "1990-05-15",
+        "time": "14:30",
+        "latitude": 48.8566,
+        "longitude": 2.3522,
+        "timezone": "Europe/Paris"
+    }
+    """
+    try:
+        # Appel à RapidAPI via le service
+        rapidapi_response = await create_natal_chart(payload)
+        
+        # Retour structuré
+        return {
+            "provider": "rapidapi",
+            "endpoint": "chart_natal",
+            "data": rapidapi_response
+        }
+        
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Ephemeris error: {e.response.status_code} - {e.response.text}"
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Ephemeris error: Unable to connect - {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ephemeris error: {str(e)}"
+        )
 

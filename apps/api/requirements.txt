@@ -4,6 +4,7 @@ uvicorn[standard]==0.27.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
+email-validator==2.1.0
 
 # === DATABASE ===
 sqlalchemy==2.0.25
@@ -23,6 +24,7 @@ requests==2.31.0
 # === UTILS ===
 pytz==2024.1
 python-dateutil==2.8.2
+apscheduler==3.10.4
 
 # === DEV ===
 pytest==7.4.4
