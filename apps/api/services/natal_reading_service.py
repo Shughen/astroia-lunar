@@ -195,6 +195,12 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
     
     subject_data = positions_data.get('subject_data', {})
     
+    if not subject_data:
+        logger.warning('[Parser] subject_data est vide, retour positions vides')
+        return []
+    
+    logger.info(f'[Parser] Parsing positions, subject_data keys: {list(subject_data.keys())[:10]}')
+    
     # Points principaux à extraire
     point_names = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 
                    'saturn', 'uranus', 'neptune', 'pluto', 'ascendant', 
@@ -203,7 +209,10 @@ def parse_positions_to_core_points(positions_data: Dict[str, Any]) -> List[Dict[
     for point_name in point_names:
         point_data = subject_data.get(point_name)
         if not point_data:
+            logger.debug(f'[Parser] {point_name} absent')
             continue
+        
+        logger.debug(f'[Parser] Parsing {point_name}: {point_data}')
             
         # Extraire la maison (format: "Ninth_House" → 9)
         house_str = point_data.get('house', 'First_House')
