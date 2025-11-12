@@ -64,15 +64,7 @@ async def call_rapidapi_natal_chart(birth_data: Dict[str, Any]) -> Dict[str, Any
         response = await client.post(url, json=payload, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
-        # DEBUG: Logger la structure de la réponse
-        logger.info(f"🔍 DEBUG Keys racine: {list(data.keys())}")
-        if 'chart_data' in data:
-            logger.info(f"🔍 DEBUG Keys chart_data: {list(data['chart_data'].keys())}")
-            logger.info(f"✅ Réponse RapidAPI reçue: {len(data.get('chart_data', {}).get('positions', []))} positions, {len(data.get('chart_data', {}).get('aspects', []))} aspects")
-        else:
-            logger.warning(f"⚠️ Pas de 'chart_data' dans la réponse ! Keys: {list(data.keys())}")
-        
+        logger.info(f"✅ Réponse RapidAPI reçue: {len(data.get('chart_data', {}).get('positions', []))} positions, {len(data.get('chart_data', {}).get('aspects', []))} aspects")
         return data
         
     except httpx.HTTPStatusError as e:

@@ -100,6 +100,17 @@ async def create_natal_reading(
             options=request.options.model_dump() if request.options else {}
         )
         
+        # Si force_refresh, supprimer l'ancienne entrée avant d'insérer
+        if force_refresh:
+            delete_result = await db.execute(
+                select(NatalReading).where(NatalReading.cache_key == cache_key)
+            )
+            old_reading = delete_result.scalar_one_or_none()
+            if old_reading:
+                logger.info(f"🗑️ Suppression ancienne lecture (id={old_reading.id}) avant force_refresh")
+                await db.delete(old_reading)
+                await db.commit()
+        
         # Sauvegarder en DB
         new_reading = NatalReading(
             cache_key=cache_key,
