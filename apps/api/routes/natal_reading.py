@@ -119,7 +119,7 @@ async def create_natal_reading(
             source="api",
             api_calls_count=result_data['api_calls_count'],
             language=request.options.language if request.options else "fr",
-            includes_full_report=request.options.include_full_report if request.options else False
+            includes_full_report=request.options.include_interpretations if request.options else True
         )
         
         db.add(new_reading)
