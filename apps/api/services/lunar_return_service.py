@@ -433,6 +433,59 @@ async def calculate_lunar_return(
         "interpretation_keys": interpretation_keys,
     }
     
+    # === V2 START ===
+    # Calcul V2 : phase lunaire et aspects significatifs
+    # Ces calculs sont effectués en parallèle du V1, sans modifier le comportement V1 existant
+    
+    try:
+        # 1. Extraire les longitudes absolues depuis raw_response pour calcul phase lunaire
+        moon_longitude = None
+        sun_longitude = None
+        
+        if raw_response:
+            chart_data = raw_response.get("chart_data", {})
+            planetary_positions = chart_data.get("planetary_positions", [])
+            
+            # Chercher Moon et Sun dans planetary_positions pour obtenir absolute_longitude
+            for pos in planetary_positions:
+                name = pos.get("name", "")
+                if name == "Moon":
+                    moon_longitude = pos.get("absolute_longitude")
+                elif name == "Sun":
+                    sun_longitude = pos.get("absolute_longitude")
+        
+        # 2. Calculer la phase lunaire V2
+        lunar_phase_v2 = None
+        if moon_longitude is not None and sun_longitude is not None:
+            lunar_phase_v2 = calculate_lunar_phase(moon_longitude, sun_longitude)
+            logger.info(f"🌙 Phase lunaire V2 calculée: {lunar_phase_v2.get('type')} (angle: {lunar_phase_v2.get('angle')}°)")
+        
+        # 3. Filtrer et scorer les aspects significatifs
+        significant_aspects = filter_significant_aspects(aspects)
+        dominant_aspect = significant_aspects[0] if significant_aspects else None
+        
+        logger.info(f"⭐ {len(significant_aspects)} aspects significatifs trouvés (V2)")
+        
+        # 4. Construire le payload V2 (en mémoire uniquement, pas de DB)
+        v2_payload = {
+            "lunar_phase": lunar_phase_v2,
+            "significant_aspects": significant_aspects,
+            "dominant_aspect": dominant_aspect,
+        }
+        
+        # 5. Ajouter le payload V2 à la réponse API (sans modifier les clés V1)
+        result["v2"] = {
+            "version": "2.0.0",
+            "payload": v2_payload
+        }
+        
+    except Exception as e:
+        # En cas d'erreur V2, on ne casse pas le V1
+        logger.warning(f"⚠️ Erreur calcul V2 (non bloquant): {e}")
+        # V2 absent de la réponse si erreur, mais V1 reste intact
+    
+    # === V2 END ===
+    
     logger.info(f"✅ Révolution lunaire calculée: Lune {result['moon_sign']} en maison {result['moon_house']}")
     
     return result
