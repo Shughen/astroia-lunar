@@ -2,7 +2,7 @@
 Configuration centralisée (Pydantic Settings)
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
 
@@ -58,9 +58,14 @@ class Settings(BaseSettings):
     # Timezone
     TZ: str = Field(default="Europe/Paris")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Supabase
+    supabase_url: Optional[str] = Field(default=None, validation_alias="SUPABASE_URL")
+    supabase_anon_key: Optional[str] = Field(default=None, validation_alias="SUPABASE_ANON_KEY")
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True
+    )
 
 
 settings = Settings()
