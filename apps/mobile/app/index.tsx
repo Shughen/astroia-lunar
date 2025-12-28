@@ -97,6 +97,8 @@ export default function HomeScreen() {
         console.log('[INDEX] 📍 Étape A: Vérification auth (bypass=', isBypassActive, ', auth=', isAuthenticated, ')');
         if (!isBypassActive && !isAuthenticated) {
           console.log('[INDEX] ❌ Pas authentifié → redirection vers /login');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
           setShouldNavigate({ route: '/login' });
           return;
         }
@@ -108,6 +110,8 @@ export default function HomeScreen() {
 
         if (!onboardingStore.hasSeenWelcomeScreen) {
           console.log('[INDEX] ✅ Welcome screen non vu → redirection vers /welcome');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
           setShouldNavigate({ route: '/welcome' });
           return;
         }
@@ -125,6 +129,8 @@ export default function HomeScreen() {
         console.log('[INDEX] hasCompletedProfile =', onboardingStore.hasCompletedProfile);
         if (!onboardingStore.hasCompletedProfile) {
           console.log('[INDEX] ✅ Profil incomplet → redirection vers /onboarding/profile-setup');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
           setShouldNavigate({ route: '/onboarding/profile-setup' });
           return;
         }
@@ -134,6 +140,8 @@ export default function HomeScreen() {
         console.log('[INDEX] hasAcceptedConsent =', onboardingStore.hasAcceptedConsent);
         if (!onboardingStore.hasAcceptedConsent) {
           console.log('[INDEX] ✅ Consentement non accepté → redirection vers /onboarding/consent');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
           setShouldNavigate({ route: '/onboarding/consent' });
           return;
         }
@@ -143,6 +151,8 @@ export default function HomeScreen() {
         console.log('[INDEX] hasSeenDisclaimer =', onboardingStore.hasSeenDisclaimer);
         if (!onboardingStore.hasSeenDisclaimer) {
           console.log('[INDEX] ✅ Disclaimer non vu → redirection vers /onboarding/disclaimer');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
           setShouldNavigate({ route: '/onboarding/disclaimer' });
           return;
         }
@@ -152,6 +162,8 @@ export default function HomeScreen() {
         console.log('[INDEX] hasCompletedOnboarding =', onboardingStore.hasCompletedOnboarding);
         if (!onboardingStore.hasCompletedOnboarding) {
           console.log('[INDEX] ✅ Onboarding slides non terminés → redirection vers /onboarding');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
           setShouldNavigate({ route: '/onboarding' });
           return;
         }
