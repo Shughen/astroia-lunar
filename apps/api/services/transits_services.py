@@ -6,6 +6,7 @@ Calcule les transits planétaires croisés avec thème natal et révolutions lun
 from typing import Dict, Any
 from services import rapidapi_client
 import logging
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +36,26 @@ async def get_natal_transits(payload: Dict[str, Any]) -> Dict[str, Any]:
     Raises:
         HTTPException: 502 si erreur provider
     """
-    logger.info(f"🔄 Calcul Natal Transits pour: {payload.get('transit_date', 'N/A')}")
+    # Default transit_date = aujourd'hui si absent
+    from datetime import datetime, timezone
+    if not payload.get("transit_date"):
+        transit_date_default = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    else:
+        transit_date_default = payload.get("transit_date", "")
+    
+    logger.info(f"🔄 Calcul Natal Transits pour: {transit_date_default}")
     
     # Transformer le payload au format attendu par RapidAPI (même format que natal-chart)
     # RapidAPI attend: { "subject": { "name": "...", "birth_data": {...} }, "transit_data": {...}, "options": {...} }
     birth_date = payload.get("birth_date", "")
+    if not birth_date:
+        raise HTTPException(
+            status_code=400,
+            detail="birth_date est requis"
+        )
+    
     birth_time = payload.get("birth_time", "12:00")
-    transit_date = payload.get("transit_date", "")
+    transit_date = transit_date_default
     transit_time = payload.get("transit_time", "12:00")
     
     # Parser les dates
@@ -89,9 +103,13 @@ async def get_natal_transits(payload: Dict[str, Any]) -> Dict[str, Any]:
         }
     }
     
-    result = await rapidapi_client.post_json(rapidapi_client.NATAL_TRANSITS_PATH, rapidapi_payload)
-    logger.info("✅ Natal Transits calculés avec succès")
-    return result
+    try:
+        result = await rapidapi_client.post_json(rapidapi_client.NATAL_TRANSITS_PATH, rapidapi_payload)
+        logger.info("✅ Natal Transits calculés avec succès")
+        return result
+    except HTTPException:
+        # Relancer les HTTPException telles quelles
+        raise
 
 
 async def get_lunar_return_transits(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -178,10 +196,23 @@ def generate_transit_insights(transits_data: Dict[str, Any]) -> Dict[str, Any]:
         }
         
         for event in sorted_events:
-            # RapidAPI utilise: transiting_planet, aspect_type, stationed_planet, orb
-            transit_planet = event.get("transiting_planet", "Unknown")
-            aspect_type = event.get("aspect_type", "unknown")
-            natal_planet = event.get("stationed_planet", "Unknown")
+            # Support multiple formats:
+            # - RapidAPI: transiting_planet, aspect_type, stationed_planet, orb
+            # - Test format: planet1, planet2, aspect, orb
+            transit_planet = (
+                event.get("transiting_planet") or 
+                event.get("planet1") or 
+                event.get("transit_planet") or 
+                "Unknown"
+            )
+            aspect_type = event.get("aspect_type") or event.get("aspect", "unknown")
+            natal_planet = (
+                event.get("stationed_planet") or 
+                event.get("planet2") or 
+                event.get("natal_point") or 
+                event.get("natal_planet") or 
+                "Unknown"
+            )
             orb = abs(event.get("orb", 0))  # Orbe en valeur absolue
             
             # Normaliser le nom de l'aspect

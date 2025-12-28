@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from main import app
 from models.user import User
 from models.natal_chart import NatalChart
+from models.lunar_return import LunarReturn
+from datetime import datetime, timezone
 
 
 class FakeAsyncSession:
@@ -76,9 +78,54 @@ class FakeAsyncSession:
             else:  # natal_missing
                 fake_result._scalar = None
         elif "LunarReturn" in query_str or "lunar_returns" in query_str:
-            # Query pour vérifier si un lunar return existe déjà
-            # Par défaut, on retourne None (pas d'existant) pour permettre la génération
-            fake_result._scalar = None
+            # Si c'est un DELETE, retourner un FakeResult avec rowcount
+            if "DELETE" in query_str.upper() or "delete" in query_str:
+                fake_result._rowcount = 0  # Pas de suppression dans les tests
+                return fake_result
+            
+            # Si c'est un SELECT, filtrer les objets ajoutés selon les conditions
+            lunar_returns = [obj for obj in self._added_objects if isinstance(obj, LunarReturn)]
+            
+            # Filtrer par user_id si présent dans la query
+            if "user_id" in query_str:
+                # Extraire user_id de la query (simplifié: on assume user_id == 1 dans les tests)
+                lunar_returns = [lr for lr in lunar_returns if hasattr(lr, 'user_id') and lr.user_id == 1]
+            
+            # Filtrer par return_date >= now si présent
+            if "return_date" in query_str and ">=" in query_str:
+                now = datetime.now(timezone.utc)
+                # Filtrer les objets qui ont un return_date valide et >= now
+                filtered_returns = []
+                for lr in lunar_returns:
+                    if hasattr(lr, 'return_date') and lr.return_date:
+                        # Comparer les dates (gérer les timezone-aware et naive)
+                        lr_date = lr.return_date
+                        if lr_date.tzinfo is None:
+                            # Si naive, supposer UTC
+                            from datetime import timezone as tz
+                            lr_date = lr_date.replace(tzinfo=tz.utc)
+                        if lr_date >= now:
+                            filtered_returns.append(lr)
+                lunar_returns = filtered_returns
+            
+            # Trier par return_date ASC si ORDER BY présent
+            if "ORDER BY" in query_str.upper() or "order_by" in query_str:
+                lunar_returns.sort(key=lambda x: x.return_date if hasattr(x, 'return_date') and x.return_date else datetime.min.replace(tzinfo=timezone.utc))
+            
+            # Appliquer LIMIT si présent
+            if "LIMIT" in query_str.upper() or "limit" in query_str:
+                # Extraire le nombre (simplifié: on assume limit(1) ou limit(12))
+                if "limit(1)" in query_str.lower() or ".limit(1)" in query_str:
+                    lunar_returns = lunar_returns[:1]
+                elif "limit(12)" in query_str.lower() or ".limit(12)" in query_str:
+                    lunar_returns = lunar_returns[:12]
+            
+            # Si c'est un scalar_one_or_none (SELECT avec limit(1))
+            if "limit(1)" in query_str.lower() or ".limit(1)" in query_str:
+                fake_result._scalar = lunar_returns[0] if lunar_returns else None
+            else:
+                # Sinon, retourner la liste via scalars()
+                fake_result._scalars_list = lunar_returns
         else:
             # Autres queries (par défaut None)
             fake_result._scalar = None
@@ -92,6 +139,10 @@ class FakeAsyncSession:
         self._committed = False
     
     def add(self, obj):
+        # Assigner un id automatique si l'objet n'en a pas (pour les tests)
+        if hasattr(obj, 'id') and obj.id is None:
+            # Générer un id simple basé sur l'index
+            obj.id = len(self._added_objects) + 1
         self._added_objects.append(obj)
     
     def refresh(self, obj):
@@ -112,6 +163,8 @@ class FakeResult:
     
     def __init__(self):
         self._scalar = None
+        self._scalars_list = []
+        self._rowcount = None
     
     def scalar_one_or_none(self):
         return self._scalar
@@ -120,8 +173,16 @@ class FakeResult:
         return self._scalar
     
     def scalars(self):
-        # Retourner un itérable vide pour les tests simples
+        # Si on a une liste de scalars (pour SELECT multiple), la retourner
+        if hasattr(self, '_scalars_list') and self._scalars_list:
+            return iter(self._scalars_list)
+        # Sinon, retourner un itérable vide
         return iter([])
+    
+    @property
+    def rowcount(self):
+        """Retourne le rowcount si disponible"""
+        return self._rowcount
 
 
 @pytest.fixture
@@ -161,10 +222,12 @@ def override_dependencies(fake_user):
     async def override_get_current_user():
         return fake_user
     
-    # Override get_db pour retourner FakeAsyncSession (scenario natal_exists)
+    # Créer une seule instance de FakeAsyncSession partagée pour toutes les requêtes
+    shared_session = FakeAsyncSession(scenario="natal_exists")
+    
+    # Override get_db pour retourner la même FakeAsyncSession (partagée entre requêtes)
     async def override_get_db():
-        async_session = FakeAsyncSession(scenario="natal_exists")
-        yield async_session
+        yield shared_session
     
     # Appliquer les overrides
     app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
