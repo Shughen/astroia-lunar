@@ -2,7 +2,7 @@
  * Écran d'accueil principal
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,12 @@ import {
   Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Fallback si LinearGradient n'est pas disponible
+const LinearGradientComponent = LinearGradient || (({ colors, style, children, ...props }: any) => {
+  // View est déjà importé depuis react-native plus haut
+  return <View style={[{ backgroundColor: colors?.[0] || '#1a0b2e' }, style]} {...props}>{children}</View>;
+});
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
@@ -31,7 +37,31 @@ export default function HomeScreen() {
   const [generating, setGenerating] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [isCheckingRouting, setIsCheckingRouting] = useState(true);
+  const [shouldNavigate, setShouldNavigate] = useState<{ route: string } | null>(null);
   const hasCheckedRoutingRef = useRef(false);
+  const isMountedRef = useRef(false);
+
+  // S'assurer que le composant est monté avant de naviguer
+  useLayoutEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Effectuer la navigation une fois que le composant est monté
+  useEffect(() => {
+    if (shouldNavigate && isMountedRef.current) {
+      const timer = setTimeout(() => {
+        try {
+          router.replace(shouldNavigate.route);
+        } catch (error) {
+          console.error('[INDEX] Erreur navigation:', error);
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldNavigate, router]);
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
@@ -45,6 +75,11 @@ export default function HomeScreen() {
       }
 
       try {
+        // Attendre que le composant soit monté
+        while (!isMountedRef.current) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
         console.log('[INDEX] 📍 Début checkRouting');
         console.log('[INDEX] isAuthenticated =', isAuthenticated);
 
@@ -62,7 +97,7 @@ export default function HomeScreen() {
         console.log('[INDEX] 📍 Étape A: Vérification auth (bypass=', isBypassActive, ', auth=', isAuthenticated, ')');
         if (!isBypassActive && !isAuthenticated) {
           console.log('[INDEX] ❌ Pas authentifié → redirection vers /login');
-          router.replace('/login');
+          setShouldNavigate({ route: '/login' });
           return;
         }
         console.log('[INDEX] ✅ Auth OK (bypassé ou authentifié)');
@@ -73,18 +108,16 @@ export default function HomeScreen() {
 
         if (!onboardingStore.hasSeenWelcomeScreen) {
           console.log('[INDEX] ✅ Welcome screen non vu → redirection vers /welcome');
-          router.replace('/welcome');
+          setShouldNavigate({ route: '/welcome' });
           return;
         }
 
         console.log('[INDEX] Welcome déjà vu, continuation du flow');
 
-        // En mode DEV_AUTH_BYPASS, arrêter ici après welcome (skip onboarding/profil)
+        // En mode DEV_AUTH_BYPASS, continuer le flow onboarding normalement
+        // Le bypass ne concerne QUE l'authentification, pas l'onboarding
         if (isBypassActive) {
-          console.log('[INDEX] ✅ DEV_AUTH_BYPASS: arrêt après welcome → accès direct Home');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          return;
+          console.log('[INDEX] ⚠️ DEV_AUTH_BYPASS: auth skipped, onboarding flow continues');
         }
 
         // C) Vérifier profil setup (nom + date de naissance)
@@ -92,7 +125,7 @@ export default function HomeScreen() {
         console.log('[INDEX] hasCompletedProfile =', onboardingStore.hasCompletedProfile);
         if (!onboardingStore.hasCompletedProfile) {
           console.log('[INDEX] ✅ Profil incomplet → redirection vers /onboarding/profile-setup');
-          router.replace('/onboarding/profile-setup');
+          setShouldNavigate({ route: '/onboarding/profile-setup' });
           return;
         }
 
@@ -101,7 +134,7 @@ export default function HomeScreen() {
         console.log('[INDEX] hasAcceptedConsent =', onboardingStore.hasAcceptedConsent);
         if (!onboardingStore.hasAcceptedConsent) {
           console.log('[INDEX] ✅ Consentement non accepté → redirection vers /onboarding/consent');
-          router.replace('/onboarding/consent');
+          setShouldNavigate({ route: '/onboarding/consent' });
           return;
         }
 
@@ -110,7 +143,7 @@ export default function HomeScreen() {
         console.log('[INDEX] hasSeenDisclaimer =', onboardingStore.hasSeenDisclaimer);
         if (!onboardingStore.hasSeenDisclaimer) {
           console.log('[INDEX] ✅ Disclaimer non vu → redirection vers /onboarding/disclaimer');
-          router.replace('/onboarding/disclaimer');
+          setShouldNavigate({ route: '/onboarding/disclaimer' });
           return;
         }
 
@@ -119,7 +152,7 @@ export default function HomeScreen() {
         console.log('[INDEX] hasCompletedOnboarding =', onboardingStore.hasCompletedOnboarding);
         if (!onboardingStore.hasCompletedOnboarding) {
           console.log('[INDEX] ✅ Onboarding slides non terminés → redirection vers /onboarding');
-          router.replace('/onboarding');
+          setShouldNavigate({ route: '/onboarding' });
           return;
         }
 
@@ -132,7 +165,7 @@ export default function HomeScreen() {
         hasCheckedRoutingRef.current = true;
         setIsCheckingRouting(false);
         // En cas d'erreur, rediriger vers login pour sécurité
-        router.replace('/login');
+        setShouldNavigate({ route: '/login' });
       }
     };
 
@@ -193,12 +226,12 @@ export default function HomeScreen() {
   // Afficher un loader pendant la vérification du routing
   if (isCheckingRouting && !isDevAuthBypassActive()) {
     return (
-      <LinearGradient colors={colors.darkBg} style={styles.container}>
+      <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.subtitle}>Chargement...</Text>
         </View>
-      </LinearGradient>
+      </LinearGradientComponent>
     );
   }
 
@@ -206,17 +239,17 @@ export default function HomeScreen() {
   // Sinon, si pas authentifié, les guards redirigeront vers /login
   if (!isAuthenticated && !isDevAuthBypassActive()) {
     return (
-      <LinearGradient colors={colors.darkBg} style={styles.container}>
+      <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.subtitle}>Redirection...</Text>
         </View>
-      </LinearGradient>
+      </LinearGradientComponent>
     );
   }
 
   return (
-    <LinearGradient colors={colors.darkBg} style={styles.container}>
+    <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -464,7 +497,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
+    </LinearGradientComponent>
   );
 }
 

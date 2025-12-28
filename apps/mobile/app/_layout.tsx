@@ -4,8 +4,22 @@
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import React from 'react';
 
 export default function RootLayout() {
+  // Vérifier que Stack est disponible au runtime
+  if (!Stack) {
+    console.error('[LAYOUT] Stack is undefined! Check expo-router installation.');
+    return (
+      <>
+        <StatusBar style="light" />
+        <React.Fragment>
+          {/* Fallback si Stack n'est pas disponible */}
+        </React.Fragment>
+      </>
+    );
+  }
+
   return (
     <>
       <StatusBar style="light" />
