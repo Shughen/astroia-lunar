@@ -1,5 +1,5 @@
 /**
- * Store pour le thème natal
+ * Store Zustand pour le thème natal
  */
 
 import { create } from 'zustand';
@@ -36,7 +36,7 @@ interface NatalChart {
   sun_sign?: string;
   moon_sign?: string;
   ascendant?: string;
-  raw_data?: any;
+  raw_data?: unknown;
 }
 
 interface NatalState {
@@ -50,11 +50,10 @@ interface NatalState {
 export const useNatalStore = create<NatalState>((set) => ({
   chart: null,
   loading: false,
-  
-  setChart: (chart) => set({ chart, loading: false }),
-  
-  setLoading: (loading) => set({ loading }),
-  
+
+  setChart: (chart: NatalChart | null) => set({ chart, loading: false }),
+
+  setLoading: (loading: boolean) => set({ loading }),
+
   clearChart: () => set({ chart: null, loading: false }),
 }));
-

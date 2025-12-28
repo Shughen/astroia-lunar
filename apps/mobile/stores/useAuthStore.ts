@@ -3,29 +3,14 @@
  */
 
 import { create } from 'zustand';
-
-interface User {
-  id: number;
-  email: string;
-  birth_date?: string;
-  birth_time?: string;
-  birth_place_name?: string;
-  is_premium: boolean;
-}
-
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  setUser: (user: User | null) => void;
-  logout: () => void;
-}
+import type { AuthState } from '../types/stores';
+import type { User } from '../types/api';
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
-  
+
+  setUser: (user: User | null) => set({ user, isAuthenticated: !!user }),
+
   logout: () => set({ user: null, isAuthenticated: false }),
 }));
-
