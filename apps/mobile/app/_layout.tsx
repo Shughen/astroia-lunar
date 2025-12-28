@@ -28,10 +28,11 @@ export default function RootLayout() {
         <Stack.Screen name="transits/overview" />
         <Stack.Screen name="transits/details" />
         <Stack.Screen name="calendar/month" />
+        <Stack.Screen name="cycle/index" />
+        <Stack.Screen name="cycle/history" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="debug/selftest" />
       </Stack>
     </>
   );
 }
-
