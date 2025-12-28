@@ -3,9 +3,10 @@ Schémas Pydantic pour les Transits (P2)
 Validation des requêtes et réponses des endpoints transits
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 from typing import Dict, Any, Optional, List
 from datetime import date, datetime
+from uuid import UUID
 
 
 class NatalTransitsRequest(BaseModel):
@@ -20,7 +21,7 @@ class NatalTransitsRequest(BaseModel):
     transit_time: Optional[str] = Field(None, description="Heure du transit (HH:MM)")
     orb: Optional[float] = Field(5.0, description="Orbe des aspects en degrés")
     
-    user_id: Optional[int] = Field(None, description="ID utilisateur pour sauvegarde en DB")
+    user_id: Optional[UUID] = Field(None, description="ID utilisateur (UUID) pour sauvegarde en DB")
     
     class Config:
         extra = "allow"
@@ -38,7 +39,7 @@ class LunarReturnTransitsRequest(BaseModel):
     transit_date: str = Field(..., description="Date du transit actuel (YYYY-MM-DD)")
     orb: Optional[float] = Field(5.0, description="Orbe des aspects en degrés")
     
-    user_id: Optional[int] = Field(None, description="ID utilisateur pour sauvegarde en DB")
+    user_id: Optional[UUID] = Field(None, description="ID utilisateur (UUID) pour sauvegarde en DB")
     month: Optional[str] = Field(None, description="Mois au format YYYY-MM")
     
     class Config:
@@ -99,19 +100,28 @@ class TransitsResponse(BaseModel):
 class TransitsOverviewDB(BaseModel):
     """Schéma pour les transits overview en DB"""
     id: int
-    user_id: int
+    user_id: UUID
     month: str
-    summary: Dict[str, Any]
+    overview: Dict[str, Any]
     created_at: datetime
     
     class Config:
         from_attributes = True
+    
+    @model_serializer(mode='wrap')
+    def serialize_model(self, serializer, info):
+        """
+        Sérialise le modèle en incluant 'overview' et 'summary' (alias pour compatibilité).
+        """
+        data = serializer(self)
+        data['summary'] = data['overview']  # Alias de compatibilité pour le mobile
+        return data
 
 
 class TransitsEventDB(BaseModel):
     """Schéma pour les événements de transit en DB"""
     id: int
-    user_id: int
+    user_id: UUID
     date: date
     transit_planet: str
     natal_point: str

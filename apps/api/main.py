@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import uuid
 
 from config import settings
 from database import engine, Base
@@ -24,10 +25,45 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle events (startup/shutdown)"""
+    correlation_id = str(uuid.uuid4())
+    
     # Startup
-    logger.info("🚀 Astroia Lunar API démarrage...")
-    logger.info(f"📊 Environment: {settings.APP_ENV}")
-    logger.info(f"🔗 Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'local'}")
+    logger.info(f"[corr={correlation_id}] 🚀 Astroia Lunar API démarrage...")
+    logger.info(f"[corr={correlation_id}] 📊 Environment: {settings.APP_ENV}")
+    logger.info(f"[corr={correlation_id}] 🔗 Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'local'}")
+    
+    # Schema sanity check au démarrage
+    try:
+        from database import AsyncSessionLocal
+        from utils.schema_sanity_check import check_schema_sanity
+        
+        async with AsyncSessionLocal() as db:
+            is_valid, errors = await check_schema_sanity(db, correlation_id)
+            
+            if not is_valid:
+                error_summary = "\n".join([f"  - {err['message']}" for err in errors])
+                error_msg = (
+                    f"[corr={correlation_id}] ❌ SCHEMA SANITY CHECK FAILED au démarrage:\n{error_summary}\n"
+                    f"Action requise: Exécuter les migrations SQL nécessaires. "
+                    f"Voir apps/api/scripts/sql/inspect_core_schema.sql pour diagnostiquer."
+                )
+                logger.error(error_msg)
+                
+                # Fail-fast en dev, warn seulement en prod
+                if settings.APP_ENV == "development":
+                    logger.error(f"[corr={correlation_id}] 🛑 Arrêt du serveur (dev mode fail-fast)")
+                    raise RuntimeError(f"Schema sanity check failed: {error_summary}")
+            else:
+                logger.info(f"[corr={correlation_id}] ✅ Schema sanity check OK au démarrage")
+    except RuntimeError:
+        # Re-raise RuntimeError (fail-fast en dev)
+        raise
+    except Exception as e:
+        # Pour toute autre erreur (DB indisponible, etc.), on log mais on continue
+        logger.warning(
+            f"[corr={correlation_id}] ⚠️ Impossible de vérifier le schéma au démarrage: {e}. "
+            f"Le serveur continue mais le schéma n'a pas été validé."
+        )
     
     # NOTE: Tables créées via Alembic migrations, pas create_all
     # En dev, utiliser : alembic upgrade head
@@ -142,6 +178,66 @@ async def health_check():
     # Check 3: RapidAPI ping (HEAD ou GET simple) - optionnel en mode dev
     # Pour éviter de consommer des crédits API, on fait un simple check de config
     # En production, on pourrait faire un vrai ping si l'API provider le permet
+    
+    return health_status
+
+
+@app.get("/health/db")
+async def health_check_db():
+    """
+    Health check spécifique pour la base de données avec vérification du schéma.
+    Vérifie que les types de colonnes critiques (id, user_id) correspondent aux attentes.
+    """
+    correlation_id = str(uuid.uuid4())
+    
+    health_status = {
+        "status": "healthy",
+        "correlation_id": correlation_id,
+        "checks": {
+            "database_connection": "unknown",
+            "schema_sanity": "unknown"
+        },
+        "errors": []
+    }
+    
+    try:
+        from database import AsyncSessionLocal
+        from utils.schema_sanity_check import check_schema_sanity
+        from sqlalchemy import text
+        
+        async with AsyncSessionLocal() as db:
+            # Test de connexion simple
+            try:
+                await db.execute(text("SELECT 1"))
+                health_status["checks"]["database_connection"] = "ok"
+            except Exception as e:
+                health_status["checks"]["database_connection"] = f"error: {str(e)[:100]}"
+                health_status["status"] = "unhealthy"
+                health_status["errors"].append(f"Database connection failed: {str(e)}")
+                return health_status
+            
+            # Schema sanity check
+            is_valid, errors = await check_schema_sanity(db, correlation_id)
+            
+            if is_valid:
+                health_status["checks"]["schema_sanity"] = "ok"
+            else:
+                health_status["checks"]["schema_sanity"] = "failed"
+                health_status["status"] = "unhealthy"
+                health_status["errors"] = [
+                    {
+                        "table": err["table_name"],
+                        "column": err["column_name"],
+                        "message": err["message"]
+                    }
+                    for err in errors
+                ]
+                
+    except Exception as e:
+        logger.error(f"[corr={correlation_id}] Health check DB failed: {e}", exc_info=True)
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["schema_sanity"] = f"error: {str(e)[:100]}"
+        health_status["errors"].append(f"Schema check exception: {str(e)}")
     
     return health_status
 

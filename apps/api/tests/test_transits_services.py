@@ -5,8 +5,11 @@ Tests unitaires pour les services Transits
 import pytest
 from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
+from datetime import datetime
+from uuid import UUID
 
 from services import transits_services
+from schemas.transits import TransitsOverviewDB
 
 
 @pytest.mark.asyncio
@@ -143,4 +146,36 @@ async def test_lunar_return_transits_error_handling():
             })
         
         assert exc_info.value.status_code == 504
+
+
+def test_transits_overview_db_schema_serialization():
+    """Test que TransitsOverviewDB sérialise avec 'overview' et 'summary' (compatibilité)"""
+    test_user_id = UUID("550e8400-e29b-41d4-a716-446655440000")
+    test_overview_data = {
+        "natal_transits": {"aspects": []},
+        "insights": {"energy_level": "medium"},
+        "last_updated": "2025-01-15T10:00:00"
+    }
+    
+    overview_db = TransitsOverviewDB(
+        id=1,
+        user_id=test_user_id,
+        month="2025-01",
+        overview=test_overview_data,
+        created_at=datetime.now()
+    )
+    
+    # Sérialiser en dict
+    serialized = overview_db.model_dump()
+    
+    # Vérifier que 'overview' est présent
+    assert "overview" in serialized
+    assert serialized["overview"] == test_overview_data
+    
+    # Vérifier que 'summary' est présent (compatibilité)
+    assert "summary" in serialized
+    assert serialized["summary"] == test_overview_data
+    
+    # Vérifier que summary == overview
+    assert serialized["summary"] == serialized["overview"]
 

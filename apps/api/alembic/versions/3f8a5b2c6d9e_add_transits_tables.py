@@ -20,12 +20,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Créer la table transits_overview
+    # NOTE: Cette migration créait la colonne 'summary', mais elle a été renommée en 'overview'
+    # dans la DB réelle. Le modèle SQLAlchemy (models/transits.py) utilise maintenant 'overview'.
+    # Si cette migration n'a pas encore été exécutée, remplacer 'summary' par 'overview' ci-dessous.
     op.create_table(
         'transits_overview',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('month', sa.String(), nullable=False),
-        sa.Column('summary', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+        sa.Column('summary', postgresql.JSONB(astext_type=sa.Text()), nullable=False),  # RENOMMÉ EN 'overview' dans la DB
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),

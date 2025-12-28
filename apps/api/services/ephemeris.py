@@ -9,7 +9,14 @@ from datetime import datetime, timedelta
 from config import settings
 import logging
 
+from utils.api_key_validator import is_configured_api_key
+
 logger = logging.getLogger(__name__)
+
+
+class EphemerisAPIKeyError(Exception):
+    """Exception levée quand la clé API Ephemeris n'est pas configurée"""
+    pass
 
 
 class EphemerisClient:
@@ -18,9 +25,14 @@ class EphemerisClient:
     def __init__(self):
         self.base_url = settings.EPHEMERIS_API_URL
         self.api_key = settings.EPHEMERIS_API_KEY
+        self.is_configured = is_configured_api_key(self.api_key)
+        self.mock_mode = settings.DEV_MOCK_EPHEMERIS
         
-        if not self.api_key:
-            logger.warning("⚠️ EPHEMERIS_API_KEY non configurée")
+        if not self.is_configured:
+            if self.mock_mode:
+                logger.warning("🎭 MODE MOCK DEV activé - EPHEMERIS_API_KEY non configurée, génération de données fake")
+            else:
+                logger.warning("⚠️ EPHEMERIS_API_KEY non configurée ou placeholder - configurez-la ou activez DEV_MOCK_EPHEMERIS=1")
     
     async def calculate_natal_chart(
         self,
@@ -42,7 +54,22 @@ class EphemerisClient:
                 "houses": { ... },
                 "aspects": [ ... ]
             }
+        
+        Raises:
+            EphemerisAPIKeyError: Si la clé API n'est pas configurée et mock mode désactivé
         """
+        # Vérifier la clé API
+        if not self.is_configured:
+            if self.mock_mode:
+                # Mode mock DEV : générer des données fake
+                from utils.ephemeris_mock import generate_mock_natal_chart
+                return generate_mock_natal_chart(date, time, latitude, longitude, timezone)
+            else:
+                # Clé manquante et mock désactivé : lever une exception propre
+                raise EphemerisAPIKeyError(
+                    "EPHEMERIS_API_KEY missing or placeholder. Configure it to compute natal charts, "
+                    "or set DEV_MOCK_EPHEMERIS=1 for development."
+                )
         
         # Format date/heure
         birth_datetime = f"{date}T{time}:00"
@@ -68,8 +95,11 @@ class EphemerisClient:
                 response.raise_for_status()
                 data = response.json()
                 
+                # Normaliser le format de réponse pour garantir cohérence
+                normalized_data = self._normalize_natal_chart_response(data)
+                
                 logger.info(f"✅ Thème natal calculé pour {birth_datetime}")
-                return data
+                return normalized_data
                 
             except httpx.HTTPError as e:
                 logger.error(f"❌ Erreur Ephemeris API: {e}")
@@ -97,7 +127,25 @@ class EphemerisClient:
                 "aspects": [ ... ],
                 "planets": { ... }
             }
+        
+        Raises:
+            EphemerisAPIKeyError: Si la clé API n'est pas configurée et mock mode désactivé
         """
+        # Vérifier la clé API
+        if not self.is_configured:
+            if self.mock_mode:
+                # Mode mock DEV : générer des données fake
+                from utils.ephemeris_mock import generate_mock_lunar_return
+                return generate_mock_lunar_return(
+                    natal_moon_degree, natal_moon_sign, target_month,
+                    birth_latitude, birth_longitude, timezone
+                )
+            else:
+                # Clé manquante et mock désactivé : lever une exception propre
+                raise EphemerisAPIKeyError(
+                    "EPHEMERIS_API_KEY missing or placeholder. Configure it to compute lunar returns, "
+                    "or set DEV_MOCK_EPHEMERIS=1 for development."
+                )
         
         # Parser le mois cible
         year, month = map(int, target_month.split("-"))
@@ -173,6 +221,108 @@ class EphemerisClient:
             )
             response.raise_for_status()
             return response.json()
+    
+    def _normalize_natal_chart_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalise la réponse de l'API Ephemeris vers un format cohérent
+        
+        Gère différents formats possibles de l'API :
+        - Format direct : {"sun": {...}, "moon": {...}, "ascendant": {...}}
+        - Format avec planetary_positions : {"planetary_positions": [...]}
+        - Format avec angles : {"angles": {"ascendant": {...}}}
+        
+        Returns:
+            Format normalisé avec clés : sun, moon, ascendant, planets, houses, aspects
+        """
+        normalized = {}
+        
+        # Normaliser Sun
+        if "sun" in api_response:
+            normalized["sun"] = api_response["sun"]
+        elif "planetary_positions" in api_response:
+            # Chercher Sun dans planetary_positions
+            for pos in api_response.get("planetary_positions", []):
+                if isinstance(pos, dict) and pos.get("name", "").lower() == "sun":
+                    normalized["sun"] = {
+                        "sign": pos.get("sign") or pos.get("zodiac_sign"),
+                        "degree": pos.get("degree") or pos.get("absolute_longitude", 0) % 30,
+                        "absolute_longitude": pos.get("absolute_longitude"),
+                        "house": pos.get("house") or pos.get("house_number")
+                    }
+                    break
+        
+        # Normaliser Moon
+        if "moon" in api_response:
+            normalized["moon"] = api_response["moon"]
+        elif "planetary_positions" in api_response:
+            # Chercher Moon dans planetary_positions
+            for pos in api_response.get("planetary_positions", []):
+                if isinstance(pos, dict) and pos.get("name", "").lower() == "moon":
+                    normalized["moon"] = {
+                        "sign": pos.get("sign") or pos.get("zodiac_sign"),
+                        "degree": pos.get("degree") or pos.get("absolute_longitude", 0) % 30,
+                        "absolute_longitude": pos.get("absolute_longitude"),
+                        "house": pos.get("house") or pos.get("house_number")
+                    }
+                    break
+        
+        # Normaliser Ascendant
+        if "ascendant" in api_response:
+            normalized["ascendant"] = api_response["ascendant"]
+        elif "angles" in api_response:
+            angles = api_response.get("angles", {})
+            if isinstance(angles, dict):
+                if "ascendant" in angles:
+                    normalized["ascendant"] = angles["ascendant"]
+                elif "Ascendant" in angles:
+                    normalized["ascendant"] = angles["Ascendant"]
+        elif "planetary_positions" in api_response:
+            # Chercher Ascendant dans planetary_positions
+            for pos in api_response.get("planetary_positions", []):
+                if isinstance(pos, dict) and pos.get("name", "").lower() in ["ascendant", "asc"]:
+                    normalized["ascendant"] = {
+                        "sign": pos.get("sign") or pos.get("zodiac_sign"),
+                        "degree": pos.get("degree") or pos.get("absolute_longitude", 0) % 30,
+                        "absolute_longitude": pos.get("absolute_longitude")
+                    }
+                    break
+        
+        # Normaliser planets (si présent en tant que dict ou array)
+        if "planets" in api_response:
+            normalized["planets"] = api_response["planets"]
+        elif "planetary_positions" in api_response:
+            # Convertir array en dict pour faciliter l'extraction
+            planets_dict = {}
+            for pos in api_response.get("planetary_positions", []):
+                if isinstance(pos, dict):
+                    name = pos.get("name", "").lower()
+                    if name and name not in ["ascendant", "asc", "medium_coeli", "mean_node", "chiron"]:
+                        planets_dict[name] = {
+                            "sign": pos.get("sign") or pos.get("zodiac_sign"),
+                            "degree": pos.get("degree") or (pos.get("absolute_longitude", 0) % 30),
+                            "absolute_longitude": pos.get("absolute_longitude"),
+                            "house": pos.get("house") or pos.get("house_number")
+                        }
+            if planets_dict:
+                normalized["planets"] = planets_dict
+        
+        # Normaliser houses
+        if "houses" in api_response:
+            normalized["houses"] = api_response["houses"]
+        elif "house_cusps" in api_response:
+            # Convertir house_cusps en format dict si nécessaire
+            normalized["houses"] = api_response.get("house_cusps", [])
+        
+        # Normaliser aspects
+        if "aspects" in api_response:
+            normalized["aspects"] = api_response["aspects"]
+        
+        # Conserver les autres clés si présentes
+        for key in ["angles", "planetary_positions"]:
+            if key in api_response and key not in normalized:
+                normalized[key] = api_response[key]
+        
+        return normalized
     
     async def get_moon_position(
         self,

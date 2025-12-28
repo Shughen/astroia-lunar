@@ -60,7 +60,7 @@ async def generate_lunar_monthly_report(
         )
         result_transits = await db.execute(stmt_transits)
         transits_record = result_transits.scalar_one_or_none()
-        transits_data = transits_record.summary if transits_record else None
+        transits_data = transits_record.overview if transits_record else None
         
         # Récupérer les événements lunaires du mois
         # Extraire année et mois

@@ -3,11 +3,12 @@ Routes FastAPI pour les Transits (P2)
 Endpoints pour transits natals et transits sur révolutions lunaires
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from typing import Dict, Any
+from sqlalchemy import select, and_, text
+from typing import Dict, Any, Optional
 from datetime import datetime, date
+from uuid import UUID
 import logging
 
 from database import get_db
@@ -19,6 +20,9 @@ from schemas.transits import (
     TransitsOverviewDB
 )
 from models.transits import TransitsOverview, TransitsEvent
+from routes.auth import get_current_user
+from models.user import User
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +75,7 @@ async def natal_transits(
                 existing = await db.execute(stmt)
                 existing_overview = existing.scalar_one_or_none()
                 
-                summary_data = {
+                overview_data = {
                     "natal_transits": result,
                     "insights": insights,
                     "last_updated": datetime.now().isoformat()
@@ -79,14 +83,14 @@ async def natal_transits(
                 
                 if existing_overview:
                     # Mise à jour
-                    existing_overview.summary = summary_data
+                    existing_overview.overview = overview_data
                     logger.info(f"♻️  Transits overview mis à jour pour {transit_month}")
                 else:
                     # Création
                     overview = TransitsOverview(
                         user_id=request.user_id,
                         month=transit_month,
-                        summary=summary_data
+                        overview=overview_data
                     )
                     db.add(overview)
                     logger.info(f"💾 Nouveau transits overview sauvegardé pour {transit_month}")
@@ -158,7 +162,7 @@ async def lunar_return_transits(
                 existing = await db.execute(stmt)
                 existing_overview = existing.scalar_one_or_none()
                 
-                summary_data = {
+                overview_data = {
                     "lunar_return_transits": result,
                     "insights": insights,
                     "last_updated": datetime.now().isoformat()
@@ -166,17 +170,17 @@ async def lunar_return_transits(
                 
                 if existing_overview:
                     # Fusionner avec données existantes
-                    if existing_overview.summary:
-                        existing_overview.summary.update(summary_data)
+                    if existing_overview.overview:
+                        existing_overview.overview.update(overview_data)
                     else:
-                        existing_overview.summary = summary_data
+                        existing_overview.overview = overview_data
                     logger.info(f"♻️  LR Transits ajoutés à l'overview {request.month}")
                 else:
                     # Création
                     overview = TransitsOverview(
                         user_id=request.user_id,
                         month=request.month,
-                        summary=summary_data
+                        overview=overview_data
                     )
                     db.add(overview)
                     logger.info(f"💾 Nouveau LR transits overview sauvegardé pour {request.month}")
@@ -205,8 +209,10 @@ async def lunar_return_transits(
 
 @router.get("/overview/{user_id}/{month}", response_model=TransitsOverviewDB)
 async def get_transits_overview(
-    user_id: int,
+    user_id: UUID,
     month: str,
+    current_user: User = Depends(get_current_user),
+    x_dev_user_id: Optional[str] = Header(default=None, alias="X-Dev-User-Id"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -214,10 +220,22 @@ async def get_transits_overview(
     
     Retourne les données en cache incluant les transits natals et LR du mois.
     
-    - **user_id**: ID de l'utilisateur
+    - **user_id**: ID de l'utilisateur (UUID dans l'URL)
     - **month**: Mois au format YYYY-MM
+    
+    En mode DEV_AUTH_BYPASS, utilise l'UUID du header X-Dev-User-Id au lieu de l'UUID de l'URL.
     """
     try:
+        # En mode DEV_AUTH_BYPASS, utiliser l'UUID du header au lieu de l'UUID de l'URL
+        # car current_user.id est INTEGER mais transits_overview.user_id est UUID
+        if settings.APP_ENV == "development" and settings.DEV_AUTH_BYPASS and x_dev_user_id:
+            try:
+                user_id = UUID(x_dev_user_id)
+                logger.debug(f"🔧 DEV_AUTH_BYPASS: utilisation UUID du header X-Dev-User-Id: {user_id}")
+            except (ValueError, TypeError):
+                # Si l'UUID du header est invalide, utiliser celui de l'URL
+                logger.warning(f"⚠️ UUID du header X-Dev-User-Id invalide, utilisation de l'UUID de l'URL: {user_id}")
+        
         stmt = select(TransitsOverview).where(
             and_(
                 TransitsOverview.user_id == user_id,
@@ -238,13 +256,16 @@ async def get_transits_overview(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Erreur récupération transits overview: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"❌ Erreur récupération transits overview: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur interne du serveur lors de la récupération des transits"
+        )
 
 
 @router.get("/overview/{user_id}", response_model=list[TransitsOverviewDB])
 async def get_user_transits_history(
-    user_id: int,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db)
 ):
     """

@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "Astroia Lunar",
+    "slug": "astroia-lunar",
+    "scheme": "astroia-lunar",
+    "platforms": ["ios", "android", "web"]
+  }
+}

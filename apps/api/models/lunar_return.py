@@ -13,8 +13,8 @@ class LunarReturn(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     # Période
-    month = Column(String, nullable=False, index=True)  # YYYY-MM
-    return_date = Column(String)  # Date exacte de la révolution lunaire
+    month = Column(String, nullable=False, index=True)  # YYYY-MM (legacy, pour compatibilité)
+    return_date = Column(DateTime(timezone=True), nullable=False, index=True)  # Date exacte de la révolution lunaire (timestamptz, UTC, NOT NULL, indexé)
     
     # Données calculées
     lunar_ascendant = Column(String)  # Ascendant de la révolution lunaire

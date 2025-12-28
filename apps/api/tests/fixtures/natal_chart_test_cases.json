@@ -1,0 +1,65 @@
+{
+  "test_cases": [
+    {
+      "id": "test_case_1",
+      "description": "Cas de test standard - Paris, France",
+      "input": {
+        "date": "1990-05-15",
+        "time": "14:30",
+        "latitude": 48.8566,
+        "longitude": 2.3522,
+        "place_name": "Paris, France",
+        "timezone": "Europe/Paris"
+      },
+      "expected_big3": {
+        "sun_sign": "Taurus",
+        "moon_sign": null,
+        "ascendant_sign": null
+      },
+      "notes": "Sun devrait être en Taurus pour cette date. Moon et Ascendant dépendent de l'heure exacte et du calcul précis."
+    },
+    {
+      "id": "test_case_2",
+      "description": "Cas de test - Naissance en été, heure matinale",
+      "input": {
+        "date": "1985-07-20",
+        "time": "08:15",
+        "latitude": 45.5017,
+        "longitude": -73.5673,
+        "place_name": "Montreal, Canada",
+        "timezone": "America/Montreal"
+      },
+      "expected_big3": {
+        "sun_sign": "Cancer",
+        "moon_sign": null,
+        "ascendant_sign": null
+      },
+      "notes": "Sun devrait être en Cancer fin juillet. Moon et Ascendant nécessitent calcul précis."
+    },
+    {
+      "id": "test_case_3",
+      "description": "Cas de test - Naissance hiver, heure soir",
+      "input": {
+        "date": "1992-12-25",
+        "time": "22:45",
+        "latitude": 40.7128,
+        "longitude": -74.0060,
+        "place_name": "New York, USA",
+        "timezone": "America/New_York"
+      },
+      "expected_big3": {
+        "sun_sign": "Capricorn",
+        "moon_sign": null,
+        "ascendant_sign": null
+      },
+      "notes": "Sun devrait être en Capricorn fin décembre. Moon et Ascendant nécessitent calcul précis avec timezone."
+    }
+  ],
+  "validation_notes": {
+    "sun_sign": "Doit correspondre à la date de naissance (approximatif : mois de naissance)",
+    "moon_sign": "Nécessite calcul précis avec heure et timezone",
+    "ascendant_sign": "Nécessite calcul précis avec heure, latitude, longitude et timezone",
+    "tolerance": "Les signes doivent être exacts. Les degrés peuvent varier légèrement selon le provider."
+  }
+}
+

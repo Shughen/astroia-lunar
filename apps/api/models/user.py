@@ -1,7 +1,7 @@
 """Modèle User"""
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, foreign
 from sqlalchemy.sql import func
 from database import Base
 
@@ -28,11 +28,17 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relations
-    natal_chart = relationship("NatalChart", back_populates="user", uselist=False)
+    natal_chart = relationship(
+        "NatalChart",
+        back_populates="user",
+        uselist=False,
+        foreign_keys="[NatalChart.user_id]"
+    )
     lunar_returns = relationship("LunarReturn", back_populates="user", cascade="all, delete-orphan")
     lunar_reports = relationship("LunarReport", back_populates="user", cascade="all, delete-orphan")
-    transits_overviews = relationship("TransitsOverview", back_populates="user", cascade="all, delete-orphan")
-    transits_events = relationship("TransitsEvent", back_populates="user", cascade="all, delete-orphan")
+    # Note: transits_overviews et transits_events ne sont plus en relation car
+    # user_id pointe vers auth.users.id (UUID Supabase) et non vers users.id (Integer FastAPI)
+    # Les RLS policies gèrent l'accès basé sur auth.uid()
     
     def __repr__(self):
         return f"<User {self.email}>"

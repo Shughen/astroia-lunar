@@ -83,11 +83,15 @@ def generate_lunar_return_interpretation(
     
     # 3. Aspects majeurs (si présents)
     if aspects:
-        major_aspects = [a for a in aspects if a.get("type") in ASPECT_INTERPRETATIONS]
+        # Supporte à la fois "type" et "aspect_type" (compatibilité)
+        major_aspects = [
+            a for a in aspects
+            if (a.get("type") or a.get("aspect_type")) in ASPECT_INTERPRETATIONS
+        ]
         if major_aspects:
             aspect = major_aspects[0]  # Prendre le premier aspect majeur
-            aspect_type = aspect["type"]
-            planet = aspect.get("planet", "une planète")
+            aspect_type = aspect.get("type") or aspect.get("aspect_type")
+            planet = aspect.get("planet") or aspect.get("to_planet") or "une planète"
             aspect_desc = ASPECT_INTERPRETATIONS.get(aspect_type, "énergie particulière")
             
             interpretation_parts.append(
