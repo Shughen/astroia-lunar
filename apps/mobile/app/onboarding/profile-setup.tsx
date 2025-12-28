@@ -18,11 +18,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
+import { useNatalStore } from '../../stores/useNatalStore';
+import { natalChart } from '../../services/api';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
   const { setProfileData, profileData } = useOnboardingStore();
+  const { setChart } = useNatalStore();
 
   const [name, setName] = useState(profileData?.name || '');
   const [birthDate, setBirthDate] = useState<Date>(
@@ -37,16 +40,40 @@ export default function ProfileSetupScreen() {
       return;
     }
 
-    // Sauvegarder le profil
-    await setProfileData({
-      name: name.trim(),
-      birthDate,
-    });
+    try {
+      // 1) Sauvegarder le profil local
+      await setProfileData({
+        name: name.trim(),
+        birthDate,
+      });
 
-    console.log('[PROFILE-SETUP] Profil sauvegardé →', { name: name.trim(), birthDate });
+      console.log('[PROFILE-SETUP] Profil sauvegardé →', { name: name.trim(), birthDate });
 
-    // Passer au consentement RGPD
-    router.push('/onboarding/consent');
+      // 2) Calculer le natal chart en background (pas bloquant)
+      // Utilise Paris par défaut pour la 1ère connexion
+      natalChart.calculate({
+        date: birthDate.toISOString().split('T')[0], // YYYY-MM-DD
+        time: '12:00', // Midi par défaut (peut être customisé plus tard)
+        latitude: 48.8566,
+        longitude: 2.3522,
+        place_name: 'Paris, France',
+        timezone: 'Europe/Paris',
+      })
+      .then((chart) => {
+        setChart(chart);
+        console.log('[PROFILE-SETUP] ✅ Natal chart calculé automatiquement');
+      })
+      .catch((error) => {
+        console.warn('[PROFILE-SETUP] ⚠️ Échec calcul natal (non bloquant):', error.message);
+        // Ne pas bloquer l'onboarding si calcul échoue
+      });
+
+      // 3) Passer au consentement RGPD (pas bloqué par natal)
+      router.push('/onboarding/consent');
+    } catch (error: any) {
+      console.error('[PROFILE-SETUP] Erreur:', error);
+      Alert.alert('Erreur', error.message || 'Impossible de sauvegarder le profil');
+    }
   };
 
   const handleBack = () => {

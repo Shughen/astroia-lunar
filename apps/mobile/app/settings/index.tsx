@@ -15,10 +15,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOnboardingStore } from '../../stores/useOnboardingStore';
+import { useNatalStore } from '../../stores/useNatalStore';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { reset: resetOnboarding } = useOnboardingStore();
+  const { clearChart } = useNatalStore();
 
   const settingsItems = [
     {
@@ -87,16 +91,29 @@ export default function SettingsScreen() {
   const handleResetAll = async () => {
     Alert.alert(
       'Réinitialiser Tout',
-      'Tu vas réinitialiser welcome ET onboarding. Tu devras tout refaire au prochain lancement.',
+      'Tu vas réinitialiser welcome, onboarding et thème natal. Le flow complet recommencera.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Tout réinitialiser',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.multiRemove(['hasSeenWelcomeScreen', 'onboarding_completed']);
-            console.log('[SETTINGS] ✅ Welcome + Onboarding réinitialisés');
-            Alert.alert('Succès', 'Tout réinitialisé ! Redémarre l\'app.');
+            try {
+              // Reset onboarding via store (+ set hydrated=false)
+              await resetOnboarding();
+
+              // Clear natal chart
+              clearChart();
+
+              console.log('[SETTINGS] ✅ Onboarding + Natal réinitialisés');
+              Alert.alert(
+                'Succès',
+                'Tout réinitialisé ! Retour au Home pour redémarrer.',
+                [{ text: 'OK', onPress: () => router.replace('/') }]
+              );
+            } catch (error: any) {
+              Alert.alert('Erreur', error.message || 'Échec reset');
+            }
           },
         },
       ]
@@ -110,7 +127,7 @@ export default function SettingsScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
           >
             <Text style={styles.backText}>← Retour</Text>
           </TouchableOpacity>

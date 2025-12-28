@@ -65,12 +65,12 @@ export default function HomeScreen() {
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
-    console.log('[INDEX] 🔄 checkRouting() appelé');
+    console.log('[INDEX] 🔄 checkRouting() appelé, hydrated=', onboardingStore.hydrated);
 
     const checkRouting = async () => {
-      // Éviter les appels multiples
-      if (hasCheckedRoutingRef.current) {
-        console.log('[INDEX] ⏭️ checkRouting déjà exécuté, skip');
+      // Éviter les appels multiples SAUF si hydrated=false (après reset)
+      if (hasCheckedRoutingRef.current && onboardingStore.hydrated) {
+        console.log('[INDEX] ⏭️ checkRouting déjà exécuté et hydraté, skip');
         return;
       }
 
@@ -182,7 +182,7 @@ export default function HomeScreen() {
     };
 
     checkRouting();
-  }, [isAuthenticated, router, onboardingStore]);
+  }, [isAuthenticated, router, onboardingStore, onboardingStore.hydrated]);
 
   useEffect(() => {
     // En mode DEV_AUTH_BYPASS, charger même sans authentification

@@ -23,6 +23,9 @@ interface OnboardingState {
   // Données temporaires
   profileData: ProfileData | null;
 
+  // Flag d'hydratation (pour forcer re-check routing après reset)
+  hydrated: boolean;
+
   // Actions
   setWelcomeSeen: () => Promise<void>;
   setProfileData: (data: ProfileData) => Promise<void>;
@@ -43,6 +46,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   hasSeenDisclaimer: false,
   hasCompletedOnboarding: false,
   profileData: null,
+  hydrated: false,
 
   setWelcomeSeen: async () => {
     await AsyncStorage.setItem(STORAGE_KEYS.HAS_SEEN_WELCOME_SCREEN, 'true');
@@ -73,6 +77,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   },
 
   reset: async () => {
+    console.log('[OnboardingStore] 🗑️ Reset onboarding complet');
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.HAS_SEEN_WELCOME_SCREEN,
       STORAGE_KEYS.ONBOARDING_COMPLETED,
@@ -87,11 +92,14 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       hasSeenDisclaimer: false,
       hasCompletedOnboarding: false,
       profileData: null,
+      hydrated: false, // Force re-hydrate au prochain checkRouting
     });
+    console.log('[OnboardingStore] ✅ Reset terminé, hydrated=false');
   },
 
   hydrate: async () => {
     try {
+      console.log('[OnboardingStore] 💧 Hydratation depuis AsyncStorage...');
       const [
         hasSeenWelcome,
         onboardingCompleted,
@@ -122,9 +130,16 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
         hasAcceptedConsent: consent[1] === 'true',
         hasSeenDisclaimer: disclaimer[1] === 'true',
         profileData,
+        hydrated: true, // Marquer comme hydraté
+      });
+      console.log('[OnboardingStore] ✅ Hydraté:', {
+        hasSeenWelcome: hasSeenWelcome[1] === 'true',
+        hasCompletedProfile: !!profileData,
+        hasAcceptedConsent: consent[1] === 'true',
       });
     } catch (error) {
       console.error('[OnboardingStore] Error hydrating from AsyncStorage:', error);
+      set({ hydrated: true }); // Même en cas d'erreur, marquer hydraté pour éviter boucle
     }
   },
 }));
