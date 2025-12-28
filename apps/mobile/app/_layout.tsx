@@ -44,7 +44,7 @@ export default function RootLayout() {
         <Stack.Screen name="calendar/month" />
         <Stack.Screen name="cycle/index" />
         <Stack.Screen name="cycle/history" />
-        <Stack.Screen name="settings" />
+        <Stack.Screen name="settings/index" />
         <Stack.Screen name="debug/selftest" />
       </Stack>
     </>

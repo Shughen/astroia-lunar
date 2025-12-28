@@ -83,8 +83,10 @@ export default function HomeScreen() {
         console.log('[INDEX] 📍 Début checkRouting');
         console.log('[INDEX] isAuthenticated =', isAuthenticated);
 
-        // Hydrater l'état onboarding depuis AsyncStorage
-        await onboardingStore.hydrate();
+        // Hydrater l'état onboarding depuis AsyncStorage (UNE SEULE FOIS)
+        if (!onboardingStore.hydrated) {
+          await onboardingStore.hydrate();
+        }
 
         // En mode DEV_AUTH_BYPASS, log clair et skip uniquement auth (pas welcome)
         const isBypassActive = isDevAuthBypassActive();
