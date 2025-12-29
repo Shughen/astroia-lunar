@@ -117,11 +117,12 @@ export default function NatalChartResultScreen() {
                 <Text style={styles.sectionTitle}>🪐 Positions Planétaires</Text>
                 {(() => {
                   // Ordre spécifique : Soleil, Lune, Ascendant, Milieu du Ciel, puis les autres
+                  // Ordre spécifique : Soleil, Lune, Ascendant, Milieu du Ciel (en 4ème), puis les autres
                   const orderedKeys = [
                     'sun', 'soleil',
                     'moon', 'lune',
                     'ascendant',
-                    'medium_coeli', 'milieu_du_ciel', 'mc',
+                    'medium_coeli', 'milieu_du_ciel', 'mc', 'milieu du ciel',
                     // Planètes classiques (ordre traditionnel)
                     'mercury', 'mercure',
                     'venus', 'vénus',
@@ -133,8 +134,8 @@ export default function NatalChartResultScreen() {
                     'neptune',
                     'pluto', 'pluton',
                     // Points astrologiques
-                    'mean_node', 'true_node', 'north_node', 'noeud_nord',
-                    'south_node', 'noeud_sud',
+                    'mean_node', 'true_node', 'north_node', 'noeud_nord', 'nœud nord',
+                    'south_node', 'noeud_sud', 'nœud sud',
                     'lilith', 'black_moon_lilith', 'blackmoonlilith',
                     'chiron',
                   ];
@@ -148,17 +149,32 @@ export default function NatalChartResultScreen() {
                   for (const key of orderedKeys) {
                     const entry = Object.entries(chart.planets).find(([name]) => {
                       const nameLower = name.toLowerCase();
+                      const keyLower = key.toLowerCase();
+                      
+                      // Cas spéciaux pour Milieu du Ciel (en 4ème position)
+                      if ((keyLower === 'medium_coeli' || keyLower === 'milieu_du_ciel' || keyLower === 'mc' || keyLower === 'milieu du ciel') &&
+                          (nameLower === 'medium_coeli' || nameLower === 'milieu_du_ciel' || nameLower === 'mc' || nameLower === 'milieu du ciel' || name === 'Milieu du Ciel')) {
+                        return true;
+                      }
+                      
                       // Pour les nœuds, prioriser mean_node et éviter les doublons
-                      if ((key === 'mean_node' || key === 'true_node' || key === 'north_node' || key === 'noeud_nord') && 
-                          (nameLower === 'mean_node' || nameLower === 'true_node' || nameLower === 'nœud nord')) {
+                      if ((keyLower === 'mean_node' || keyLower === 'true_node' || keyLower === 'north_node' || keyLower === 'noeud_nord' || keyLower === 'nœud nord') && 
+                          (nameLower === 'mean_node' || nameLower === 'true_node' || nameLower === 'nœud nord' || name === 'Nœud Nord')) {
                         // Si on a déjà ajouté un nœud, skip
-                        if (addedNames.has('mean_node') || addedNames.has('true_node') || addedNames.has('nœud nord')) {
+                        if (addedNames.has('mean_node') || addedNames.has('true_node') || addedNames.has('nœud nord') || addedNames.has('Nœud Nord')) {
                           return false;
                         }
                         // Prioriser mean_node
-                        return nameLower === 'mean_node';
+                        return nameLower === 'mean_node' || name === 'Nœud Nord';
                       }
-                      return nameLower === key.toLowerCase();
+                      
+                      // Pour Nœud Sud
+                      if ((keyLower === 'south_node' || keyLower === 'noeud_sud' || keyLower === 'nœud sud') &&
+                          (nameLower === 'south_node' || nameLower === 'noeud_sud' || nameLower === 'nœud sud' || name === 'Nœud Sud')) {
+                        return true;
+                      }
+                      
+                      return nameLower === keyLower;
                     });
                     if (entry) {
                       const nameLower = entry[0].toLowerCase();
@@ -194,12 +210,14 @@ export default function NatalChartResultScreen() {
                     let displayName: string;
                     const nameLower = planetName.toLowerCase();
                     
-                    if (nameLower === 'medium_coeli' || nameLower === 'milieu du ciel' || nameLower === 'mc') {
+                    if (nameLower === 'medium_coeli' || nameLower === 'milieu du ciel' || nameLower === 'mc' || nameLower === 'milieu_du_ciel') {
                       displayName = 'Milieu du Ciel';
                     } else if (nameLower === 'ascendant') {
                       displayName = 'Ascendant';  // Capitalisation
-                    } else if (nameLower === 'mean_node' || nameLower === 'true_node' || nameLower === 'nœud nord') {
+                    } else if (nameLower === 'mean_node' || nameLower === 'true_node' || nameLower === 'nœud nord' || nameLower === 'noeud_nord' || nameLower === 'north_node') {
                       displayName = 'Nœud Nord';  // Unifier mean_node et true_node
+                    } else if (nameLower === 'south_node' || nameLower === 'noeud_sud' || nameLower === 'nœud sud') {
+                      displayName = 'Nœud Sud';  // N majuscule
                     } else {
                       displayName = tPlanet(planetName);
                     }
