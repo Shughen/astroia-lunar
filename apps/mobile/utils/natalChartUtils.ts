@@ -84,9 +84,9 @@ export function planetNameToSubject(planetName: string): NatalSubject | null {
     'ascendant': 'ascendant',
     'midheaven': 'midheaven',
     'mc': 'midheaven',
-    'mileuduciel': 'midheaven',
+    'milieuduciel': 'midheaven',  // "Milieu du Ciel" normalisé (sans espaces)
     'milieuciel': 'midheaven',
-    'mediumcoeli': 'midheaven',
+    'mediumcoeli': 'midheaven',  // Format backend normalisé
     'mercury': 'mercury',
     'mercure': 'mercury',
     'venus': 'venus',
@@ -157,10 +157,56 @@ export function buildSubjectPayload(
     // L'ascendant est toujours en Maison 1
     house = 1;
   } else if (subject === 'midheaven') {
-    sign = chartData.midheaven || '';
     subjectLabel = 'Milieu du Ciel';
     // Le Milieu du Ciel est toujours en Maison 10
     house = 10;
+    // Chercher dans planets avec différentes clés possibles
+    const mcPlanet = chartData.planets?.['Milieu du Ciel'] || 
+                     chartData.planets?.['medium_coeli'] || 
+                     chartData.planets?.['mc'] ||
+                     chartData.planets?.['midheaven'] ||
+                     chartData.midheaven;
+    
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7242/ingest/b9873e08-35c7-4b38-b260-a864e4bb735c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'natalChartUtils.ts:160',
+          message: 'midheaven payload construction',
+          data: {
+            mcPlanetFound: !!mcPlanet,
+            mcPlanetType: typeof mcPlanet,
+            mcPlanetValue: mcPlanet,
+            chartDataPlanetsKeys: chartData.planets ? Object.keys(chartData.planets) : [],
+            chartDataMidheaven: chartData.midheaven
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'B'
+        })
+      }).catch(() => {});
+    } catch (e) {}
+    // #endregion
+    
+    if (mcPlanet) {
+      sign = mcPlanet.sign || (typeof mcPlanet === 'string' ? mcPlanet : '');
+      if (typeof mcPlanet === 'object') {
+        degree = mcPlanet.degree;
+        // house est déjà 10, mais on peut le récupérer si présent
+        if (mcPlanet.house) house = mcPlanet.house;
+      }
+    } else if (chartData.midheaven) {
+      // Fallback sur chartData.midheaven si c'est une string
+      sign = chartData.midheaven;
+    }
+    
+    // Si toujours pas de signe, essayer de le chercher dans les maisons (MC = cuspide maison 10)
+    if (!sign && chartData.houses && chartData.houses['10']) {
+      sign = chartData.houses['10'].sign || '';
+    }
   } else {
     // Autres planètes - planets est un OBJET avec des clés
     // Chercher la clé correspondant au subject
@@ -197,4 +243,65 @@ export function buildSubjectPayload(
     house,
     ascendant_sign: chartData.ascendant ? tSign(chartData.ascendant) : undefined,
   };
+}
+
+/**
+ * Filtre les aspects selon les règles v4 (senior professionnel)
+ *
+ * Règles v4:
+ * - Types majeurs uniquement: conjunction, opposition, square, trine
+ * - Orbe strict: <= 6°
+ * - Exclure Lilith (mean_lilith, lilith) des aspects affichés
+ *
+ * @param aspects - Liste brute des aspects
+ * @param version - Version d'interprétation (2, 3, ou 4). Défaut: 4 (règles strictes)
+ * @returns Aspects filtrés et triés par orbe croissant
+ */
+export function filterMajorAspectsV4(
+  aspects: any[],
+  version: number = 4
+): any[] {
+  // v2/v3: conserver tous les aspects (comportement legacy)
+  if (version !== 4) {
+    return aspects.slice().sort((a, b) => {
+      const orbA = Math.abs(a.orb ?? 999);
+      const orbB = Math.abs(b.orb ?? 999);
+      return orbA - orbB;
+    });
+  }
+
+  // v4: filtrage strict
+  const MAJOR_ASPECT_TYPES = new Set(['conjunction', 'opposition', 'square', 'trine']);
+  const MAX_ORB = 6;
+
+  return aspects
+    .filter((aspect) => {
+      // 1. Type majeur uniquement
+      const type = aspect.type?.toLowerCase();
+      if (!type || !MAJOR_ASPECT_TYPES.has(type)) {
+        return false;
+      }
+
+      // 2. Orbe <= 6°
+      const orb = Math.abs(aspect.orb ?? 999);
+      if (orb > MAX_ORB) {
+        return false;
+      }
+
+      // 3. Exclure Lilith (mean_lilith, lilith)
+      const planet1 = aspect.planet1?.toLowerCase().replace(/[\s_-]+/g, '') ?? '';
+      const planet2 = aspect.planet2?.toLowerCase().replace(/[\s_-]+/g, '') ?? '';
+
+      if (planet1.includes('lilith') || planet2.includes('lilith')) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Tri par orbe croissant (aspects les plus serrés en premier)
+      const orbA = Math.abs(a.orb ?? 999);
+      const orbB = Math.abs(b.orb ?? 999);
+      return orbA - orbB;
+    });
 }

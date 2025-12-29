@@ -19,7 +19,7 @@ import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 import { tSign, tPlanet, formatAspectFR, formatDegree } from '../../i18n/astro.format';
 import NatalInterpretationModal from '../../components/NatalInterpretationModal';
 import { NatalSubject, ChartPayload } from '../../types/natal';
-import { planetNameToSubject, buildSubjectPayload } from '../../utils/natalChartUtils';
+import { planetNameToSubject, buildSubjectPayload, filterMajorAspectsV4 } from '../../utils/natalChartUtils';
 
 // Mapping français des signes
 const ZODIAC_EMOJI: Record<string, string> = {
@@ -66,6 +66,25 @@ export default function NatalChartResultScreen() {
     if (!chart) return;
 
     const payload = buildSubjectPayload(subject, chart);
+    
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7242/ingest/b9873e08-35c7-4b38-b260-a864e4bb735c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'result.tsx:65',
+          message: 'handlePlacementClick',
+          data: { subject, payload, hasSign: !!payload.sign, signValue: payload.sign, chartPlanetsKeys: chart.planets ? Object.keys(chart.planets) : [] },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A'
+        })
+      }).catch(() => {});
+    } catch (e) {}
+    // #endregion
+    
     setSelectedSubject(subject);
     setSelectedPayload(payload);
     setModalVisible(true);
@@ -316,29 +335,34 @@ export default function NatalChartResultScreen() {
             {chart.aspects && Array.isArray(chart.aspects) && chart.aspects.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>✨ Aspects Majeurs</Text>
-                {chart.aspects.slice(0, 10).map((aspect: any, index: number) => {
-                  const aspectText = formatAspectFR(aspect);
-                  const orb = aspect.orb !== undefined && aspect.orb !== null ? Math.abs(aspect.orb) : null;
-                  
-                  return (
-                    <View key={index} style={styles.aspectRow}>
-                      <View style={styles.aspectContent}>
-                        <Text style={styles.aspectText}>
-                          {aspectText.replace(/ \(orbe [^)]+\)/, '')}  {/* Enlever l'orbe du texte principal */}
-                        </Text>
-                        {orb !== null && (
-                          <Text style={styles.aspectOrb}>
-                            Orbe: {orb.toFixed(1).replace('.', ',')}°  {/* Distance à l'aspect exact */}
-                            {' '}
-                            <Text style={styles.aspectOrbHint}>
-                              ({orb <= 1 ? 'exact' : orb <= 3 ? 'serré' : orb <= 6 ? 'moyen' : 'large'})
-                            </Text>
+                {(() => {
+                  // v4: Filtrer selon règles senior professionnel (types majeurs, orbe ≤6°, exclure Lilith)
+                  const filteredAspects = filterMajorAspectsV4(chart.aspects, 4);
+
+                  return filteredAspects.slice(0, 10).map((aspect: any, index: number) => {
+                    const aspectText = formatAspectFR(aspect);
+                    const orb = aspect.orb !== undefined && aspect.orb !== null ? Math.abs(aspect.orb) : null;
+
+                    return (
+                      <View key={index} style={styles.aspectRow}>
+                        <View style={styles.aspectContent}>
+                          <Text style={styles.aspectText}>
+                            {aspectText.replace(/ \(orbe [^)]+\)/, '')}  {/* Enlever l'orbe du texte principal */}
                           </Text>
-                        )}
+                          {orb !== null && (
+                            <Text style={styles.aspectOrb}>
+                              Orbe: {orb.toFixed(1).replace('.', ',')}°  {/* Distance à l'aspect exact */}
+                              {' '}
+                              <Text style={styles.aspectOrbHint}>
+                                ({orb <= 1 ? 'exact' : orb <= 3 ? 'serré' : orb <= 6 ? 'moyen' : 'large'})
+                              </Text>
+                            </Text>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  });
+                })()}
                 <Text style={styles.aspectExplanation}>
                   L'orbe indique la distance en degrés à l'aspect exact. Plus l'orbe est petit, plus l'aspect est puissant.
                 </Text>
