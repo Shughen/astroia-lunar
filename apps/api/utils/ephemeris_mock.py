@@ -240,13 +240,21 @@ def generate_mock_lunar_return(
         lunar_cycle_offset = month_offset * 27.321582  # Mois sidéral en jours
         
         # Calculer le jour du mois (entre 10 et 20) basé sur l'offset
-        # Utiliser une fonction sinusoïdale pour plus de variation naturelle
-        base_day = 15  # Jour de base
-        # Variation sinusoïdale pour éviter les répétitions
-        day_variation = int(5 * ((lunar_cycle_offset / 27.32) % 1) - 2.5)  # Variation entre -2.5 et +2.5
-        # Ajouter aussi une variation basée sur le mois pour plus de diversité
-        month_day_offset = (month * 7) % 11  # Offset basé sur le mois (0-10)
-        calculated_day = max(10, min(20, base_day + day_variation + (month_day_offset - 5)))
+        # Utiliser plusieurs facteurs pour éviter les répétitions et le 15 fixe
+        # Variation principale basée sur le cycle lunaire
+        cycle_day = int((lunar_cycle_offset % 27.32) / 27.32 * 11)  # 0-10
+        # Variation secondaire basée sur le mois
+        month_day = (month * 13) % 11  # 0-10, utilise nombre premier pour plus de variation
+        # Variation tertiaire basée sur l'année
+        year_day = (year * 7) % 11  # 0-10
+        
+        # Combiner les variations pour éviter les répétitions
+        combined_offset = (cycle_day + month_day + year_day) % 11  # 0-10
+        calculated_day = 10 + combined_offset  # Entre 10 et 20
+        
+        # S'assurer qu'on n'a jamais exactement 15 (trop proche de l'ancien placeholder)
+        if calculated_day == 15:
+            calculated_day = 14 if (month % 2 == 0) else 16
         
         # Calculer l'heure (entre 8h et 20h) basée sur l'offset
         # Utiliser plusieurs facteurs pour plus de variation
