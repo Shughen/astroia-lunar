@@ -103,6 +103,36 @@ async def calculate_natal_chart(
         parsed_positions = parse_positions_from_natal_chart(rapidapi_response)
         parsed_aspects = parse_aspects_from_natal_chart(rapidapi_response)
         
+        # Calculer les positions complémentaires manquantes (Uranus, Neptune, Pluton, Nœuds, Lilith, Chiron)
+        # RapidAPI ne retourne que 9 positions, on complète avec Swiss Ephemeris si disponible
+        try:
+            from services.natal_planets_complement import calculate_complementary_positions, merge_complementary_positions
+            from datetime import datetime, timezone as dt_timezone
+            
+            # Construire datetime de naissance en UTC
+            birth_datetime = datetime(
+                int(data.date.split("-")[0]),
+                int(data.date.split("-")[1]),
+                int(data.date.split("-")[2]),
+                int(birth_time.split(":")[0]),
+                int(birth_time.split(":")[1]),
+                tzinfo=dt_timezone.utc
+            )
+            
+            # Calculer positions complémentaires
+            complementary_positions = calculate_complementary_positions(
+                birth_datetime,
+                data.latitude,
+                data.longitude
+            )
+            
+            # Fusionner avec les positions RapidAPI
+            if complementary_positions:
+                parsed_positions = merge_complementary_positions(parsed_positions, complementary_positions)
+                logger.info(f"✅ {len(complementary_positions)} positions complémentaires ajoutées (Uranus, Neptune, Pluton, Nœuds, Lilith, Chiron)")
+        except Exception as e:
+            logger.warning(f"⚠️ Impossible de calculer positions complémentaires: {e}. Continuons avec les positions RapidAPI uniquement.")
+        
         # Mapping signes abrégés RapidAPI → noms complets attendus par le mobile
         sign_mapping = {
             "Ari": "Aries", "Tau": "Taurus", "Gem": "Gemini", "Can": "Cancer",
@@ -131,8 +161,15 @@ async def calculate_natal_chart(
             sign_abbr = pos.get("sign", "")
             sign_full = map_sign(sign_abbr)
             
+            # Extraire Big3 pour compatibilité (sun_data, moon_data, ascendant_data)
             if name == "sun":
                 sun_data = {
+                    "sign": sign_full,
+                    "degree": pos.get("degree", 0.0),
+                    "house": pos.get("house", 0)
+                }
+                # AUSSI ajouter dans planets_dict pour affichage complet
+                planets_dict["sun"] = {
                     "sign": sign_full,
                     "degree": pos.get("degree", 0.0),
                     "house": pos.get("house", 0)
@@ -143,13 +180,32 @@ async def calculate_natal_chart(
                     "degree": pos.get("degree", 0.0),
                     "house": pos.get("house", 0)
                 }
+                # AUSSI ajouter dans planets_dict pour affichage complet
+                planets_dict["moon"] = {
+                    "sign": sign_full,
+                    "degree": pos.get("degree", 0.0),
+                    "house": pos.get("house", 0)
+                }
             elif name == "ascendant":
                 ascendant_data = {
                     "sign": sign_full,
                     "degree": pos.get("degree", 0.0)
                 }
-            elif name not in ["ascendant", "medium_coeli", "mean_node", "chiron"]:
-                # Ajouter les planètes (pas les angles)
+                # AUSSI ajouter dans planets_dict pour affichage complet
+                planets_dict["ascendant"] = {
+                    "sign": sign_full,
+                    "degree": pos.get("degree", 0.0),
+                    "house": 1  # Ascendant = cuspide maison 1
+                }
+            elif name == "medium_coeli":
+                # Ajouter Medium Coeli (MC) dans planets_dict
+                planets_dict["medium_coeli"] = {
+                    "sign": sign_full,
+                    "degree": pos.get("degree", 0.0),
+                    "house": 10  # MC = cuspide maison 10
+                }
+            else:
+                # Ajouter toutes les autres planètes et points (Mercure, Vénus, Mars, Jupiter, Saturne, Uranus, Neptune, Pluton, Nœuds, Lilith, Chiron, etc.)
                 planets_dict[name] = {
                     "sign": sign_full,
                     "degree": pos.get("degree", 0.0),
