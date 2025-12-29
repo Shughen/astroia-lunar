@@ -68,7 +68,7 @@ class Settings(BaseSettings):
 
     # Anthropic (Claude AI)
     ANTHROPIC_API_KEY: str = Field(default="", description="Clé API Anthropic pour génération interprétations")
-    NATAL_INTERPRETATION_VERSION: int = Field(default=2, description="Version du prompt d'interprétation (2=moderne avec micro-rituel, 3=senior sans micro-rituel)")
+    NATAL_INTERPRETATION_VERSION: int = Field(default=2, description="Version du prompt d'interprétation (2=moderne avec micro-rituel, 3=senior expérimental déprécié, 4=senior professionnel structuré)")
 
     model_config = SettingsConfigDict(
         env_file=".env",

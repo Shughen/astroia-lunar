@@ -496,6 +496,198 @@ GÉNÈRE L'INTERPRÉTATION MAINTENANT (français, markdown, 700-1000 chars):"""
     return prompt
 
 
+# ============================================================================
+# V4 SENIOR PROFESSIONNEL - Fonction → Signe → Maison → Manifestations
+# ============================================================================
+
+# Mapping des fonctions planétaires (archétypes)
+PLANET_FUNCTIONS_V4 = {
+    'sun': 'identité centrale, énergie vitale, volonté',
+    'moon': 'besoins émotionnels, sécurité, réactions instinctives',
+    'mercury': 'intellect, communication, analyse',
+    'venus': 'valeurs, relations, capacité à recevoir',
+    'mars': 'action, désir, affirmation',
+    'jupiter': 'expansion, sens, optimisme',
+    'saturn': 'structure, limites, responsabilité',
+    'uranus': 'innovation, liberté, rupture',
+    'neptune': 'dissolution, inspiration, transcendance',
+    'pluto': 'transformation, pouvoir, régénération',
+    'ascendant': 'masque social, façon d\'entrer en contact',
+    'midheaven': 'vocation, image publique, accomplissement',
+    'north_node': 'chemin de vie, territoire à conquérir',
+    'south_node': 'acquis passés, zone de confort',
+    'chiron': 'blessure originelle, don de guérison'
+}
+
+
+def get_opposite_sign_v4(sign: str) -> str:
+    """Retourne le signe opposé (pour axe NN/NS)"""
+    opposites = {
+        'Bélier': 'Balance', 'Balance': 'Bélier',
+        'Taureau': 'Scorpion', 'Scorpion': 'Taureau',
+        'Gémeaux': 'Sagittaire', 'Sagittaire': 'Gémeaux',
+        'Cancer': 'Capricorne', 'Capricorne': 'Cancer',
+        'Lion': 'Verseau', 'Verseau': 'Lion',
+        'Vierge': 'Poissons', 'Poissons': 'Vierge'
+    }
+    return opposites.get(sign, sign)
+
+
+def build_interpretation_prompt_v4_senior(
+    subject: str,
+    chart_payload: ChartPayload
+) -> str:
+    """
+    Construit le prompt v4 'senior professionnel' style
+    
+    Template structuré:
+    1. Fonction planétaire → 2. Coloration signe → 3. Domaine vie (maison)
+    4. Manifestations observables → 5. Vigilance
+    
+    Cas spécial Nœud Nord/Sud: traité comme axe d'évolution
+    Lilith exclue (validation en amont dans route)
+    """
+    emoji = SUBJECT_EMOJI.get(subject, '⭐')
+    subject_label = chart_payload.subject_label
+    sign = chart_payload.sign
+
+    # Validation : signe obligatoire
+    if not sign or sign.strip() == '':
+        logger.error(f"❌ v4: Signe manquant pour {subject}")
+        raise ValueError(f"Signe manquant pour {subject_label} ({subject}).")
+
+    # Fonction planétaire archétypale
+    planet_function = PLANET_FUNCTIONS_V4.get(subject, 'fonction archétypale')
+
+    # Maison
+    house_context = ""
+    house_short_label = ""
+    if chart_payload.house:
+        house_short_label, house_full = get_house_label_v2(chart_payload.house)
+        house_context = f"\n- {house_full}"
+
+    # Aspect majeur v4 (réutilise find_relevant_aspect_v3: orb <= 6°, majeurs uniquement)
+    aspect_context = ""
+    aspect_desc = None
+    try:
+        aspect_desc = find_relevant_aspect_v3(subject, chart_payload)
+        if aspect_desc:
+            aspect_context = f"\n- Aspect majeur : {aspect_desc}"
+    except Exception as aspect_err:
+        logger.warning(f"⚠️ v4: Erreur recherche aspect pour {subject}: {aspect_err}")
+        aspect_desc = None
+
+    # Ascendant (contexte global)
+    asc_context = ""
+    if chart_payload.ascendant_sign:
+        asc_context = f"\n- Ascendant en {chart_payload.ascendant_sign}"
+
+    # Cas spécial: Axe des Nœuds (traiter comme axe d'évolution)
+    is_node = subject in ['north_node', 'south_node']
+    node_context = ""
+
+    if is_node:
+        opposite_sign = get_opposite_sign_v4(sign)
+        opposite_house = ((chart_payload.house or 1) + 6 - 1) % 12 + 1  # Maison opposée
+
+        if subject == 'north_node':
+            node_context = f"\n\n⚠️ AXE D'ÉVOLUTION: Nœud Nord en {sign} (Maison {chart_payload.house}) = chemin de vie. Nœud Sud en {opposite_sign} (Maison {opposite_house}) = acquis à transcender. Traiter l'axe comme dynamique évolutive."
+        else:  # south_node
+            opposite_sign_nn = get_opposite_sign_v4(sign)  # NN est à l'opposé du NS
+            opposite_house_nn = ((chart_payload.house or 1) + 6 - 1) % 12 + 1
+            node_context = f"\n\n⚠️ AXE D'ÉVOLUTION: Nœud Sud en {sign} (Maison {chart_payload.house}) = confort familier. Nœud Nord en {opposite_sign_nn} (Maison {opposite_house_nn}) = territoire à conquérir. Traiter l'axe comme dynamique évolutive."
+
+    # Fallback si aucun aspect majeur
+    fallback_note = ""
+    if not aspect_desc:
+        fallback_note = "\n\n(Aucun aspect majeur ≤6° détecté. Concentre-toi sur Fonction-Signe-Maison.)"
+
+    # Construire parties conditionnelles
+    aspect_mention = " + Aspect" if aspect_desc else ""
+
+    # Template v4 selon type de sujet
+    if is_node:
+        # Template spécial pour les Nœuds (axe)
+        prompt = f"""Tu es un astrologue senior professionnel. Style : précis, concret, pédagogique, non ésotérique.
+
+DONNÉES DU THÈME:
+- {subject_label} en {sign}{house_context}{aspect_context}{asc_context}{node_context}{fallback_note}
+
+TEMPLATE À SUIVRE (EXACT):
+
+# {emoji} {subject_label} en {sign}
+
+## 1. L'axe des Nœuds Lunaires
+[2 phrases : expliquer que c'est un AXE d'évolution, pas juste un point. {subject_label} en {sign} = {'chemin de vie à développer' if subject == 'north_node' else 'acquis passés à transcender'}. L'autre pôle enrichit le sens.]
+
+## 2. Fonction du {'Nœud Nord' if subject == 'north_node' else 'Nœud Sud'}
+[2 phrases : {planet_function}. Expliciter cette fonction archétypale avant de parler du signe.]
+
+## 3. Coloration {sign}
+[2 phrases : comment {sign} module cette fonction. Exemples comportementaux concrets. Pas de "tu es...".]
+
+## 4. Domaine de vie (Maison {chart_payload.house or 'N'})
+[2 phrases : où cet axe se joue concrètement. Maison {chart_payload.house or 'N'} = {house_short_label}. Situations réelles{'. Intégrer aspect si pertinent' if aspect_desc else ''}.]
+
+## 5. Manifestations observables
+[2-3 phrases : patterns comportementaux concrets. Exemples de situations vécues (max 3 exemples). {'Dynamique NN/NS : tension entre confort et croissance' if subject == 'north_node' else "Dynamique NS/NN : dépasser l'acquis pour évoluer"}.]
+
+## 6. Vigilance
+[1-2 phrases : piège typique. {'Rester bloqué dans le Nœud Sud' if subject == 'north_node' else 'Dévaloriser les acquis du Nœud Sud'}. Exemple concret factuel, non mystique.]
+
+CONTRAINTES STRICTES:
+1. LONGUEUR: 800-1100 chars (max 1300).
+2. INTERDIT: "tu es...", prédictions, conseils santé, spiritualisation, coaching.
+3. OBLIGATOIRE: Croiser Fonction + Signe + Maison + Axe NN/NS.
+4. OBLIGATOIRE: Max 3 exemples comportementaux concrets, incarnés.
+5. TON: Professionnel analytique. Présent/infinitif. Vocabulaire simple.
+6. FORMAT: Markdown strict, ## obligatoires.
+7. VIGILANCE: Courte, factuelle, non mystique.
+
+GÉNÈRE L'INTERPRÉTATION (français, markdown, 800-1100 chars):"""
+
+    else:
+        # Template standard planètes/points
+        prompt = f"""Tu es un astrologue senior professionnel. Style : précis, concret, pédagogique, non ésotérique.
+
+DONNÉES DU THÈME:
+- {subject_label} en {sign}{house_context}{aspect_context}{asc_context}{fallback_note}
+
+TEMPLATE À SUIVRE (EXACT):
+
+# {emoji} {subject_label} en {sign}
+
+## 1. Fonction planétaire
+[2 phrases : {planet_function}. Expliciter cette fonction archétypale de {subject_label} avant de parler du signe. Qu'est-ce que {subject_label} fait dans un thème ?]
+
+## 2. Coloration par {sign}
+[2 phrases : comment {sign} module la fonction de {subject_label}. Exemples comportementaux concrets. Pas de "tu es...".]
+
+## 3. Domaine de vie (Maison {chart_payload.house or 'N'})
+[2 phrases : où {subject_label} en {sign} s'exprime concrètement. Maison {chart_payload.house or 'N'} = {house_short_label}. Situations réelles{'. Intégrer aspect comme tension ou soutien' if aspect_desc else ''}.]
+
+## 4. Manifestations observables
+[2-3 phrases : patterns comportementaux concrets. Exemples de situations vécues (max 3 exemples). Croiser systématiquement Fonction + Signe + Maison{aspect_mention}.]
+
+## 5. Vigilance
+[1-2 phrases : piège typique de {subject_label} en {sign} en Maison {chart_payload.house or 'N'}. Factuel, non mystique. Exemple concret.]
+
+CONTRAINTES STRICTES:
+1. LONGUEUR: 800-1100 chars (max 1300).
+2. INTERDIT: "tu es...", prédictions, conseils santé, spiritualisation, coaching.
+3. OBLIGATOIRE: Croiser Fonction + Signe + Maison{aspect_mention}.
+4. OBLIGATOIRE: Max 3 exemples comportementaux concrets, incarnés.
+5. TON: Professionnel analytique. Présent/infinitif. Vocabulaire simple.
+6. FORMAT: Markdown strict, ## obligatoires.
+7. MANIFESTATIONS: Concrètes, incarnées, max 3 exemples.
+8. VIGILANCE: Courte, factuelle, non mystique.
+
+GÉNÈRE L'INTERPRÉTATION (français, markdown, 800-1100 chars):"""
+
+    return prompt
+
+
+
 def validate_interpretation_length(text: str, version: int = 2) -> Tuple[bool, int]:
     """
     Valide que l'interprétation respecte les contraintes de longueur
@@ -508,11 +700,14 @@ def validate_interpretation_length(text: str, version: int = 2) -> Tuple[bool, i
         tuple: (is_valid, length)
     """
     length = len(text)
-    if version == 3:
-        # v3: 700-1200 chars (prompt senior, sans micro-rituel)
+    if version == 4:
+        # v4: 800-1300 chars (senior professionnel structuré)
+        return (800 <= length <= 1300), length
+    elif version == 3:
+        # v3: 700-1200 chars (senior expérimental déprécié)
         return (700 <= length <= 1200), length
     else:
-        # v2: 900-1400 chars (prompt moderne avec micro-rituel)
+        # v2: 900-1400 chars (moderne avec micro-rituel)
         return (900 <= length <= 1400), length
 
 
@@ -527,14 +722,14 @@ async def generate_with_sonnet_fallback_haiku(
     Stratégie:
     1. Essayer Sonnet 3.5
     2. Si erreur (429, timeout, 5xx) -> fallback Haiku
-    3. Valider longueur selon version (v2: 900-1400, v3: 700-1200)
+    3. Valider longueur selon version (v2: 900-1400, v3: 700-1200, v4: 800-1300)
     4. Si hors limites -> retry 1x avec prompt d'ajustement
     5. Si toujours hors limites -> tronquer proprement
 
     Args:
         subject: Objet céleste à interpréter
         chart_payload: Données du chart
-        version: Version du prompt (2 ou 3). Si None, utilise PROMPT_VERSION global.
+        version: Version du prompt (2, 3, ou 4). Si None, utilise PROMPT_VERSION global.
 
     Returns:
         tuple: (interpretation_text, model_used)
@@ -596,7 +791,9 @@ async def generate_with_sonnet_fallback_haiku(
 
     # Construire le prompt selon la version
     try:
-        if version == 3:
+        if version == 4:
+            prompt = build_interpretation_prompt_v4_senior(subject, payload)
+        elif version == 3:
             prompt = build_interpretation_prompt_v3_senior(subject, payload)
         else:
             prompt = build_interpretation_prompt_v2(subject, payload)
@@ -725,9 +922,12 @@ async def generate_with_sonnet_fallback_haiku(
             is_valid, length = validate_interpretation_length(text_content, version)
 
             # Définir les seuils selon la version
-            min_chars = 700 if version == 3 else 900
-            max_chars = 1200 if version == 3 else 1400
-            target_range = "800-1000" if version == 3 else "1000-1200"
+            if version == 4:
+                min_chars, max_chars, target_range = 800, 1300, "900-1100"
+            elif version == 3:
+                min_chars, max_chars, target_range = 700, 1200, "800-1000"
+            else:
+                min_chars, max_chars, target_range = 900, 1400, "1000-1200"
 
             # #region agent log
             try:
