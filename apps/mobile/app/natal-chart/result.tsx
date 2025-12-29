@@ -3,7 +3,7 @@
  * Affiche les positions planétaires, maisons, aspects
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import { useRouter } from 'expo-router';
 import { useNatalStore } from '../../stores/useNatalStore';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 import { tSign, tPlanet, formatAspectFR, formatDegree } from '../../i18n/astro.format';
+import NatalInterpretationModal from '../../components/NatalInterpretationModal';
+import { NatalSubject, ChartPayload } from '../../types/natal';
+import { planetNameToSubject, buildSubjectPayload } from '../../utils/natalChartUtils';
 
 // Mapping français des signes
 const ZODIAC_EMOJI: Record<string, string> = {
@@ -50,6 +53,24 @@ export default function NatalChartResultScreen() {
   const router = useRouter();
   const { chart, clearChart } = useNatalStore();
 
+  // State pour le modal d'interprétation
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<NatalSubject | null>(null);
+  const [selectedPayload, setSelectedPayload] = useState<ChartPayload | null>(null);
+
+  // Générer chart_id stable (simplifié pour V1 - utiliser hash en prod)
+  const chartId = chart ? `chart_${chart.sun_sign}_${chart.moon_sign}_${chart.ascendant}` : 'unknown';
+
+  // Handler pour clic sur un placement
+  const handlePlacementClick = (subject: NatalSubject) => {
+    if (!chart) return;
+
+    const payload = buildSubjectPayload(subject, chart);
+    setSelectedSubject(subject);
+    setSelectedPayload(payload);
+    setModalVisible(true);
+  };
+
   // Si pas de chart, rediriger vers l'écran intermédiaire
   React.useEffect(() => {
     if (!chart) {
@@ -78,10 +99,14 @@ export default function NatalChartResultScreen() {
           <View style={styles.resultContainer}>
             <Text style={styles.resultTitle}>✨ Ton Thème Natal</Text>
 
-            {/* Big 3 */}
+            {/* Big 3 - Cliquable pour afficher l'interprétation */}
             {(chart.sun_sign || chart.moon_sign || chart.ascendant) && (
               <View style={styles.statsRow}>
-                <View style={styles.statCard}>
+                <TouchableOpacity
+                  style={styles.statCard}
+                  onPress={() => handlePlacementClick('sun')}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.statLabel}>Soleil</Text>
                   <Text style={styles.statEmoji}>
                     {ZODIAC_EMOJI[chart.sun_sign || ''] || '☀️'}
@@ -89,9 +114,14 @@ export default function NatalChartResultScreen() {
                   <Text style={styles.statValue}>
                     {tSign(chart.sun_sign) || 'N/A'}
                   </Text>
-                </View>
+                  <Text style={styles.tapHint}>Tap pour interpréter</Text>
+                </TouchableOpacity>
 
-                <View style={styles.statCard}>
+                <TouchableOpacity
+                  style={styles.statCard}
+                  onPress={() => handlePlacementClick('moon')}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.statLabel}>Lune</Text>
                   <Text style={styles.statEmoji}>
                     {ZODIAC_EMOJI[chart.moon_sign || ''] || '🌙'}
@@ -99,15 +129,21 @@ export default function NatalChartResultScreen() {
                   <Text style={styles.statValue}>
                     {tSign(chart.moon_sign) || 'N/A'}
                   </Text>
-                </View>
+                  <Text style={styles.tapHint}>Tap pour interpréter</Text>
+                </TouchableOpacity>
 
-                <View style={styles.statCard}>
+                <TouchableOpacity
+                  style={styles.statCard}
+                  onPress={() => handlePlacementClick('ascendant')}
+                  activeOpacity={0.7}
+                >
                   <Text style={styles.statLabel}>Ascendant</Text>
                   <Text style={styles.statEmoji}>⬆️</Text>
                   <Text style={styles.statValue}>
                     {tSign(chart.ascendant) || 'N/A'}
                   </Text>
-                </View>
+                  <Text style={styles.tapHint}>Tap pour interpréter</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -209,7 +245,7 @@ export default function NatalChartResultScreen() {
                     // Traduire les noms pour affichage
                     let displayName: string;
                     const nameLower = planetName.toLowerCase();
-                    
+
                     if (nameLower === 'medium_coeli' || nameLower === 'milieu du ciel' || nameLower === 'mc' || nameLower === 'milieu_du_ciel') {
                       displayName = 'Milieu du Ciel';
                     } else if (nameLower === 'ascendant') {
@@ -221,9 +257,18 @@ export default function NatalChartResultScreen() {
                     } else {
                       displayName = tPlanet(planetName);
                     }
-                    
+
+                    // Convertir le nom de planète en NatalSubject pour rendre cliquable
+                    const subject = planetNameToSubject(planetName);
+
                     return (
-                      <View key={index} style={styles.planetRow}>
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.planetRow}
+                        onPress={() => subject && handlePlacementClick(subject)}
+                        disabled={!subject}
+                        activeOpacity={subject ? 0.7 : 1}
+                      >
                         <Text style={styles.planetName}>
                           {displayName}
                         </Text>
@@ -232,7 +277,7 @@ export default function NatalChartResultScreen() {
                           {planetData.degree !== undefined && ` • ${formatDegree(planetData.degree)}`}
                           {planetData.house !== undefined && planetData.house > 0 && ` • Maison ${planetData.house}`}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     );
                   });
                 })()}
@@ -312,6 +357,17 @@ export default function NatalChartResultScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        {/* Modal d'interprétation */}
+        {selectedSubject && selectedPayload && (
+          <NatalInterpretationModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            subject={selectedSubject}
+            chartId={chartId}
+            chartPayload={selectedPayload}
+          />
+        )}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -443,6 +499,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontStyle: 'italic',
   },
+  aspectExplanation: {
+    ...fonts.bodySmall,
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: spacing.md,
+    fontStyle: 'italic',
+  },
   buttonSecondary: {
     backgroundColor: colors.cardBg,
     paddingVertical: spacing.md,
@@ -455,6 +518,13 @@ const styles = StyleSheet.create({
   buttonText: {
     ...fonts.button,
     color: colors.accent,
+  },
+  tapHint: {
+    ...fonts.caption,
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: spacing.xs,
+    fontStyle: 'italic',
   },
 });
 

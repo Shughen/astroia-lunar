@@ -49,6 +49,7 @@ export const PLANET_FR: Record<string, string> = {
   'truesouthnode': 'Nœud Sud',
   'true_south_node': 'Nœud Sud',
   // Points sensibles
+  'midheaven': 'Milieu du Ciel',
   'mediumcoeli': 'Milieu du Ciel',
   'medium_coeli': 'Milieu du Ciel',
   'mc': 'Milieu du Ciel',
