@@ -61,7 +61,18 @@ async def calculate_natal_chart(
     # Fallback birth_time à "12:00" (midi) si manquant (comme dans l'ancienne app)
     birth_time = data.time if data.time else "12:00"
     
-    logger.info(f"📊 Calcul thème natal - user_id={current_user.id}, email={current_user.email}, date={data.date} {birth_time}")
+    # Détecter automatiquement la timezone depuis les coordonnées GPS si non fournie ou valeur par défaut
+    from utils.timezone_utils import get_timezone_for_birth_place
+    detected_timezone = get_timezone_for_birth_place(
+        latitude=data.latitude,
+        longitude=data.longitude,
+        provided_timezone=data.timezone
+    )
+    
+    if detected_timezone != data.timezone:
+        logger.info(f"🌍 Timezone auto-détectée: {data.timezone} → {detected_timezone} (lat={data.latitude}, lon={data.longitude})")
+    
+    logger.info(f"📊 Calcul thème natal - user_id={current_user.id}, email={current_user.email}, date={data.date} {birth_time}, timezone={detected_timezone}")
     
     # Calculer via RapidAPI (Best Astrology API)
     try:
@@ -82,7 +93,7 @@ async def calculate_natal_chart(
             "country_code": "FR",  # Par défaut, peut être amélioré
             "latitude": data.latitude,
             "longitude": data.longitude,
-            "timezone": data.timezone
+            "timezone": detected_timezone  # Utiliser la timezone détectée
         }
         
         # Appel à RapidAPI via le service natal_reading_service
@@ -382,7 +393,7 @@ async def calculate_natal_chart(
         existing_chart.birth_place = data.place_name  # Mapper place_name -> birth_place
         existing_chart.latitude = data.latitude
         existing_chart.longitude = data.longitude
-        existing_chart.timezone = data.timezone
+        existing_chart.timezone = detected_timezone
         chart = existing_chart
         logger.debug(f"💾 Thème natal mis à jour - natal_chart_id={chart.id}")
     else:
@@ -394,7 +405,7 @@ async def calculate_natal_chart(
             birth_place=data.place_name,  # Mapper place_name -> birth_place
             latitude=data.latitude,
             longitude=data.longitude,
-            timezone=data.timezone,
+            timezone=detected_timezone,
             positions=positions  # Tout dans positions JSONB
         )
         db.add(chart)
@@ -406,7 +417,7 @@ async def calculate_natal_chart(
     current_user.birth_latitude = str(data.latitude)
     current_user.birth_longitude = str(data.longitude)
     current_user.birth_place_name = data.place_name
-    current_user.birth_timezone = data.timezone
+    current_user.birth_timezone = detected_timezone
     
     # Log clair avant commit avec tous les champs qui vont en DB
     logger.info(f"💾 Sauvegarde DB natal_chart - user_id={chart.user_id}, birth_date={chart.birth_date}, "
@@ -463,7 +474,7 @@ async def calculate_natal_chart(
                 birth_time=birth_time,
                 birth_latitude=data.latitude,
                 birth_longitude=data.longitude,
-                birth_timezone=data.timezone,
+                birth_timezone=detected_timezone,
                 transit_date=transit_date,
                 user_id=user_uuid
             )

@@ -588,5 +588,39 @@ export const lunaPack = {
   },
 };
 
+// === NATAL INTERPRETATIONS ===
+export const natalInterpretations = {
+  /**
+   * Génère ou récupère une interprétation pour un placement du thème natal
+   * @param data - Requête avec chart_id, subject, chart_payload
+   * @returns Interprétation (texte markdown) avec flag cached
+   */
+  generate: async (data: {
+    chart_id: string;
+    subject: string;
+    lang?: string;
+    chart_payload: {
+      subject_label: string;
+      sign: string;
+      degree?: number;
+      house?: number;
+      ascendant_sign?: string;
+    };
+    force_refresh?: boolean;
+  }) => {
+    const response = await apiClient.post('/api/natal/interpretation', data);
+    return response.data;
+  },
+
+  /**
+   * Supprime une interprétation (pour forcer régénération)
+   * @param chart_id - ID du chart
+   * @param subject - Objet céleste (ex: 'sun', 'moon')
+   */
+  delete: async (chart_id: string, subject: string) => {
+    await apiClient.delete(`/api/natal/interpretation/${chart_id}/${subject}`);
+  },
+};
+
 export default apiClient;
 

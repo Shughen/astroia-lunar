@@ -62,3 +62,5 @@ coverage/
 .cursor/
 .turbo/
 
+apps/api/.env.bak
+apps/api/.env.bak2
