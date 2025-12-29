@@ -240,16 +240,23 @@ def generate_mock_lunar_return(
         lunar_cycle_offset = month_offset * 27.321582  # Mois sidéral en jours
         
         # Calculer le jour du mois (entre 10 et 20) basé sur l'offset
+        # Utiliser une fonction sinusoïdale pour plus de variation naturelle
         base_day = 15  # Jour de base
-        day_variation = int((lunar_cycle_offset % 10) - 5)  # Variation entre -5 et +5
-        calculated_day = max(10, min(20, base_day + day_variation))
+        # Variation sinusoïdale pour éviter les répétitions
+        day_variation = int(5 * ((lunar_cycle_offset / 27.32) % 1) - 2.5)  # Variation entre -2.5 et +2.5
+        # Ajouter aussi une variation basée sur le mois pour plus de diversité
+        month_day_offset = (month * 7) % 11  # Offset basé sur le mois (0-10)
+        calculated_day = max(10, min(20, base_day + day_variation + (month_day_offset - 5)))
         
         # Calculer l'heure (entre 8h et 20h) basée sur l'offset
-        hour_variation = int((lunar_cycle_offset * 2) % 12)  # Variation entre 0 et 11
+        # Utiliser plusieurs facteurs pour plus de variation
+        hour_base = int((lunar_cycle_offset * 3) % 12)  # 0-11
+        hour_month = (month * 5) % 12  # Variation basée sur le mois
+        hour_variation = (hour_base + hour_month) % 12
         calculated_hour = 8 + hour_variation  # Entre 8h et 19h
         
         # Calculer les minutes (0, 15, 30, 45) pour plus de réalisme
-        minute_variation = int((lunar_cycle_offset * 4) % 4) * 15  # 0, 15, 30, 45
+        minute_variation = int((lunar_cycle_offset * 4 + month * 3) % 4) * 15  # 0, 15, 30, 45
         
         return_dt = datetime(year, month, calculated_day, calculated_hour, minute_variation, 0, tzinfo=dt_timezone.utc)
         return_datetime_str = return_dt.isoformat()
