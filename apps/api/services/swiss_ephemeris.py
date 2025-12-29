@@ -12,13 +12,23 @@ This module provides:
 All calculations are in UTC. Timezone conversion is for display only.
 """
 
-import swisseph as swe
+try:
+    import swisseph as swe
+    SWISS_EPHEMERIS_AVAILABLE = True
+except ImportError:
+    SWISS_EPHEMERIS_AVAILABLE = False
+    swe = None
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning("⚠️ Swiss Ephemeris (pyswisseph) non disponible - certaines fonctions seront limitées")
+
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from collections import namedtuple
 
-logger = logging.getLogger(__name__)
+if 'logger' not in locals():
+    logger = logging.getLogger(__name__)
 
 # Constants
 ZODIAC_SIGNS = [
@@ -65,6 +75,9 @@ def datetime_to_julian_day(dt: datetime) -> float:
     Returns:
         Julian Day number
     """
+    if not SWISS_EPHEMERIS_AVAILABLE:
+        raise ImportError("Swiss Ephemeris (pyswisseph) n'est pas installé. Installez-le avec: pip install pyswisseph")
+    
     if dt.tzinfo is None:
         # Assume UTC if naive
         dt = dt.replace(tzinfo=timezone.utc)
@@ -159,6 +172,9 @@ def get_moon_longitude(jd_ut: float) -> float:
     Returns:
         Ecliptic longitude (0-360)
     """
+    if not SWISS_EPHEMERIS_AVAILABLE:
+        raise ImportError("Swiss Ephemeris (pyswisseph) n'est pas installé. Installez-le avec: pip install pyswisseph")
+    
     result = swe.calc_ut(jd_ut, swe.MOON, swe.FLG_SWIEPH)
     moon_longitude = result[0][0]
     return moon_longitude
@@ -310,6 +326,10 @@ def find_lunar_return(
     Returns:
         datetime du Lunar Return (UTC) ou None si non trouvé
     """
+    if not SWISS_EPHEMERIS_AVAILABLE:
+        logger.warning("[LunarReturn] ⚠️ Swiss Ephemeris non disponible - impossible de calculer le Lunar Return")
+        return None
+    
     logger.info(
         f"[LunarReturn] Recherche Lunar Return - "
         f"λ_natal={natal_moon_longitude:.2f}°, "

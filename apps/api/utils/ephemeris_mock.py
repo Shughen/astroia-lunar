@@ -18,10 +18,11 @@ try:
         datetime_to_julian_day,
         get_moon_longitude,
         get_sun_longitude,
-        degree_to_sign
+        degree_to_sign,
+        SWISS_EPHEMERIS_AVAILABLE as SWE_AVAILABLE
     )
-    SWISS_EPHEMERIS_AVAILABLE = True
-except ImportError:
+    SWISS_EPHEMERIS_AVAILABLE = SWE_AVAILABLE
+except (ImportError, AttributeError):
     SWISS_EPHEMERIS_AVAILABLE = False
     logger.warning("⚠️ Swiss Ephemeris non disponible - utilisation du placeholder")
 

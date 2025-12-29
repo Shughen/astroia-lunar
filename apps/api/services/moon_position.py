@@ -3,7 +3,13 @@ Service pour calculer la position actuelle de la Lune avec Swiss Ephemeris
 Calcule la longitude écliptique, le signe zodiacal et la phase lunaire
 """
 
-import swisseph as swe
+try:
+    import swisseph as swe
+    SWISS_EPHEMERIS_AVAILABLE = True
+except ImportError:
+    SWISS_EPHEMERIS_AVAILABLE = False
+    swe = None
+
 from datetime import datetime, timezone
 from typing import Dict, Any
 import logging
@@ -105,6 +111,15 @@ def get_current_moon_position() -> Dict[str, Any]:
         Exception: Si le calcul Swiss Ephemeris échoue
     """
     global _CACHE
+
+    if not SWISS_EPHEMERIS_AVAILABLE:
+        logger.warning("[MoonPosition] ⚠️ Swiss Ephemeris non disponible - retour données mock")
+        # Retourner des données mock minimales
+        return {
+            "sign": "Gemini",
+            "degree": 67.5,
+            "phase": "Premier Quartier"
+        }
 
     # Vérifier le cache
     current_time = time.time()
