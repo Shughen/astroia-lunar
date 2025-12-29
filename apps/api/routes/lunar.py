@@ -12,9 +12,11 @@ import logging
 
 from database import get_db
 from services import lunar_services
+from services.moon_position import get_current_moon_position
+from services.daily_climate import get_daily_climate
 from schemas.lunar import (
-    LunarReturnReportRequest, 
-    VoidOfCourseRequest, 
+    LunarReturnReportRequest,
+    VoidOfCourseRequest,
     LunarMansionRequest,
     LunarResponse
 )
@@ -23,6 +25,91 @@ from models.lunar_pack import LunarReport, LunarVocWindow, LunarMansionDaily
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/lunar", tags=["Luna Pack"])
+
+
+@router.get("/current")
+async def get_current_moon():
+    """
+    Calcule la position actuelle de la Lune avec Swiss Ephemeris.
+
+    Retourne la longitude écliptique, le signe zodiacal et la phase lunaire.
+    Les résultats sont mis en cache pendant 5 minutes côté serveur.
+
+    **Returns:**
+    ```json
+    {
+      "sign": "Gemini",
+      "degree": 67.5,
+      "phase": "Premier Quartier"
+    }
+    ```
+
+    **Phases possibles:**
+    - Nouvelle Lune
+    - Premier Croissant
+    - Premier Quartier
+    - Lune Gibbeuse
+    - Pleine Lune
+    - Lune Disseminante
+    - Dernier Quartier
+    - Dernier Croissant
+
+    **Signes possibles:**
+    Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio,
+    Sagittarius, Capricorn, Aquarius, Pisces
+    """
+    try:
+        result = get_current_moon_position()
+        logger.info(f"[GET /api/lunar/current] ✅ Moon: {result['degree']}° {result['sign']}, Phase: {result['phase']}")
+        return result
+    except Exception as e:
+        logger.error(f"[GET /api/lunar/current] ❌ Error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to calculate moon position: {str(e)}"
+        )
+
+
+@router.get("/daily-climate")
+async def get_daily_lunar_climate():
+    """
+    Récupère le Daily Lunar Climate avec insight stable sur 24h.
+
+    Combine la position lunaire actuelle avec un insight déterministe généré
+    en fonction de la date, du signe et de la phase lunaire.
+
+    Le contenu reste STRICTEMENT identique pour toute la journée (cache 24h).
+
+    **Returns:**
+    ```json
+    {
+      "date": "2025-12-29",
+      "moon": {
+        "sign": "Gemini",
+        "degree": 67.5,
+        "phase": "Premier Quartier"
+      },
+      "insight": {
+        "title": "Synthèse Brillante",
+        "text": "Rassemblez les informations dispersées...",
+        "keywords": ["synthèse", "cohérence", "intelligence", "clarté"],
+        "version": "v1"
+      }
+    }
+    ```
+
+    **Cache:** 24h (invalidation automatique au changement de date)
+    """
+    try:
+        result = get_daily_climate()
+        logger.info(f"[GET /api/lunar/daily-climate] ✅ Climate (date: {result['date']}, insight: {result['insight']['title']})")
+        return result
+    except Exception as e:
+        logger.error(f"[GET /api/lunar/daily-climate] ❌ Error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate daily climate: {str(e)}"
+        )
 
 
 @router.post("/return/report", response_model=LunarResponse, status_code=200)

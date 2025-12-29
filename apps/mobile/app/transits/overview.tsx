@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -214,7 +215,23 @@ export default function TransitsOverview() {
         {/* Major Aspects */}
         {majorAspects.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>⭐ Aspects Majeurs</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>⭐ Aspects Majeurs</Text>
+              <TouchableOpacity
+                onPress={() =>
+                  Alert.alert(
+                    'ℹ️ Orbe',
+                    "L'orbe représente l'écart en degrés entre les planètes. Plus c'est proche de 0°, plus l'aspect est fort et influent.",
+                    [{ text: 'OK' }]
+                  )
+                }
+              >
+                <Text style={styles.infoIcon}>ℹ️</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.sectionSubtitle}>
+              Orbe = écart en degrés. Plus c'est proche de 0°, plus l'aspect est fort.
+            </Text>
             {majorAspects.map((aspect: any, index: number) => {
               const aspectInfo = ASPECT_BADGES[aspect.aspect] || {
                 emoji: '●',
@@ -318,10 +335,27 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#b794f6',
+    flex: 1,
+  },
+  infoIcon: {
+    fontSize: 18,
+    color: '#b794f6',
+    marginLeft: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#a0a0b0',
+    fontStyle: 'italic',
     marginBottom: 12,
   },
   insightCard: {

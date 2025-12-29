@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { tPlanet, tAspect, formatOrb } from '../../i18n/astro.format';
 
 interface LunarReturnReport {
   provider: string;
@@ -123,16 +124,24 @@ export default function LunarReportDetailScreen() {
     return (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>⭐ Aspects Majeurs</Text>
-        {report.data.aspects.map((aspect, index) => (
-          <View key={index} style={styles.aspectRow}>
-            <Text style={styles.aspectText}>
-              {aspect.planet1} {aspect.type} {aspect.planet2}
-            </Text>
-            <Text style={styles.aspectOrb}>
-              Orbe: {aspect.orb?.toFixed(1)}°
-            </Text>
-          </View>
-        ))}
+        {report.data.aspects.map((aspect, index) => {
+          // Détecter les noms de champs (variantes)
+          const planet1 = aspect.planet1 || aspect.p1 || aspect.transit_planet || aspect.from_planet;
+          const planet2 = aspect.planet2 || aspect.p2 || aspect.natal_planet || aspect.to_planet;
+          const aspectType = aspect.aspect || aspect.type;
+          const orb = aspect.orb;
+
+          return (
+            <View key={index} style={styles.aspectRow}>
+              <Text style={styles.aspectText}>
+                {tPlanet(planet1)} {tAspect(aspectType).toLowerCase()} {tPlanet(planet2)}
+              </Text>
+              <Text style={styles.aspectOrb}>
+                Orbe: {formatOrb(orb)}
+              </Text>
+            </View>
+          );
+        })}
       </View>
     );
   };

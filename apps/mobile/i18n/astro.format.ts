@@ -52,12 +52,29 @@ export function tAspect(value: string | undefined | null): string {
 
 /**
  * Formate un orbe en degrés avec 1 décimale et virgule FR
- * @param orb - Orbe en degrés (number)
- * @returns String formatée (ex: "2,5°")
+ * Affiche la valeur absolue + indicateur séparatif/applicatif optionnel
+ * @param orb - Orbe en degrés (number, peut être négatif)
+ * @param showDirection - Afficher l'indicateur directionnel (applicatif/séparatif) (défaut: false)
+ * @returns String formatée (ex: "2,5°" ou "2,5° (applicatif)")
  */
-export function formatOrb(orb: number | undefined | null): string {
+export function formatOrb(orb: number | undefined | null, showDirection: boolean = false): string {
   if (orb === undefined || orb === null) return '';
-  return `${orb.toFixed(1).replace('.', ',')}°`;
+  
+  // Valeur absolue
+  const absOrb = Math.abs(orb);
+  const formatted = `${absOrb.toFixed(1).replace('.', ',')}°`;
+  
+  // Indicateur directionnel optionnel
+  if (showDirection) {
+    if (orb < 0) {
+      return `${formatted} (séparatif)`;
+    } else if (orb > 0) {
+      return `${formatted} (applicatif)`;
+    }
+    // orb === 0 : aspect exact, pas besoin d'indicateur
+  }
+  
+  return formatted;
 }
 
 /**

@@ -13,22 +13,31 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
+import { useNatalStore } from '../../stores/useNatalStore';
+import { natalChart } from '../../services/api';
+import { geocodePlace } from '../../services/geocoding';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
   const { setProfileData, profileData } = useOnboardingStore();
+  const { setChart } = useNatalStore();
 
   const [name, setName] = useState(profileData?.name || '');
   const [birthDate, setBirthDate] = useState<Date>(
     profileData?.birthDate || new Date(2000, 0, 1)
   );
+  const [birthTime, setBirthTime] = useState(profileData?.birthTime || '12:00');
+  const [birthPlace, setBirthPlace] = useState(profileData?.birthPlace || '');
+  const [birthTimezone, setBirthTimezone] = useState(profileData?.birthTimezone || 'Europe/Paris');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   const handleNext = async () => {
     // Validation
@@ -37,24 +46,76 @@ export default function ProfileSetupScreen() {
       return;
     }
 
+    if (!birthPlace.trim()) {
+      Alert.alert('Lieu requis', 'Veuillez entrer votre lieu de naissance');
+      return;
+    }
+
+    if (!birthTime.trim()) {
+      Alert.alert('Heure requise', 'Veuillez entrer votre heure de naissance');
+      return;
+    }
+
+    setIsCalculating(true);
+
     try {
-      // 1) Sauvegarder le profil local
+      // 1) Géocoder le lieu de naissance
+      console.log('[PROFILE-SETUP] Géocodage du lieu:', birthPlace);
+      const coords = await geocodePlace(birthPlace);
+      console.log('[PROFILE-SETUP] Coordonnées:', coords);
+
+      // 2) Sauvegarder le profil complet avec coordonnées
       await setProfileData({
         name: name.trim(),
         birthDate,
+        birthTime: birthTime.trim(),
+        birthPlace: birthPlace.trim(),
+        birthLatitude: coords.latitude,
+        birthLongitude: coords.longitude,
+        birthTimezone: birthTimezone.trim(),
       });
 
-      console.log('[PROFILE-SETUP] Profil sauvegardé →', { name: name.trim(), birthDate });
+      console.log('[PROFILE-SETUP] Profil sauvegardé →', {
+        name: name.trim(),
+        birthDate,
+        birthTime: birthTime.trim(),
+        birthPlace: birthPlace.trim(),
+      });
 
-      // NOTE: Le calcul du natal chart nécessite le lieu + heure de naissance
-      // Pour l'instant, l'utilisateur devra le faire manuellement via /natal-chart
-      // TODO: Ajouter lieu + heure dans profile-setup si on veut calcul auto
+      // 3) Calculer le thème natal automatiquement (NON BLOQUANT)
+      try {
+        console.log('[PROFILE-SETUP] Calcul du thème natal...');
+        const response = await natalChart.calculate({
+          date: birthDate.toISOString().split('T')[0], // YYYY-MM-DD
+          time: birthTime.trim(),
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          place_name: birthPlace.trim(),
+          timezone: birthTimezone.trim(),
+        });
 
-      // Passer au consentement RGPD
+        setChart(response);
+        console.log('[PROFILE-SETUP] ✅ Thème natal calculé automatiquement');
+      } catch (natalError: any) {
+        // Ne pas bloquer l'onboarding si le calcul échoue
+        console.warn('[PROFILE-SETUP] ⚠️ Échec calcul natal (non bloquant):', natalError.message);
+      }
+
+      // 4) Passer au consentement RGPD
       router.push('/onboarding/consent');
     } catch (error: any) {
       console.error('[PROFILE-SETUP] Erreur:', error);
-      Alert.alert('Erreur', error.message || 'Impossible de sauvegarder le profil');
+
+      // Gérer les erreurs de géocodage
+      if (error.message === 'Lieu introuvable') {
+        Alert.alert('Lieu introuvable', 'Merci de préciser la ville et le pays (ex: Paris, France)');
+      } else if (error.message?.includes('Timeout')) {
+        Alert.alert('Erreur', 'Le géocodage a pris trop de temps, réessayez');
+      } else {
+        Alert.alert('Erreur', error.message || 'Impossible de sauvegarder le profil');
+      }
+    } finally {
+      setIsCalculating(false);
     }
   };
 
@@ -193,12 +254,50 @@ export default function ProfileSetupScreen() {
                 </View>
               )}
 
+              {/* Heure de naissance */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Heure de naissance</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 14:30"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  value={birthTime}
+                  onChangeText={setBirthTime}
+                  keyboardType="numbers-and-punctuation"
+                />
+              </View>
+
+              {/* Lieu de naissance */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Lieu de naissance</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Paris, France"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  value={birthPlace}
+                  onChangeText={setBirthPlace}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              {/* Timezone (optionnel, masqué par défaut) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Timezone (optionnel)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Europe/Paris"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  value={birthTimezone}
+                  onChangeText={setBirthTimezone}
+                />
+              </View>
+
               {/* Info box */}
               <View style={styles.infoBox}>
                 <Text style={styles.infoIcon}>ℹ️</Text>
                 <Text style={styles.infoText}>
-                  Ta date de naissance nous permet de calculer ton thème astral pour des
-                  prévisions personnalisées sur tes révolutions lunaires
+                  Ces informations nous permettent de calculer ton thème natal complet pour des
+                  prévisions personnalisées
                 </Text>
               </View>
             </View>
@@ -207,9 +306,10 @@ export default function ProfileSetupScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.nextButton}
+              style={[styles.nextButton, isCalculating && styles.nextButtonDisabled]}
               onPress={handleNext}
               activeOpacity={0.8}
+              disabled={isCalculating}
             >
               <LinearGradient
                 colors={[colors.accent, colors.accentDark || colors.accent]}
@@ -217,7 +317,11 @@ export default function ProfileSetupScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Text style={styles.nextButtonText}>Suivant</Text>
+                {isCalculating ? (
+                  <ActivityIndicator color={colors.text} />
+                ) : (
+                  <Text style={styles.nextButtonText}>Suivant</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -400,5 +504,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fonts.sizes.lg,
     fontWeight: 'bold',
+  },
+  nextButtonDisabled: {
+    opacity: 0.6,
   },
 });

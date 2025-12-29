@@ -83,6 +83,9 @@ export default function OnboardingIndexScreen() {
       // Dernier slide → marquer onboarding comme terminé
       console.log('[ONBOARDING] Dernier slide → completeOnboarding()');
       await completeOnboarding();
+      // PAS de réhydratation ici : completeOnboarding() a déjà mis à jour le store
+      // Le index.tsx fera le re-check automatiquement
+      console.log('[ONBOARDING] completeOnboarding terminé, navigation vers /');
       router.replace('/');
     }
   };
@@ -90,6 +93,8 @@ export default function OnboardingIndexScreen() {
   const handleSkip = async () => {
     console.log('[ONBOARDING] Skip → completeOnboarding()');
     await completeOnboarding();
+    // PAS de réhydratation ici : completeOnboarding() a déjà mis à jour le store
+    console.log('[ONBOARDING] completeOnboarding terminé, navigation vers /');
     router.replace('/');
   };
 

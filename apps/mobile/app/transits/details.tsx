@@ -65,54 +65,54 @@ export default function TransitsDetails() {
             <Text style={styles.orbValue}>{formatOrb(aspectDetails.orb)}</Text>
           </View>
 
-        {/* Interpretation */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔮 Interprétation</Text>
-          <Text style={styles.interpretation}>
-            {aspectDetails.interpretation}
-          </Text>
-        </View>
-
-        {/* Timing */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⏰ Timing</Text>
-          <View style={styles.timingCard}>
-            <Text style={styles.timingLabel}>Aspect exact :</Text>
-            <Text style={styles.timingValue}>
-              {new Date(aspectDetails.timing.exact_date).toLocaleDateString('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+          {/* Interpretation */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🔮 Interprétation</Text>
+            <Text style={styles.interpretation}>
+              {aspectDetails.interpretation}
             </Text>
-            <Text style={styles.timingLabel}>Période d'influence :</Text>
-            <Text style={styles.timingValue}>{aspectDetails.timing.orb_range}</Text>
           </View>
-        </View>
 
-        {/* Themes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎯 Thèmes</Text>
-          <View style={styles.themesContainer}>
-            {aspectDetails.themes.map((theme, index) => (
-              <View key={index} style={styles.themeBadge}>
-                <Text style={styles.themeText}>{theme}</Text>
+          {/* Timing */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>⏰ Timing</Text>
+            <View style={styles.timingCard}>
+              <Text style={styles.timingLabel}>Aspect exact :</Text>
+              <Text style={styles.timingValue}>
+                {new Date(aspectDetails.timing.exact_date).toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+              <Text style={styles.timingLabel}>Période d'influence :</Text>
+              <Text style={styles.timingValue}>{aspectDetails.timing.orb_range}</Text>
+            </View>
+          </View>
+
+          {/* Themes */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🎯 Thèmes</Text>
+            <View style={styles.themesContainer}>
+              {aspectDetails.themes.map((theme, index) => (
+                <View key={index} style={styles.themeBadge}>
+                  <Text style={styles.themeText}>{theme}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Recommendations */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>✨ Recommandations</Text>
+            {aspectDetails.recommendations.map((rec, index) => (
+              <View key={index} style={styles.recCard}>
+                <Text style={styles.recBullet}>•</Text>
+                <Text style={styles.recText}>{rec}</Text>
               </View>
             ))}
-          </View>
-        </View>
-
-        {/* Recommendations */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>✨ Recommandations</Text>
-          {aspectDetails.recommendations.map((rec, index) => (
-            <View key={index} style={styles.recCard}>
-              <Text style={styles.recBullet}>•</Text>
-              <Text style={styles.recText}>{rec}</Text>
-            </View>
-          ))}
           </View>
         </ScrollView>
       </SafeAreaView>

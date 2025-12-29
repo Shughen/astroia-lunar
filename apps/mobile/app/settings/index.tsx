@@ -60,9 +60,18 @@ export default function SettingsScreen() {
           text: 'Réinitialiser',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('hasSeenWelcomeScreen');
-            console.log('[SETTINGS] ✅ hasSeenWelcomeScreen supprimé');
-            Alert.alert('Succès', 'Welcome réinitialisé ! Redémarre l\'app pour le voir.');
+            try {
+              // Utilise la méthode reset du store qui gère tout proprement
+              await resetOnboarding();
+              console.log('[SETTINGS] ✅ Welcome + Onboarding réinitialisés via store');
+              Alert.alert(
+                'Succès',
+                'Welcome réinitialisé ! Retour au Home pour redémarrer.',
+                [{ text: 'OK', onPress: () => router.replace('/') }]
+              );
+            } catch (error: any) {
+              Alert.alert('Erreur', error.message || 'Échec reset');
+            }
           },
         },
       ]
@@ -79,9 +88,18 @@ export default function SettingsScreen() {
           text: 'Réinitialiser',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('onboarding_completed');
-            console.log('[SETTINGS] ✅ onboarding_completed supprimé');
-            Alert.alert('Succès', 'Onboarding réinitialisé ! Redémarre l\'app.');
+            try {
+              // Utilise la méthode reset du store qui gère tout proprement
+              await resetOnboarding();
+              console.log('[SETTINGS] ✅ Onboarding réinitialisé via store');
+              Alert.alert(
+                'Succès',
+                'Onboarding réinitialisé ! Retour au Home pour redémarrer.',
+                [{ text: 'OK', onPress: () => router.replace('/') }]
+              );
+            } catch (error: any) {
+              Alert.alert('Erreur', error.message || 'Échec reset');
+            }
           },
         },
       ]

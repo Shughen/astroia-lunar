@@ -19,7 +19,7 @@ export const SIGN_FR: Record<string, string> = {
   'pisces': 'Poissons',
 };
 
-// Planètes
+// Planètes et points sensibles
 export const PLANET_FR: Record<string, string> = {
   'sun': 'Soleil',
   'moon': 'Lune',
@@ -33,10 +33,32 @@ export const PLANET_FR: Record<string, string> = {
   'pluto': 'Pluton',
   'chiron': 'Chiron',
   'lilith': 'Lilith',
+  'blackmoon': 'Lilith',
+  'black_moon': 'Lilith',
+  // Nœuds lunaires
   'northnode': 'Nœud Nord',
   'north_node': 'Nœud Nord',
+  'meannorthnode': 'Nœud Nord',
+  'mean_north_node': 'Nœud Nord',
+  'truenorthnode': 'Nœud Nord',
+  'true_north_node': 'Nœud Nord',
   'southnode': 'Nœud Sud',
   'south_node': 'Nœud Sud',
+  'meansouthnode': 'Nœud Sud',
+  'mean_south_node': 'Nœud Sud',
+  'truesouthnode': 'Nœud Sud',
+  'true_south_node': 'Nœud Sud',
+  // Points sensibles
+  'mediumcoeli': 'Milieu du Ciel',
+  'medium_coeli': 'Milieu du Ciel',
+  'mc': 'Milieu du Ciel',
+  'imumcoeli': 'Fond du Ciel',
+  'imum_coeli': 'Fond du Ciel',
+  'ic': 'Fond du Ciel',
+  'partoffortune': 'Part de Fortune',
+  'part_of_fortune': 'Part de Fortune',
+  'pof': 'Part de Fortune',
+  'vertex': 'Vertex',
 };
 
 // Aspects

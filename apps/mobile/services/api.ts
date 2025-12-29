@@ -341,8 +341,17 @@ export const lunarReturns = {
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 404) {
+        console.log('[API] Aucun retour lunaire trouvé (404)');
         return null;
       }
+      // Logger les détails de l'erreur pour diagnostic
+      console.error('[API] Erreur getNext:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url,
+      });
       throw error;
     }
   },
@@ -538,6 +547,43 @@ export const lunaPack = {
    */
   getCurrentVoc: async () => {
     const response = await apiClient.get('/api/lunar/voc/current');
+    return response.data;
+  },
+
+  /**
+   * Récupère la position actuelle de la Lune (Swiss Ephemeris)
+   * Cache serveur 5 minutes
+   * @returns { sign: string, degree: number, phase: string }
+   */
+  getCurrentMoonPosition: async (): Promise<{
+    sign: string;
+    degree: number;
+    phase: string;
+  }> => {
+    const response = await apiClient.get('/api/lunar/current');
+    return response.data;
+  },
+
+  /**
+   * Récupère le Daily Lunar Climate avec insight stable sur 24h
+   * Cache serveur 24h (invalidation automatique au changement de date)
+   * @returns Daily climate avec position lunaire + insight déterministe
+   */
+  getDailyClimate: async (): Promise<{
+    date: string;
+    moon: {
+      sign: string;
+      degree: number;
+      phase: string;
+    };
+    insight: {
+      title: string;
+      text: string;
+      keywords: string[];
+      version: string;
+    };
+  }> => {
+    const response = await apiClient.get('/api/lunar/daily-climate');
     return response.data;
   },
 };

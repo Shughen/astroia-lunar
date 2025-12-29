@@ -588,43 +588,53 @@ async def get_next_lunar_return(
     """Récupère le prochain retour lunaire de l'utilisateur (>= maintenant)"""
     correlation_id = str(uuid4())
     
-    logger.info(f"[corr={correlation_id}] 🔍 Recherche prochain retour lunaire pour user_id={current_user.id}")
-    
-    now = datetime.now(timezone.utc)
-    result = await db.execute(
-        select(LunarReturn)
-        .where(
-            LunarReturn.user_id == current_user.id,
-            LunarReturn.return_date >= now
+    try:
+        logger.info(f"[corr={correlation_id}] 🔍 Recherche prochain retour lunaire pour user_id={current_user.id}")
+        
+        now = datetime.now(timezone.utc)
+        result = await db.execute(
+            select(LunarReturn)
+            .where(
+                LunarReturn.user_id == current_user.id,
+                LunarReturn.return_date >= now
+            )
+            .order_by(LunarReturn.return_date.asc())
+            .limit(1)
         )
-        .order_by(LunarReturn.return_date.asc())
-        .limit(1)
-    )
-    
-    # Extraire les résultats de manière robuste
-    items = extract_scalars_all(result)
-    
-    # Filtrer en Python (fallback pour tests avec FakeAsyncSession)
-    # Si items est vide mais qu'on est en test (FakeResult), essayer de récupérer tous les objets
-    if not items:
-        # En test, FakeAsyncSession peut ne pas retourner les objets via execute()
-        # On essaie de récupérer directement depuis la session si possible
-        if hasattr(db, '_added_objects'):
-            items = [obj for obj in db._added_objects if isinstance(obj, LunarReturn)]
-    
-    filtered = _post_filter_returns(items, current_user.id, now)
-    
-    if not filtered:
-        # Log en DEBUG plutôt qu'INFO car c'est un cas normal (pas d'erreur)
-        logger.debug(f"[corr={correlation_id}] Aucun retour lunaire à venir trouvé pour user_id={current_user.id}")
+        
+        # Extraire les résultats de manière robuste
+        items = extract_scalars_all(result)
+        
+        # Filtrer en Python (fallback pour tests avec FakeAsyncSession)
+        # Si items est vide mais qu'on est en test (FakeResult), essayer de récupérer tous les objets
+        if not items:
+            # En test, FakeAsyncSession peut ne pas retourner les objets via execute()
+            # On essaie de récupérer directement depuis la session si possible
+            if hasattr(db, '_added_objects'):
+                items = [obj for obj in db._added_objects if isinstance(obj, LunarReturn)]
+        
+        filtered = _post_filter_returns(items, current_user.id, now)
+        
+        if not filtered:
+            # Log en DEBUG plutôt qu'INFO car c'est un cas normal (pas d'erreur)
+            logger.debug(f"[corr={correlation_id}] Aucun retour lunaire à venir trouvé pour user_id={current_user.id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Aucun retour lunaire à venir. Utilisez POST /api/lunar-returns/generate pour générer les retours."
+            )
+        
+        lunar_return = filtered[0]
+        logger.info(f"[corr={correlation_id}] ✅ Prochain retour trouvé: id={lunar_return.id}, return_date={lunar_return.return_date}")
+        return lunar_return
+    except HTTPException:
+        # Re-raise les HTTPException (404, etc.)
+        raise
+    except Exception as e:
+        logger.error(f"[corr={correlation_id}] ❌ Erreur lors de la récupération du prochain retour lunaire: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Aucun retour lunaire à venir. Utilisez POST /api/lunar-returns/generate pour générer les retours."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur serveur lors de la récupération du prochain retour lunaire: {str(e)}"
         )
-    
-    lunar_return = filtered[0]
-    logger.info(f"[corr={correlation_id}] ✅ Prochain retour trouvé: id={lunar_return.id}, return_date={lunar_return.return_date}")
-    return lunar_return
 
 
 @router.get("/rolling", response_model=List[LunarReturnResponse])

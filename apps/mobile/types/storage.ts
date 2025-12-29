@@ -24,6 +24,9 @@ export const STORAGE_KEYS = {
   // Cycle
   LAST_PERIOD_DATE: 'lastPeriodDate',
   AVERAGE_CYCLE_LENGTH: 'averageCycleLength',
+
+  // Daily Ritual
+  DAILY_RESONANCE: 'daily_resonance', // {date: "YYYY-MM-DD", value: "yes"|"no"|"maybe"}
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

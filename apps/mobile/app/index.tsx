@@ -2,7 +2,7 @@
  * Écran d'accueil principal
  */
 
-import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,13 +20,32 @@ const LinearGradientComponent = LinearGradient || (({ colors, style, children, .
   // View est déjà importé depuis react-native plus haut
   return <View style={[{ backgroundColor: colors?.[0] || '#1a0b2e' }, style]} {...props}>{children}</View>;
 });
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
 import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevUserId } from '../services/api';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { formatDate, getDaysUntil } from '../utils/date';
 import { formatAspects, parseInterpretation } from '../utils/astrology-format';
+import DailyLunarClimate from '../components/DailyLunarClimate';
+import { getMoonPositionWithCache } from '../services/moonPositionCache';
+import { getDailyClimateWithCache, DailyClimate, DailyInsight } from '../services/dailyClimateCache';
+import { MoonPosition } from '../services/lunarClimate';
+
+// Fonction utilitaire pour obtenir la salutation selon l'heure
+const getTimeBasedGreeting = (): string => {
+  const hour = new Date().getHours();
+
+  if (hour >= 6 && hour < 12) {
+    return 'Bonjour';
+  } else if (hour >= 12 && hour < 18) {
+    return 'Bon après-midi';
+  } else if (hour >= 18 && hour < 24) {
+    return 'Bonsoir';
+  } else {
+    return 'Belle nuit';
+  }
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -40,6 +59,10 @@ export default function HomeScreen() {
   const [shouldNavigate, setShouldNavigate] = useState<{ route: string } | null>(null);
   const hasCheckedRoutingRef = useRef(false);
   const isMountedRef = useRef(false);
+  const [moonPosition, setMoonPosition] = useState<MoonPosition | null>(null);
+  const [dailyInsight, setDailyInsight] = useState<DailyInsight | null>(null);
+  const isLoadingDailyClimateRef = useRef(false);
+  const [greeting, setGreeting] = useState(getTimeBasedGreeting());
 
   // S'assurer que le composant est monté avant de naviguer
   useLayoutEffect(() => {
@@ -65,12 +88,12 @@ export default function HomeScreen() {
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
-    console.log('[INDEX] 🔄 checkRouting() appelé, hydrated=', onboardingStore.hydrated);
+    console.log('[INDEX] 🔄 checkRouting() appelé, hydrated=', onboardingStore.hydrated, 'hasCompletedOnboarding=', onboardingStore.hasCompletedOnboarding);
 
     const checkRouting = async () => {
-      // Éviter les appels multiples SAUF si hydrated=false (après reset)
-      if (hasCheckedRoutingRef.current && onboardingStore.hydrated) {
-        console.log('[INDEX] ⏭️ checkRouting déjà exécuté et hydraté, skip');
+      // Guard absolu: si onboarding complété et déjà checké, JAMAIS re-router
+      if (hasCheckedRoutingRef.current && onboardingStore.hasCompletedOnboarding) {
+        console.log('[INDEX] ⏭️ Onboarding déjà complété et checké, skip re-check');
         return;
       }
 
@@ -83,10 +106,18 @@ export default function HomeScreen() {
         console.log('[INDEX] 📍 Début checkRouting');
         console.log('[INDEX] isAuthenticated =', isAuthenticated);
 
-        // Hydrater l'état onboarding depuis AsyncStorage (UNE SEULE FOIS)
-        if (!onboardingStore.hydrated) {
-          await onboardingStore.hydrate();
-        }
+        // Hydrater l'état onboarding depuis AsyncStorage (UNE SEULE FOIS grâce au guard hydrated)
+        await onboardingStore.hydrate();
+
+        // Log de tous les flags après hydratation
+        console.log('[INDEX] 📊 État onboarding après hydratation:', {
+          hasSeenWelcomeScreen: onboardingStore.hasSeenWelcomeScreen,
+          hasCompletedProfile: onboardingStore.hasCompletedProfile,
+          hasAcceptedConsent: onboardingStore.hasAcceptedConsent,
+          hasSeenDisclaimer: onboardingStore.hasSeenDisclaimer,
+          hasCompletedOnboarding: onboardingStore.hasCompletedOnboarding,
+          hydrated: onboardingStore.hydrated,
+        });
 
         // En mode DEV_AUTH_BYPASS, log clair et skip uniquement auth (pas welcome)
         const isBypassActive = isDevAuthBypassActive();
@@ -106,7 +137,16 @@ export default function HomeScreen() {
         }
         console.log('[INDEX] ✅ Auth OK (bypassé ou authentifié)');
 
-        // B) Vérifier hasSeenWelcomeScreen
+        // ⚠️ GUARD HARD STOP : Si onboarding est complété, NE JAMAIS rediriger vers welcome/onboarding
+        if (onboardingStore.hasCompletedOnboarding) {
+          console.log('[INDEX] 🛑 GUARD HARD STOP: hasCompletedOnboarding=true → affichage Home (jamais welcome/onboarding)');
+          hasCheckedRoutingRef.current = true;
+          setIsCheckingRouting(false);
+          // Ne pas naviguer, juste afficher le contenu Home
+          return;
+        }
+
+        // B) Vérifier hasSeenWelcomeScreen (seulement si onboarding pas complété)
         console.log('[INDEX] 📍 Étape B: Vérification hasSeenWelcomeScreen');
         console.log('[INDEX] hasSeenWelcomeScreen =', onboardingStore.hasSeenWelcomeScreen);
 
@@ -184,14 +224,69 @@ export default function HomeScreen() {
     };
 
     checkRouting();
-  }, [isAuthenticated, router, onboardingStore, onboardingStore.hydrated]);
+  }, [isAuthenticated, router, onboardingStore.hydrated, onboardingStore.hasCompletedOnboarding]);
 
+  // Charger daily climate avec cache (appelé au mount initial)
   useEffect(() => {
     // En mode DEV_AUTH_BYPASS, charger même sans authentification
     if ((isAuthenticated || isDevAuthBypassActive()) && !isCheckingRouting) {
       loadNextLunarReturn();
+      loadDailyClimate(false); // false = utiliser cache
     }
   }, [isAuthenticated, isCheckingRouting]);
+
+  // Refresh daily climate au focus de l'écran (avec cache quotidien)
+  useFocusEffect(
+    useCallback(() => {
+      // Ne charger que si authentifié et routing vérifié
+      if ((isAuthenticated || isDevAuthBypassActive()) && !isCheckingRouting) {
+        console.log('[INDEX] 🔄 useFocusEffect: écran Home en focus, refresh daily climate');
+        loadDailyClimate(false); // false = utiliser cache si même jour
+
+        // Mettre à jour la salutation au focus
+        setGreeting(getTimeBasedGreeting());
+      }
+    }, [isAuthenticated, isCheckingRouting])
+  );
+
+  const loadDailyClimate = async (forceRefresh: boolean = false) => {
+    // Éviter les appels concurrents
+    if (isLoadingDailyClimateRef.current) {
+      console.log('[INDEX] ⏭️ Chargement daily climate déjà en cours, skip');
+      return;
+    }
+
+    isLoadingDailyClimateRef.current = true;
+
+    try {
+      // Essayer de récupérer le climate complet avec insight
+      const climate = await getDailyClimateWithCache(forceRefresh);
+
+      if (climate) {
+        // Success: climate complet avec insight
+        setMoonPosition(climate.moon);
+        setDailyInsight(climate.insight);
+      } else {
+        // Fallback: API failed, utiliser seulement moonPosition
+        console.warn('[INDEX] ⚠️ Daily climate API failed, fallback sur moonPosition seul');
+        const position = await getMoonPositionWithCache(forceRefresh);
+        setMoonPosition(position);
+        setDailyInsight(null); // Pas d'insight
+      }
+    } catch (error) {
+      console.error('[INDEX] ❌ Erreur chargement daily climate:', error);
+      // Dernier fallback: essayer au moins de charger moonPosition
+      try {
+        const position = await getMoonPositionWithCache(forceRefresh);
+        setMoonPosition(position);
+        setDailyInsight(null);
+      } catch (fallbackError) {
+        console.error('[INDEX] ❌ Erreur fallback moonPosition:', fallbackError);
+      }
+    } finally {
+      isLoadingDailyClimateRef.current = false;
+    }
+  };
 
   const loadNextLunarReturn = async () => {
     setLoadingNext(true);
@@ -275,6 +370,14 @@ export default function HomeScreen() {
             </Text>
           )}
         </View>
+
+        {/* Salutation temporelle */}
+        {moonPosition && (
+          <Text style={styles.greeting}>{greeting}</Text>
+        )}
+
+        {/* Climat Lunaire du Jour - HERO CARD */}
+        {moonPosition && <DailyLunarClimate moonPosition={moonPosition} insight={dailyInsight} />}
 
         {/* Prochain retour lunaire */}
         <TouchableOpacity
@@ -556,6 +659,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     fontSize: 10,
     opacity: 0.7,
+  },
+  greeting: {
+    ...fonts.body,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 14,
+    fontWeight: '300',
+    marginBottom: spacing.md,
+    paddingLeft: spacing.lg,
   },
   button: {
     backgroundColor: colors.accent,

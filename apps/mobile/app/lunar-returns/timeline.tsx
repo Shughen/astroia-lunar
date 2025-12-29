@@ -14,6 +14,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -32,6 +33,7 @@ export default function LunarReturnsTimelineScreen() {
   const router = useRouter();
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [selectedItem, setSelectedItem] = useState<LunarReturn | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -40,12 +42,17 @@ export default function LunarReturnsTimelineScreen() {
     loadTimeline();
   }, []);
 
-  const loadTimeline = async () => {
-    setLoading(true);
+  const loadTimeline = async (isRefreshing: boolean = false) => {
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
       // Utiliser getRolling() au lieu de getYear() pour les 12 prochains retours
       const returns = await lunarReturns.getRolling();
-      
+
       // Trier par return_date asc et ajouter badges
       const now = new Date();
       const sortedReturns = returns
@@ -53,17 +60,17 @@ export default function LunarReturnsTimelineScreen() {
         .map((ret): TimelineItem => {
           const returnDate = new Date(ret.return_date);
           const diffDays = Math.floor((returnDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          
+
           let badgeType: BadgeType = 'upcoming';
           if (diffDays < 0) {
             badgeType = 'past';
           } else if (diffDays === 0) {
             badgeType = 'today';
           }
-          
+
           return { ...ret, badgeType };
         });
-      
+
       setItems(sortedReturns);
     } catch (error: any) {
       // Si 404, ne pas afficher d'erreur (liste vide est normale)
@@ -71,8 +78,16 @@ export default function LunarReturnsTimelineScreen() {
         handleApiError(error);
       }
     } finally {
-      setLoading(false);
+      if (isRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleRefresh = () => {
+    loadTimeline(true);
   };
 
   const handleGenerate = async () => {
@@ -200,6 +215,14 @@ export default function LunarReturnsTimelineScreen() {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmpty}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+            />
+          }
         />
       )}
 
