@@ -4,10 +4,26 @@ Utilisé quand EPHEMERIS_API_KEY n'est pas configurée et DEV_MOCK_EPHEMERIS=Tru
 """
 
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Import Swiss Ephemeris pour le calcul réel des Lunar Returns
+try:
+    from services.swiss_ephemeris import (
+        find_lunar_return,
+        get_moon_position,
+        get_sun_position,
+        datetime_to_julian_day,
+        get_moon_longitude,
+        get_sun_longitude,
+        degree_to_sign
+    )
+    SWISS_EPHEMERIS_AVAILABLE = True
+except ImportError:
+    SWISS_EPHEMERIS_AVAILABLE = False
+    logger.warning("⚠️ Swiss Ephemeris non disponible - utilisation du placeholder")
 
 
 # Mapping simple : mois de naissance → signe solaire (approximatif)
@@ -134,8 +150,11 @@ def generate_mock_lunar_return(
     """
     Génère une révolution lunaire mock minimal pour le mode DEV
     
+    Si Swiss Ephemeris est disponible, calcule le vrai Lunar Return.
+    Sinon, utilise un placeholder (15 du mois à 12:00).
+    
     Args:
-        natal_moon_degree: Degré natale de la Lune
+        natal_moon_degree: Degré natale de la Lune (dans le signe, 0-30)
         natal_moon_sign: Signe natale de la Lune
         target_month: Mois cible YYYY-MM
         birth_latitude: Latitude du lieu de naissance
@@ -145,32 +164,102 @@ def generate_mock_lunar_return(
     Returns:
         Structure similaire à l'API Ephemeris avec données minimales
     """
-    logger.warning(f"🎭 MODE MOCK DEV - Génération révolution lunaire fake pour {target_month}")
-    
-    # Date estimée (15 du mois)
     year, month = map(int, target_month.split("-"))
-    return_datetime = f"{target_month}-15T12:00:00"
     
-    # Ascendant approximatif (basé sur le mois)
-    ascendant_sign_index = month % len(_ASCENDANT_SIGNS)
-    ascendant_sign = _ASCENDANT_SIGNS[ascendant_sign_index]
+    # Calculer la longitude écliptique natale complète (0-360°)
+    # Si natal_moon_degree est déjà une longitude absolue (> 30), l'utiliser directement
+    # Sinon, calculer depuis le signe et le degré dans le signe
+    if natal_moon_degree is not None and natal_moon_degree > 30:
+        # C'est déjà une longitude absolue
+        natal_moon_longitude = natal_moon_degree % 360
+        logger.debug(f"Utilisation longitude absolue: {natal_moon_longitude:.2f}°")
+    else:
+        # Calculer depuis signe + degré dans le signe
+        sign_index = _MOON_SIGNS.index(natal_moon_sign) if natal_moon_sign in _MOON_SIGNS else 0
+        natal_moon_longitude = (sign_index * 30) + (natal_moon_degree or 0)
+        logger.debug(
+            f"Calcul longitude depuis signe: {natal_moon_sign} ({sign_index}) + "
+            f"degre={natal_moon_degree} = {natal_moon_longitude:.2f}°"
+        )
     
-    # Maison de la Lune (1-12)
-    moon_house = (month % 12) + 1
+    # Date de départ pour la recherche (milieu du mois)
+    search_start = datetime(year, month, 15, 12, 0, 0, tzinfo=timezone.utc)
     
-    return {
-        "return_datetime": return_datetime,
+    if SWISS_EPHEMERIS_AVAILABLE:
+        # Calcul réel du Lunar Return
+        logger.info(
+            f"🎭 MODE MOCK DEV - Calcul réel Lunar Return pour {target_month} "
+            f"(λ_natal={natal_moon_longitude:.2f}°)"
+        )
+        
+        return_dt = find_lunar_return(
+            natal_moon_longitude=natal_moon_longitude,
+            start_dt=search_start,
+            search_window_hours=48,
+            tolerance_seconds=60
+        )
+        
+        if return_dt is None:
+            # Fallback si la recherche échoue
+            logger.warning(
+                f"⚠️ Calcul Lunar Return échoué pour {target_month}, "
+                f"utilisation du placeholder"
+            )
+            return_dt = search_start
+        else:
+            logger.info(
+                f"✅ Lunar Return calculé: {return_dt.isoformat()}"
+            )
+        
+        # Calculer les positions à ce moment
+        moon_pos = get_moon_position(return_dt)
+        sun_pos = get_sun_position(return_dt)
+        
+        # Ascendant approximatif (basé sur l'heure)
+        ascendant_sign_index = return_dt.hour % len(_ASCENDANT_SIGNS)
+        ascendant_sign = _ASCENDANT_SIGNS[ascendant_sign_index]
+        
+        # Maison de la Lune (1-12, approximatif basé sur l'heure)
+        moon_house = (return_dt.hour % 12) + 1
+        
+        return_datetime_str = return_dt.isoformat()
+        
+    else:
+        # Fallback: placeholder (ancien comportement)
+        logger.warning(
+            f"🎭 MODE MOCK DEV - Placeholder (Swiss Ephemeris non disponible) "
+            f"pour {target_month}"
+        )
+        return_dt = search_start
+        return_datetime_str = f"{target_month}-15T12:00:00"
+        
+        # Ascendant approximatif (basé sur le mois)
+        ascendant_sign_index = month % len(_ASCENDANT_SIGNS)
+        ascendant_sign = _ASCENDANT_SIGNS[ascendant_sign_index]
+        
+        # Maison de la Lune (1-12)
+        moon_house = (month % 12) + 1
+        
+        moon_pos = None
+        sun_pos = None
+    
+    # Construire la réponse
+    result = {
+        "return_datetime": return_datetime_str,
         "ascendant": {
             "sign": ascendant_sign,
             "degree": 10.5
         },
         "moon": {
-            "sign": natal_moon_sign,  # Même signe que natal
-            "degree": natal_moon_degree,  # Même degré que natal
+            "sign": moon_pos.sign if moon_pos else natal_moon_sign,
+            "degree": moon_pos.degree if moon_pos else natal_moon_degree,
             "house": moon_house
         },
         "planets": {
-            "Moon": {"sign": natal_moon_sign, "degree": natal_moon_degree},
+            "Moon": {
+                "sign": moon_pos.sign if moon_pos else natal_moon_sign,
+                "degree": moon_pos.degree if moon_pos else natal_moon_degree
+            },
         },
         "houses": {
             "1": {"sign": ascendant_sign, "degree": 10.5},
@@ -184,4 +273,12 @@ def generate_mock_lunar_return(
             }
         ]
     }
+    
+    if sun_pos:
+        result["planets"]["Sun"] = {
+            "sign": sun_pos.sign,
+            "degree": sun_pos.degree
+        }
+    
+    return result
 
