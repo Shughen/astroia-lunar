@@ -329,18 +329,17 @@ async def generate_lunar_returns(
             f"période: {start_date.strftime('%Y-%m-%d')} à {end_date.strftime('%Y-%m-%d')}"
         )
 
-        # Supprimer les retours existants dans la période rolling pour éviter les doublons
+        # Supprimer TOUTES les révolutions lunaires de l'utilisateur avant de régénérer
+        # Cela garantit que les nouvelles dates variées remplacent les anciennes dates fixes
         try:
             delete_stmt = delete(LunarReturn).where(
-                LunarReturn.user_id == current_user.id,
-                LunarReturn.return_date >= start_date,
-                LunarReturn.return_date < end_date
+                LunarReturn.user_id == current_user.id
             )
             delete_result = await db.execute(delete_stmt)
             deleted_count = extract_result_rowcount(delete_result)
             if deleted_count is not None:
                 logger.info(
-                    f"[corr={correlation_id}] 🗑️  Suppression des retours existants dans la période rolling: "
+                    f"[corr={correlation_id}] 🗑️  Suppression de toutes les révolutions lunaires existantes: "
                     f"{deleted_count} retour(s) supprimé(s)"
                 )
             else:
