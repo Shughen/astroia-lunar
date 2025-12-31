@@ -51,7 +51,8 @@ export default function TimelineScreen() {
     try {
       setLoading(true);
       setError(false);
-      const data = await generateTimelineV2(getDayData, { daysBefore: 14, daysAfter: 14 });
+      // V1 : 7 jours uniquement (3 passés + aujourd'hui + 3 futurs)
+      const data = await generateTimelineV2(getDayData, { daysBefore: 3, daysAfter: 3 });
       setTimeline(data);
     } catch (err) {
       console.error('[Timeline] Error loading timeline:', err);
