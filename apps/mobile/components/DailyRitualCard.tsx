@@ -25,10 +25,42 @@ import { useRouter } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { useLunar } from '../contexts/LunarProvider';
 import { isFirstViewToday, markAsViewedToday } from '../services/ritualService';
-import { getTodayDateString } from '../utils/ritualHelpers';
+import { getTodayDateString, translatePhaseToFrench } from '../utils/ritualHelpers';
+import { calculateLunarDay } from '../utils/moonCalc';
 import { Skeleton } from './Skeleton';
 import { JournalEntryModal } from './JournalEntryModal';
+import { LunarCycleIndicator } from './LunarCycleIndicator';
 import { hasJournalEntry } from '../services/journalService';
+
+/**
+ * Formate le timestamp de cache en date/heure lisible
+ * Ex: "30 déc. 14h30" ou "Aujourd'hui 14h30"
+ */
+function formatCachedDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+
+  // Vérifier si c'est aujourd'hui
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  const hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const time = `${hours}h${minutes}`;
+
+  if (isToday) {
+    return `Aujourd'hui ${time}`;
+  }
+
+  // Sinon, afficher la date courte
+  const day = date.getDate();
+  const monthNames = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+  const month = monthNames[date.getMonth()];
+
+  return `${day} ${month}. ${time}`;
+}
 
 export function DailyRitualCard() {
   const { t, i18n } = useTranslation();
@@ -129,11 +161,15 @@ export function DailyRitualCard() {
   const vocActive = helpers.vocActive;
   const vocEndTime = helpers.vocEndTime;
 
-  // Texte phase + signe
+  // Texte phase + signe (traduit en français)
+  const phaseFr = translatePhaseToFrench(data.moon.phase);
   const phaseText =
     data.moon.sign !== 'Unknown'
-      ? `${data.moon.phase.toUpperCase()} EN ${data.moon.sign.toUpperCase()}`
-      : data.moon.phase.toUpperCase();
+      ? `${phaseFr.toUpperCase()} EN ${data.moon.sign.toUpperCase()}`
+      : phaseFr.toUpperCase();
+
+  // Calculer le jour du cycle lunaire
+  const currentLunarDay = calculateLunarDay();
 
   return (
     <Animated.View
@@ -156,6 +192,9 @@ export function DailyRitualCard() {
         {/* Phase + Sign */}
         <Text style={styles.phaseTitle}>{phaseText}</Text>
 
+        {/* Lunar Cycle Indicator */}
+        <LunarCycleIndicator currentLunarDay={currentLunarDay} />
+
         {/* Guidance */}
         <Text style={styles.guidance}>{guidance}</Text>
 
@@ -168,10 +207,22 @@ export function DailyRitualCard() {
           </View>
         )}
 
-        {/* Error indicator (données limitées) */}
-        {status.error && (
-          <View style={styles.errorBadge}>
-            <Text style={styles.errorText}>ℹ️ {status.source === 'local' ? 'Calcul local' : 'Cache'}</Text>
+        {/* Cache/Offline indicator */}
+        {status.cachedAt && status.source !== 'api' && (
+          <View style={styles.cacheBadge}>
+            <Text style={styles.cacheText}>
+              {status.source === 'local'
+                ? 'ℹ️ Connexion requise pour la mise à jour'
+                : `ℹ️ Dernière mise à jour : ${formatCachedDate(status.cachedAt)}`
+              }
+            </Text>
+          </View>
+        )}
+        {!status.cachedAt && status.source === 'local' && (
+          <View style={styles.cacheBadge}>
+            <Text style={styles.cacheText}>
+              ℹ️ Calcul local (connexion requise pour données complètes)
+            </Text>
           </View>
         )}
 
@@ -264,18 +315,19 @@ const styles = StyleSheet.create({
     ...fonts.bodySmall,
     color: colors.warning,
   },
-  errorBadge: {
-    backgroundColor: 'rgba(160, 160, 176, 0.1)',
+  cacheBadge: {
+    backgroundColor: 'rgba(160, 160, 176, 0.08)',
     borderWidth: 1,
-    borderColor: colors.textMuted,
+    borderColor: 'rgba(160, 160, 176, 0.2)',
     borderRadius: borderRadius.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.sm,
   },
-  errorText: {
+  cacheText: {
     ...fonts.caption,
     color: colors.textMuted,
+    fontSize: 12,
   },
   cta: {
     paddingVertical: spacing.sm,

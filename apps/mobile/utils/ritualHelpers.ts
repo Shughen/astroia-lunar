@@ -30,6 +30,24 @@ export function getPhaseKey(phase: MoonPhase): string {
 }
 
 /**
+ * Traduit la phase lunaire anglaise en français
+ * Mapping exact des 8 phases définies dans MoonPhase
+ */
+export function translatePhaseToFrench(phase: MoonPhase): string {
+  const translations: Record<MoonPhase, string> = {
+    'New Moon': 'Nouvelle Lune',
+    'Waxing Crescent': 'Premier Croissant',
+    'First Quarter': 'Premier Quartier',
+    'Waxing Gibbous': 'Lune Gibbeuse Croissante',
+    'Full Moon': 'Pleine Lune',
+    'Waning Gibbous': 'Lune Gibbeuse Décroissante',
+    'Last Quarter': 'Dernier Quartier',
+    'Waning Crescent': 'Dernier Croissant',
+  };
+  return translations[phase] || phase;
+}
+
+/**
  * Formate un timestamp ISO en heure locale (HH:mm)
  */
 export function formatTime(isoString: string): string {
