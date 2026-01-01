@@ -30,7 +30,7 @@ async def test_root_endpoint():
         assert response.status_code == 200
         data = response.json()
         
-        assert data["app"] == "Astroia Lunar API"
+        assert data["app"] == "Lunation API"
         assert data["status"] == "running"
         assert "docs" in data
 

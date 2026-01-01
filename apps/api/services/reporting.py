@@ -106,7 +106,7 @@ HTML_TEMPLATE = """
         </div>
         
         <div class="footer">
-            <p>Généré le {generated_at} par Astroia Lunar</p>
+            <p>Généré le {generated_at} par Lunation</p>
             <p>🌙 ⭐ ✨</p>
         </div>
     </div>

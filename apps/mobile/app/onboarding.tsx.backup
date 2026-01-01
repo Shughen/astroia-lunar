@@ -91,7 +91,7 @@ export default function OnboardingScreen() {
         {/* Step 1: Authentification */}
         {step === 1 && (
           <>
-            <Text style={styles.title}>🌙 Bienvenue sur Astroia Lunar</Text>
+            <Text style={styles.title}>🌙 Bienvenue sur Lunation</Text>
             <Text style={styles.subtitle}>
               Découvre tes révolutions lunaires mensuelles
             </Text>

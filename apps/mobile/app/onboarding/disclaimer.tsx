@@ -58,7 +58,7 @@ export default function DisclaimerScreen() {
 
           <View style={styles.content}>
             <Text style={styles.paragraph}>
-              Astroia Lunar est un outil de développement personnel et de
+              Lunation est un outil de développement personnel et de
               bien-être basé sur l'astrologie.
             </Text>
             <Text style={styles.paragraph}>

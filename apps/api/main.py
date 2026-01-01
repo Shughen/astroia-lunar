@@ -1,5 +1,5 @@
 """
-🌙 Astroia Lunar API - Point d'entrée principal
+🌙 Lunation API - Point d'entrée principal
 FastAPI backend pour calculs astrologiques et révolutions lunaires
 """
 
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     correlation_id = str(uuid.uuid4())
     
     # Startup
-    logger.info(f"[corr={correlation_id}] 🚀 Astroia Lunar API démarrage...")
+    logger.info(f"[corr={correlation_id}] 🚀 Lunation API démarrage...")
     logger.info(f"[corr={correlation_id}] 📊 Environment: {settings.APP_ENV}")
     logger.info(f"[corr={correlation_id}] 🔗 Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'local'}")
     
@@ -104,7 +104,7 @@ async def lifespan(app: FastAPI):
 
 # Initialisation FastAPI
 app = FastAPI(
-    title="Astroia Lunar API",
+    title="Lunation API",
     description="API pour calculs de révolutions lunaires et thèmes natals",
     version="1.0.0",
     docs_url="/docs",
@@ -137,7 +137,7 @@ app.include_router(reports.router, tags=["Reports"])
 async def root():
     """Health check"""
     return {
-        "app": "Astroia Lunar API",
+        "app": "Lunation API",
         "status": "running",
         "version": "1.0.0",
         "docs": "/docs"

@@ -34,7 +34,7 @@ export async function geocodePlace(placeName: string): Promise<GeocodeResult> {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'AstroiaLunar/1.0 (contact@astroia.app)',
+        'User-Agent': 'Lunation/1.0 (contact@astroia.app)',
       },
       signal: controller.signal,
     });

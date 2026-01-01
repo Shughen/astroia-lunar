@@ -59,7 +59,7 @@ EXPO_PUBLIC_DEV_USER_ID=1
 Quand le mode DEV_AUTH_BYPASS est actif, un label discret s'affiche sous le titre :
 
 ```
-🌙 Astroia Lunar
+🌙 Lunation
 Ton tableau de bord astrologique
 DEV AUTH BYPASS (user_id=1)
 ```
@@ -226,5 +226,5 @@ Après avoir suivi ces étapes :
 
 ---
 
-**Développé avec 🌙 par l'équipe Astroia**
+**Développé avec 🌙 par l'équipe Lunation**
 

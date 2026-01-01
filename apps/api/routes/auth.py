@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -108,18 +109,43 @@ async def resolve_dev_user(
 
         # Créer un nouvel utilisateur dev avec cet UUID
         logger.info(f"🆕 DEV_AUTH_BYPASS: création user avec dev_external_id={user_uuid}")
-        new_user = User(
-            email=f"dev+{str(user_uuid)[:8]}@local.dev",
-            hashed_password=hash_password("dev-password"),
-            dev_external_id=str(user_uuid),
-            is_active=True,
-            is_premium=False
-        )
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-        logger.info(f"✅ DEV_AUTH_BYPASS: user créé - id={new_user.id}, email={new_user.email}")
-        return new_user, "header_uuid_created"
+        try:
+            # Utiliser un hash pré-calculé pour éviter les problèmes avec bcrypt
+            # Hash de "dev-password" pré-calculé avec bcrypt (généré avec bcrypt.gensalt())
+            dev_password_hash = "$2b$12$A2rj/gsY/fAzI5GY9TCQFOByzS/J8TIL3ElOyFSAAxHzVdg.OluOq"
+            
+            new_user = User(
+                email=f"dev+{str(user_uuid)[:8]}@local.dev",
+                hashed_password=dev_password_hash,
+                dev_external_id=str(user_uuid),
+                is_active=True,
+                is_premium=False
+            )
+            db.add(new_user)
+            await db.commit()
+            await db.refresh(new_user)
+            logger.info(f"✅ DEV_AUTH_BYPASS: user créé - id={new_user.id}, email={new_user.email}")
+            return new_user, "header_uuid_created"
+        except IntegrityError as e:
+            # L'utilisateur existe peut-être déjà (email ou dev_external_id en double)
+            await db.rollback()
+            logger.warning(f"⚠️ DEV_AUTH_BYPASS: échec création user avec dev_external_id={user_uuid}, erreur: {e}")
+            # Réessayer de chercher par dev_external_id (peut-être créé entre temps)
+            result = await db.execute(
+                select(User).where(User.dev_external_id == str(user_uuid))
+            )
+            user = result.scalar_one_or_none()
+            if user:
+                logger.info(f"✅ DEV_AUTH_BYPASS: user trouvé après rollback via dev_external_id={user_uuid}")
+                return user, "header_uuid"
+            # Si toujours pas trouvé, essayer par email généré
+            email = f"dev+{str(user_uuid)[:8]}@local.dev"
+            result = await db.execute(select(User).where(User.email == email))
+            user = result.scalar_one_or_none()
+            if user:
+                logger.info(f"✅ DEV_AUTH_BYPASS: user trouvé via email={email} après échec création")
+                return user, "header_uuid_email_fallback"
+            # Si toujours pas trouvé, continuer vers les autres méthodes de résolution
 
     except (ValueError, TypeError):
         # Pas un UUID valide, continuer
@@ -152,7 +178,54 @@ async def resolve_dev_user(
         logger.info(f"✅ DEV_AUTH_BYPASS: user trouvé via email={user_identifier}")
         return user, "header_email"
 
-    # Échec: aucune résolution possible
+    # Tentative 4: Fallback vers dev@local.dev (utilisateur par défaut pour DEV)
+    logger.info("📥 DEV_AUTH_BYPASS: pas de header/env, fallback vers dev@local.dev")
+    result = await db.execute(select(User).where(User.email == "dev@local.dev"))
+    dev_user = result.scalar_one_or_none()
+
+    if dev_user:
+        logger.info(f"✅ DEV_AUTH_BYPASS resolved: user_id={dev_user.id}, method=dev_default")
+        return dev_user, "dev_default"
+
+    # Créer le user dev@local.dev si il n'existe pas
+    logger.info("🆕 DEV_AUTH_BYPASS: création user dev@local.dev")
+    try:
+        # Utiliser un hash pré-calculé pour éviter les problèmes avec bcrypt
+        # Hash de "dev-password" pré-calculé avec bcrypt (généré avec bcrypt.gensalt())
+        dev_password_hash = "$2b$12$A2rj/gsY/fAzI5GY9TCQFOByzS/J8TIL3ElOyFSAAxHzVdg.OluOq"
+        
+        new_dev_user = User(
+            email="dev@local.dev",
+            hashed_password=dev_password_hash,
+            is_active=True,
+            is_premium=False
+        )
+        db.add(new_dev_user)
+        await db.commit()
+        await db.refresh(new_dev_user)
+        logger.info(f"✅ DEV_AUTH_BYPASS: user dev@local.dev créé - id={new_dev_user.id}")
+        return new_dev_user, "dev_default_created"
+    except IntegrityError:
+        # L'utilisateur a peut-être été créé entre temps
+        await db.rollback()
+        result = await db.execute(select(User).where(User.email == "dev@local.dev"))
+        dev_user = result.scalar_one_or_none()
+        if dev_user:
+            logger.info(f"✅ DEV_AUTH_BYPASS: user dev@local.dev trouvé après rollback - id={dev_user.id}")
+            return dev_user, "dev_default"
+    except Exception as e:
+        # Autres erreurs (comme bcrypt)
+        await db.rollback()
+        logger.warning(f"⚠️ DEV_AUTH_BYPASS: erreur lors de la création de dev@local.dev: {e}")
+        # Réessayer de chercher l'utilisateur
+        result = await db.execute(select(User).where(User.email == "dev@local.dev"))
+        dev_user = result.scalar_one_or_none()
+        if dev_user:
+            logger.info(f"✅ DEV_AUTH_BYPASS: user dev@local.dev trouvé après erreur - id={dev_user.id}")
+            return dev_user, "dev_default"
+
+    # Échec: aucune résolution possible (ne devrait jamais arriver si dev@local.dev fonctionne)
+    logger.error(f"❌ DEV_AUTH_BYPASS: impossible de résoudre user avec identifier={user_identifier}")
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=f"DEV_AUTH_BYPASS: impossible de résoudre user avec identifier={user_identifier}"
@@ -202,17 +275,30 @@ async def get_current_user(
 
             # Créer le user dev@local.dev
             logger.info("🆕 DEV_AUTH_BYPASS: création user dev@local.dev")
-            dev_user = User(
-                email="dev@local.dev",
-                hashed_password=hash_password("dev-password"),
-                is_active=True,
-                is_premium=False
-            )
-            db.add(dev_user)
-            await db.commit()
-            await db.refresh(dev_user)
-            logger.info(f"✅ DEV_AUTH_BYPASS created: user_id={dev_user.id}, method=dev_default")
-            return dev_user
+            try:
+                # Utiliser un hash pré-calculé pour éviter les problèmes avec bcrypt
+                # Hash de "dev-password" pré-calculé avec bcrypt (généré avec bcrypt.gensalt())
+                dev_password_hash = "$2b$12$A2rj/gsY/fAzI5GY9TCQFOByzS/J8TIL3ElOyFSAAxHzVdg.OluOq"
+                dev_user = User(
+                    email="dev@local.dev",
+                    hashed_password=dev_password_hash,
+                    is_active=True,
+                    is_premium=False
+                )
+                db.add(dev_user)
+                await db.commit()
+                await db.refresh(dev_user)
+                logger.info(f"✅ DEV_AUTH_BYPASS created: user_id={dev_user.id}, method=dev_default")
+                return dev_user
+            except IntegrityError:
+                # L'utilisateur a peut-être été créé entre temps
+                await db.rollback()
+                result = await db.execute(select(User).where(User.email == "dev@local.dev"))
+                dev_user = result.scalar_one_or_none()
+                if dev_user:
+                    logger.info(f"✅ DEV_AUTH_BYPASS: user dev@local.dev trouvé après rollback - id={dev_user.id}")
+                    return dev_user
+                raise
 
         # Si on a un user_identifier, résoudre via resolve_dev_user()
         if user_identifier:

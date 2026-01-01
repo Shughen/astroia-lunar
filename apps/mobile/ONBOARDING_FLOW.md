@@ -1,4 +1,4 @@
-# Onboarding Flow - Astroia Lunar
+# Onboarding Flow - Lunation
 
 ## Vue d'ensemble
 
@@ -12,7 +12,7 @@ Le flow d'onboarding guide l'utilisateur à travers 6 étapes avant d'accéder �
 - **Objectif**: Premier écran one-time, présentation rapide
 - **Contenu**:
   - Emoji 🌙
-  - "Bienvenue sur Astroia Lunar"
+  - "Bienvenue sur Lunation"
   - Bouton "Continuer"
 - **Action**:
   ```typescript
@@ -99,7 +99,7 @@ Le flow d'onboarding guide l'utilisateur à travers 6 étapes avant d'accéder �
 **Fichier**: `app/onboarding/index.tsx`
 **Dernière étape**
 
-- **Objectif**: Présenter les 4 valeurs clés d'Astroia Lunar
+- **Objectif**: Présenter les 4 valeurs clés de Lunation
 - **Slides**:
   1. 🌙 Bienvenue - Révolutions Lunaires
   2. ⭐ Thème natal précis
@@ -198,7 +198,7 @@ await AsyncStorage.multiRemove([
 ]);
 ```
 
-## Adaptation pour Astroia Lunar
+## Adaptation pour Lunation
 
 Le flow a été adapté depuis `astroia-app` avec les changements suivants:
 

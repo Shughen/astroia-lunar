@@ -1,6 +1,6 @@
 /**
  * Onboarding slides - Value proposition
- * Adapté pour Astroia Lunar (Révolutions Lunaires prioritaires)
+ * Adapté pour Lunation (Révolutions Lunaires prioritaires)
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -25,7 +25,7 @@ const STEPS = [
   {
     id: 'welcome',
     emoji: '🌙',
-    title: 'Bienvenue sur Astroia Lunar',
+    title: 'Bienvenue sur Lunation',
     subtitle: 'Révolutions Lunaires',
     description: 'Découvre tes révolutions lunaires mensuelles et comprends leur influence sur ta vie.',
   },

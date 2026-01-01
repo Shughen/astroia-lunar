@@ -300,11 +300,6 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>🌙 Rituel Lunaire</Text>
-          {isDevAuthBypassActive() && (
-            <Text style={styles.devBypassLabel}>
-              DEV AUTH BYPASS (user_id={getDevUserId()})
-            </Text>
-          )}
         </View>
 
         {/* Carte Mode Hors Connexion (calme, non anxiogène) */}
@@ -321,28 +316,7 @@ export default function HomeScreen() {
         {/* Carte Rituel Quotidien (HERO) */}
         <DailyRitualCard />
 
-        {/* Résumé Cycle Lunaire du mois (3 lignes max) */}
-        {currentLunarReturn && (
-          <View style={styles.cycleSummary}>
-            <Text style={styles.cycleSummaryTitle}>
-              Ton cycle lunaire • {new Date(currentLunarReturn.return_date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-            </Text>
-            {currentLunarReturn.moon_sign && (
-              <Text style={styles.cycleSummaryDetails}>
-                Lune en {currentLunarReturn.moon_sign}
-                {currentLunarReturn.lunar_ascendant && ` • Ascendant ${currentLunarReturn.lunar_ascendant}`}
-              </Text>
-            )}
-            <TouchableOpacity
-              onPress={() => router.push('/lunar/report')}
-              style={styles.cycleSummaryLink}
-            >
-              <Text style={styles.cycleSummaryLinkText}>→ Voir le rapport mensuel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Menu principal (V1 : 4 cards, 2×2 grid) */}
+        {/* Menu principal MVP : Journal + Réglages uniquement */}
         <View style={styles.grid}>
           <TouchableOpacity
             style={styles.menuCard}
@@ -354,63 +328,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.menuCard, !isOnline && styles.menuCardDisabled]}
-            onPress={() => {
-              if (!isOnline) {
-                Alert.alert('Hors ligne', 'Cette fonctionnalité nécessite une connexion Internet.');
-                return;
-              }
-              router.push('/timeline');
-            }}
-            disabled={!isOnline}
-          >
-            <Text style={styles.menuEmoji}>🌙</Text>
-            <Text style={styles.menuTitle}>Timeline</Text>
-            <Text style={styles.menuDesc}>Cette semaine lunaire</Text>
-            {!isOnline && <Text style={styles.offlineBadge}>Hors ligne</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.menuCard, !isOnline && styles.menuCardDisabled]}
-            onPress={() => {
-              if (!isOnline) {
-                Alert.alert('Hors ligne', 'Cette fonctionnalité nécessite une connexion Internet.');
-                return;
-              }
-              router.push('/lunar/voc');
-            }}
-            disabled={!isOnline}
-          >
-            <Text style={styles.menuEmoji}>🌑</Text>
-            <Text style={styles.menuTitle}>Lune en transition</Text>
-            <Text style={styles.menuDesc}>Void of Course actuel</Text>
-            {!isOnline && <Text style={styles.offlineBadge}>Hors ligne</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.menuCard, !isOnline && styles.menuCardDisabled]}
-            onPress={() => {
-              if (!isOnline) {
-                Alert.alert('Hors ligne', 'Cette fonctionnalité nécessite une connexion Internet.');
-                return;
-              }
-              router.push('/natal-chart');
-            }}
-            disabled={!isOnline}
-          >
-            <Text style={styles.menuEmoji}>⭐</Text>
-            <Text style={styles.menuTitle}>Thème natal</Text>
-            <Text style={styles.menuDesc}>Mon ciel de naissance</Text>
-            {!isOnline && <Text style={styles.offlineBadge}>Hors ligne</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={styles.menuCard}
             onPress={() => router.push('/settings')}
           >
             <Text style={styles.menuEmoji}>⚙️</Text>
             <Text style={styles.menuTitle}>Réglages</Text>
-            <Text style={styles.menuDesc}>Profil et paramètres</Text>
+            <Text style={styles.menuDesc}>Infos et paramètres</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -451,14 +374,6 @@ const styles = StyleSheet.create({
     ...fonts.body,
     color: colors.textMuted,
     textAlign: 'center',
-  },
-  devBypassLabel: {
-    ...fonts.bodySmall,
-    color: colors.accent,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    fontSize: 10,
-    opacity: 0.7,
   },
   button: {
     backgroundColor: colors.accent,

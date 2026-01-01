@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-# Script zsh pour récupérer un JWT depuis l'API Astroia Lunar
+# Script zsh pour récupérer un JWT depuis l'API Lunation
 # Usage:
 #   ./scripts/get_token.sh email password
 # Exemple:

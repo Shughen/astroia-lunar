@@ -1,4 +1,4 @@
-# 📱 Astroia Lunar - Application Mobile V1
+# 📱 Lunation - Application Mobile V1
 
 **Version:** 1.0.0  
 **Framework:** Expo SDK 54 + React Native  
@@ -509,7 +509,7 @@ En mode DEV_AUTH_BYPASS :
 
 ## 🎉 Conclusion
 
-L'application mobile Astroia Lunar V1 est **complète et opérationnelle** avec :
+L'application mobile Lunation V1 est **complète et opérationnelle** avec :
 - ✅ 8 écrans navigables
 - ✅ 5 composants réutilisables
 - ✅ 5 stores Zustand avec cache
@@ -522,5 +522,5 @@ L'application mobile Astroia Lunar V1 est **complète et opérationnelle** avec 
 
 ---
 
-**Développé avec 🌙 et ⭐ par l'équipe Astroia**
+**Développé avec 🌙 et ⭐ par l'équipe Lunation**
 

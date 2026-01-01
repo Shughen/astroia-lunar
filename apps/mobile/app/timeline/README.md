@@ -1,6 +1,6 @@
 # Timeline Lunaire
 
-Vision continue du temps lunaire pour Astroia Lunar.
+Vision continue du temps lunaire pour Lunation.
 
 ## Objectif
 

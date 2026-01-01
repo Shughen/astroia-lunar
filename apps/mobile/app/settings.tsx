@@ -195,7 +195,7 @@ export default function SettingsScreen() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Astroia Lunar MVP v1.4</Text>
+        <Text style={styles.footerText}>Lunation MVP v1.4</Text>
         <Text style={styles.footerText}>Phase 1.4 : Notifications Push</Text>
       </View>
     </ScrollView>

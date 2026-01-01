@@ -1,8 +1,8 @@
 {
   "onboarding": {
     "welcome": {
-      "title": "Welcome to Astroia Lunar",
-      "body": "Astroia tracks your lunar returns — a personal 28-day cycle based on your birth chart. No daily notifications, no anxious predictions.",
+      "title": "Welcome to Lunation",
+      "body": "Lunation tracks your lunar returns — a personal 28-day cycle based on your birth chart. No daily notifications, no anxious predictions.",
       "cta": "Get Started"
     },
     "profile": {
@@ -18,13 +18,13 @@
     },
     "consent": {
       "title": "Your Data Privacy",
-      "body": "Astroia Lunar stores your astrological information locally on your device. No personal data is sold or transmitted to third parties.",
+      "body": "Lunation stores your astrological information locally on your device. No personal data is sold or transmitted to third parties.",
       "checkbox": "I accept the privacy policy",
       "cta": "Accept and Continue"
     },
     "disclaimer": {
       "title": "Disclaimer",
-      "body": "Astroia provides monthly symbolic analyses. This content does not replace medical, legal, or professional advice.",
+      "body": "Lunation provides monthly symbolic analyses. This content does not replace medical, legal, or professional advice.",
       "checkbox": "I understand",
       "cta": "Start My First Cycle"
     },
@@ -154,21 +154,36 @@
     }
   },
   "journal": {
-    "title": "Cycle Journal",
-    "weekLabel": "Week {weekNumber}",
-    "placeholder": "Record your observations (50 characters max)",
-    "charCount": "{count}/50",
-    "saved": "Saved",
-    "empty": "No note for this week"
+    "title": "Lunar Journal",
+    "cycleJournal": {
+      "title": "Cycle Journal",
+      "weekLabel": "Week {weekNumber}",
+      "placeholder": "Record your observations (50 characters max)",
+      "charCount": "{count}/50",
+      "saved": "Saved",
+      "empty": "No note for this week"
+    },
+    "entryTitle": "How are you feeling today?",
+    "placeholder": "Note your feelings, observations, what stands out today...",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "saved": "Entry saved",
+    "deleted": "Entry deleted",
+    "moonContext": "{{phase}} in {{sign}}",
+    "emptyState": "No note for today",
+    "deleteConfirm": "Delete this entry?",
+    "characterCount": "{{count}} characters",
+    "maxLength": "Maximum {{max}} characters"
   },
   "disclaimers": {
     "medical": {
       "title": "Medical Disclaimer",
-      "body": "Astroia Lunar provides monthly symbolic analyses based on astronomical calculations and classical astrological interpretations.\n\nThis content is provided for informational purposes only and does not constitute medical, psychological, legal, or financial advice.\n\nIf you have concerns about your physical or mental health, consult a qualified healthcare professional. Astroia content should never replace medical diagnosis or treatment."
+      "body": "Lunation provides monthly symbolic analyses based on astronomical calculations and classical astrological interpretations.\n\nThis content is provided for informational purposes only and does not constitute medical, psychological, legal, or financial advice.\n\nIf you have concerns about your physical or mental health, consult a qualified healthcare professional. Lunation content should never replace medical diagnosis or treatment."
     },
     "rgpd": {
       "title": "Privacy Policy",
-      "body": "Astroia Lunar stores your birth data and preferences locally on your device.\n\nNo personal data is transmitted to third parties for commercial purposes.\n\nYou can export or delete your data at any time from Settings."
+      "body": "Lunation stores your birth data and preferences locally on your device.\n\nNo personal data is transmitted to third parties for commercial purposes.\n\nYou can export or delete your data at any time from Settings."
     }
   },
   "common": {
@@ -202,21 +217,6 @@
     "cta": "View lunar climate",
     "journalPrompt": "Note your feelings",
     "journalEdited": "Review / Edit"
-  },
-  "journal": {
-    "title": "Lunar Journal",
-    "entryTitle": "How are you feeling today?",
-    "placeholder": "Note your feelings, observations, what stands out today...",
-    "save": "Save",
-    "delete": "Delete",
-    "cancel": "Cancel",
-    "saved": "Entry saved",
-    "deleted": "Entry deleted",
-    "moonContext": "{{phase}} in {{sign}}",
-    "emptyState": "No note for today",
-    "deleteConfirm": "Delete this entry?",
-    "characterCount": "{{count}} characters",
-    "maxLength": "Maximum {{max}} characters"
   },
   "timeline": {
     "title": "Lunar Timeline",

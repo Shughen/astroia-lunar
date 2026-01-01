@@ -141,7 +141,7 @@ async def test_database_connection():
 async def main():
     """Exécute tous les tests"""
     print("=" * 50)
-    print("🧪 TESTS - Interprétations Natales Astroia")
+    print("🧪 TESTS - Interprétations Natales Lunation")
     print("=" * 50)
 
     results = []

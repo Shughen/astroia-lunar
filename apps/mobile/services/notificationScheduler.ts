@@ -60,7 +60,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     // Android : configurer channel
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'Astroia Notifications',
+        name: 'Lunation Notifications',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#8B7BF7',

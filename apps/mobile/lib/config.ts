@@ -18,7 +18,7 @@ export const FEATURES = {
 
 // App Metadata
 export const APP_INFO = {
-  NAME: 'Astroia Lunar',
+  NAME: 'Lunation',
   VERSION: Constants.expoConfig?.version || '1.0.0',
   BUILD_NUMBER: Constants.expoConfig?.extra?.buildNumber || '1',
 } as const;

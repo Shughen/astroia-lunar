@@ -42,21 +42,19 @@ export default function WelcomeScreen() {
           <Text style={styles.emoji}>🌙</Text>
         </View>
 
-        {/* Titre */}
-        <Text style={styles.title}>Bienvenue sur Astroia Lunar</Text>
-        
-        {/* Sous-titre */}
-        <Text style={styles.subtitle}>
-          Découvre tes révolutions lunaires mensuelles et explore ton thème astrologique
+        {/* Message simple */}
+        <Text style={styles.message}>
+          Lunation est un rituel lunaire quotidien.{'\n\n'}
+          Chaque jour, découvre la phase de la lune et prends un moment pour écrire, si tu le souhaites.
         </Text>
 
-        {/* Bouton Continuer */}
+        {/* Bouton Commencer */}
         <TouchableOpacity
           style={styles.button}
           onPress={handleContinue}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Continuer</Text>
+          <Text style={styles.buttonText}>Commencer</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
@@ -92,19 +90,14 @@ const styles = StyleSheet.create({
   emoji: {
     fontSize: 64,
   },
-  title: {
-    ...fonts.h1,
+  message: {
+    ...fonts.body,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  subtitle: {
-    ...fonts.body,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
     marginBottom: spacing.xxl,
     paddingHorizontal: spacing.md,
+    fontSize: fonts.sizes.md,
   },
   button: {
     backgroundColor: colors.accent,

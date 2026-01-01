@@ -1,5 +1,5 @@
 /**
- * Design System Astroia Lunar
+ * Design System Lunation
  * Couleurs, typographies, espacements
  */
 

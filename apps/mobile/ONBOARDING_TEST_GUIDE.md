@@ -30,7 +30,7 @@ clearChart();
 ### Étapes
 
 1. **Lancer l'app** → Devrait rediriger vers `/welcome`
-   - ✅ Écran "Bienvenue sur Astroia Lunar" visible
+   - ✅ Écran "Bienvenue sur Lunation" visible
    - ✅ Bouton "Continuer" présent
 
 2. **Cliquer "Continuer"** → Redirection `/onboarding/profile-setup`
@@ -77,7 +77,7 @@ clearChart();
    - ✅ Redirection vers Home
 
 10. **Vérifier Home**
-    - ✅ Titre "🌙 Astroia Lunar"
+    - ✅ Titre "🌙 Lunation"
     - ✅ Badge DEV_AUTH_BYPASS visible
     - ✅ Natal chart disponible dans store
 

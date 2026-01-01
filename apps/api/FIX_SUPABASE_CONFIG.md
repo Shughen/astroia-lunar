@@ -107,7 +107,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process
 INFO:     Started server process
 INFO:     Waiting for application startup.
-🚀 Astroia Lunar API démarrage...
+🚀 Lunation API démarrage...
 ```
 
 ### 4. Test curl de l'API

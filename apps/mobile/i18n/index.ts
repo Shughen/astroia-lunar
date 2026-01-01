@@ -1,5 +1,5 @@
 /**
- * i18n configuration for Astroia Lunar
+ * i18n configuration for Lunation
  *
  * Initializes i18next with French and English translations.
  * Default language: French (fr)

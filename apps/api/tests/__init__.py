@@ -1,4 +1,4 @@
 """
-Tests unitaires pour Astroia Lunar API
+Tests unitaires pour Lunation API
 """
 

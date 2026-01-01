@@ -1,8 +1,8 @@
 {
   "onboarding": {
     "welcome": {
-      "title": "Bienvenue sur Astroia Lunar",
-      "body": "Astroia suit vos révolutions lunaires — un cycle personnel de 28 jours basé sur votre thème natal. Pas de notifications quotidiennes, pas de prédictions anxiogènes.",
+      "title": "Bienvenue sur Lunation",
+      "body": "Lunation suit vos révolutions lunaires — un cycle personnel de 28 jours basé sur votre thème natal. Pas de notifications quotidiennes, pas de prédictions anxiogènes.",
       "cta": "Commencer"
     },
     "profile": {
@@ -18,13 +18,13 @@
     },
     "consent": {
       "title": "Respect de vos données",
-      "body": "Astroia Lunar stocke vos informations astrologiques localement sur votre appareil. Aucune donnée personnelle n'est vendue ou transmise à des tiers.",
+      "body": "Lunation stocke vos informations astrologiques localement sur votre appareil. Aucune donnée personnelle n'est vendue ou transmise à des tiers.",
       "checkbox": "J'accepte la politique de confidentialité",
       "cta": "Accepter et continuer"
     },
     "disclaimer": {
       "title": "Avertissement",
-      "body": "Astroia propose des analyses symboliques mensuelles. Ce contenu ne remplace en aucun cas un avis médical, juridique ou professionnel.",
+      "body": "Lunation propose des analyses symboliques mensuelles. Ce contenu ne remplace en aucun cas un avis médical, juridique ou professionnel.",
       "checkbox": "J'ai compris",
       "cta": "Commencer mon premier cycle"
     },
@@ -154,21 +154,46 @@
     }
   },
   "journal": {
-    "title": "Journal de Cycle",
-    "weekLabel": "Semaine {weekNumber}",
-    "placeholder": "Notez vos observations (50 caractères max)",
-    "charCount": "{count}/50",
-    "saved": "Sauvegardé",
-    "empty": "Aucune note pour cette semaine"
+    "title": "Journal Lunaire",
+    "cycleJournal": {
+      "title": "Journal de Cycle",
+      "weekLabel": "Semaine {weekNumber}",
+      "placeholder": "Notez vos observations (50 caractères max)",
+      "charCount": "{count}/50",
+      "saved": "Sauvegardé",
+      "empty": "Aucune note pour cette semaine"
+    },
+    "entryTitle": "Comment vous sentez-vous aujourd'hui ?",
+    "placeholder": "Notez votre ressenti, vos observations, ce qui vous marque aujourd'hui...",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "saved": "Entrée enregistrée",
+    "deleted": "Entrée supprimée",
+    "moonContext": "{{phase}} en {{sign}}",
+    "emptyState": "Aucune note pour aujourd'hui",
+    "deleteConfirm": "Supprimer cette entrée ?",
+    "characterCount": "{{count}} caractères",
+    "maxLength": "Maximum {{max}} caractères",
+    "prompts": {
+      "new_moon": "Quelles intentions douces as-tu envie de poser aujourd'hui, même toutes petites ?",
+      "waxing_crescent": "Qu'est-ce qui commence à prendre forme en toi, sans être encore très clair ?",
+      "first_quarter": "Y a-t-il quelque chose que tu pourrais ajuster légèrement, pour te sentir plus alignée ?",
+      "waxing_gibbous": "Qu'est-ce qui est en train de mûrir dans ta vie, même discrètement ?",
+      "full_moon": "Qu'est-ce qui se révèle en ce moment, en toi ou autour de toi ?",
+      "waning_gibbous": "Qu'est-ce que tu as envie de reconnaître ou d'honorer, sans forcément le partager ?",
+      "last_quarter": "Y a-t-il quelque chose que tu pourrais relâcher, même partiellement ?",
+      "waning_crescent": "De quoi aurais-tu besoin pour te reposer un peu plus, à ta manière ?"
+    }
   },
   "disclaimers": {
     "medical": {
       "title": "Avertissement médical",
-      "body": "Astroia Lunar propose des analyses symboliques mensuelles basées sur des calculs astronomiques et des interprétations astrologiques classiques.\n\nCe contenu est fourni à titre informatif et ne constitue en aucun cas un avis médical, psychologique, juridique ou financier.\n\nEn cas de doute sur votre santé physique ou mentale, consultez un professionnel de santé qualifié. Les contenus d'Astroia ne doivent jamais remplacer un diagnostic ou un traitement médical."
+      "body": "Lunation propose des analyses symboliques mensuelles basées sur des calculs astronomiques et des interprétations astrologiques classiques.\n\nCe contenu est fourni à titre informatif et ne constitue en aucun cas un avis médical, psychologique, juridique ou financier.\n\nEn cas de doute sur votre santé physique ou mentale, consultez un professionnel de santé qualifié. Les contenus de Lunation ne doivent jamais remplacer un diagnostic ou un traitement médical."
     },
     "rgpd": {
       "title": "Politique de confidentialité",
-      "body": "Astroia Lunar stocke vos données de naissance et vos préférences localement sur votre appareil.\n\nAucune donnée personnelle n'est transmise à des tiers à des fins commerciales.\n\nVous pouvez à tout moment exporter ou supprimer vos données depuis les Paramètres."
+      "body": "Lunation stocke vos données de naissance et vos préférences localement sur votre appareil.\n\nAucune donnée personnelle n'est transmise à des tiers à des fins commerciales.\n\nVous pouvez à tout moment exporter ou supprimer vos données depuis les Paramètres."
     }
   },
   "common": {
@@ -202,31 +227,6 @@
     "cta": "Voir le climat lunaire",
     "journalPrompt": "Noter mon ressenti",
     "journalEdited": "Relire / Modifier"
-  },
-  "journal": {
-    "title": "Journal Lunaire",
-    "entryTitle": "Comment vous sentez-vous aujourd'hui ?",
-    "placeholder": "Notez votre ressenti, vos observations, ce qui vous marque aujourd'hui...",
-    "save": "Enregistrer",
-    "delete": "Supprimer",
-    "cancel": "Annuler",
-    "saved": "Entrée enregistrée",
-    "deleted": "Entrée supprimée",
-    "moonContext": "{{phase}} en {{sign}}",
-    "emptyState": "Aucune note pour aujourd'hui",
-    "deleteConfirm": "Supprimer cette entrée ?",
-    "characterCount": "{{count}} caractères",
-    "maxLength": "Maximum {{max}} caractères",
-    "prompts": {
-      "new_moon": "Quelles intentions douces as-tu envie de poser aujourd'hui, même toutes petites ?",
-      "waxing_crescent": "Qu'est-ce qui commence à prendre forme en toi, sans être encore très clair ?",
-      "first_quarter": "Y a-t-il quelque chose que tu pourrais ajuster légèrement, pour te sentir plus alignée ?",
-      "waxing_gibbous": "Qu'est-ce qui est en train de mûrir dans ta vie, même discrètement ?",
-      "full_moon": "Qu'est-ce qui se révèle en ce moment, en toi ou autour de toi ?",
-      "waning_gibbous": "Qu'est-ce que tu as envie de reconnaître ou d'honorer, sans forcément le partager ?",
-      "last_quarter": "Y a-t-il quelque chose que tu pourrais relâcher, même partiellement ?",
-      "waning_crescent": "De quoi aurais-tu besoin pour te reposer un peu plus, à ta manière ?"
-    }
   },
   "timeline": {
     "title": "Timeline Lunaire",

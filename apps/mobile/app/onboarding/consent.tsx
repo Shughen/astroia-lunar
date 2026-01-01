@@ -53,7 +53,7 @@ export default function ConsentScreen() {
         >
           <Text style={styles.title}>Données personnelles</Text>
           <Text style={styles.subtitle}>
-            Astroia Lunar respecte ta vie privée
+            Lunation respecte ta vie privée
           </Text>
 
           <View style={styles.content}>

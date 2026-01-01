@@ -173,7 +173,7 @@ export default function ProfileSetupScreen() {
             {/* Title */}
             <Text style={styles.title}>Créons ton profil</Text>
             <Text style={styles.subtitle}>
-              Ces informations nous permettront de personnaliser ton expérience Astroia Lunar
+              Ces informations nous permettront de personnaliser ton expérience Lunation
             </Text>
 
             {/* Form */}

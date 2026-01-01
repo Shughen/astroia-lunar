@@ -1,4 +1,4 @@
-# Architecture - Astroia Lunar Mobile App
+# Architecture - Lunation Mobile App
 
 ## Vue d'ensemble
 

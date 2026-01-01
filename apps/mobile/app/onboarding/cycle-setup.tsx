@@ -53,7 +53,7 @@ export default function CycleSetupScreen() {
           <View style={styles.content}>
             <Text style={styles.emoji}>📅</Text>
             <Text style={styles.paragraph}>
-              Astroia Lunar se concentre principalement sur tes{' '}
+              Lunation se concentre principalement sur tes{' '}
               <Text style={styles.bold}>révolutions lunaires</Text>.
             </Text>
             <Text style={styles.paragraph}>

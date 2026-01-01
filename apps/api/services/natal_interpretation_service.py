@@ -12,7 +12,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 # Version du prompt (utilisé pour le cache)
-# v2 = prompt Astroia moderne avec micro-rituel, aspects orb <=3°
+# v2 = prompt Lunation moderne avec micro-rituel, aspects orb <=3°
 # v3 = prompt senior astrologer, aspects majeurs orb <=6°, sans micro-rituel
 # Configurable via .env: NATAL_INTERPRETATION_VERSION=3
 PROMPT_VERSION = settings.NATAL_INTERPRETATION_VERSION
@@ -150,7 +150,7 @@ def build_interpretation_prompt_v2(
     chart_payload: ChartPayload
 ) -> str:
     """
-    Construit le prompt v2 avec le nouveau template Astroia
+    Construit le prompt v2 avec le nouveau template Lunation
 
     Template:
     # {emoji} {Sujet} en {Signe}
@@ -228,7 +228,7 @@ def build_interpretation_prompt_v2(
     aspect_mention = " + Aspect" if aspect_desc else ""
     aspect_integration = ". Mention subtile de l'aspect si pertinent." if aspect_desc else ""
 
-    prompt = f"""Tu es un·e astrologue moderne pour l'app Astroia. Ton rôle : éclairer, pas prédire. Ton style : concret, chaleureux, jamais mystique.
+    prompt = f"""Tu es un·e astrologue moderne pour l'app Lunation. Ton rôle : éclairer, pas prédire. Ton style : concret, chaleureux, jamais mystique.
 
 DONNÉES DU THÈME:
 - {subject_label} en {sign}{house_context}{aspect_context}{asc_context}
