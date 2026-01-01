@@ -20,6 +20,9 @@ class User(Base):
     birth_longitude = Column(String, nullable=True)
     birth_place_name = Column(String, nullable=True)
     birth_timezone = Column(String, default="Europe/Paris")
+
+    # Dev mode (DEV_AUTH_BYPASS)
+    dev_external_id = Column(String, unique=True, nullable=True, index=True)
     
     # Metadata
     is_active = Column(Boolean, default=True)

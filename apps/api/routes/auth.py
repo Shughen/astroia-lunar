@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 from uuid import UUID
 import logging
 
@@ -77,6 +77,88 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+async def resolve_dev_user(
+    user_identifier: str,
+    db: AsyncSession
+) -> Tuple[User, str]:
+    """
+    Résolution déterministe d'un utilisateur en mode DEV_AUTH_BYPASS.
+
+    Args:
+        user_identifier: UUID string, integer string, ou email
+        db: Session de base de données
+
+    Returns:
+        Tuple (User, method) où method décrit comment l'utilisateur a été résolu
+
+    Raises:
+        HTTPException: Si l'utilisateur ne peut pas être résolu
+    """
+    # Tentative 1: Traiter comme UUID et chercher par dev_external_id
+    try:
+        user_uuid = UUID(user_identifier)
+        result = await db.execute(
+            select(User).where(User.dev_external_id == str(user_uuid))
+        )
+        user = result.scalar_one_or_none()
+
+        if user:
+            logger.info(f"✅ DEV_AUTH_BYPASS: user trouvé via dev_external_id={user_uuid}")
+            return user, "header_uuid"
+
+        # Créer un nouvel utilisateur dev avec cet UUID
+        logger.info(f"🆕 DEV_AUTH_BYPASS: création user avec dev_external_id={user_uuid}")
+        new_user = User(
+            email=f"dev+{str(user_uuid)[:8]}@local.dev",
+            hashed_password=hash_password("dev-password"),
+            dev_external_id=str(user_uuid),
+            is_active=True,
+            is_premium=False
+        )
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        logger.info(f"✅ DEV_AUTH_BYPASS: user créé - id={new_user.id}, email={new_user.email}")
+        return new_user, "header_uuid_created"
+
+    except (ValueError, TypeError):
+        # Pas un UUID valide, continuer
+        pass
+
+    # Tentative 2: Traiter comme integer ID
+    try:
+        user_id = int(user_identifier)
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if user:
+            logger.info(f"✅ DEV_AUTH_BYPASS: user trouvé via id={user_id}")
+            return user, "header_int"
+
+        logger.warning(f"⚠️ DEV_AUTH_BYPASS: user_id={user_id} introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"DEV_AUTH_BYPASS: user avec id={user_id} introuvable"
+        )
+    except (ValueError, TypeError):
+        # Pas un integer valide
+        pass
+
+    # Tentative 3: Traiter comme email
+    result = await db.execute(select(User).where(User.email == user_identifier))
+    user = result.scalar_one_or_none()
+
+    if user:
+        logger.info(f"✅ DEV_AUTH_BYPASS: user trouvé via email={user_identifier}")
+        return user, "header_email"
+
+    # Échec: aucune résolution possible
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"DEV_AUTH_BYPASS: impossible de résoudre user avec identifier={user_identifier}"
+    )
+
+
 async def get_current_user(
     x_dev_user_id: Optional[str] = Header(default=None, alias="X-Dev-User-Id"),
     token: Optional[str] = Depends(oauth2_scheme),
@@ -84,58 +166,65 @@ async def get_current_user(
 ) -> User:
     """Dependency pour récupérer le user connecté"""
     from jose.exceptions import ExpiredSignatureError
-    
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Impossible de valider les identifiants",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
-    # Mode DEV: bypass avec header X-Dev-User-Id (uniquement en development)
-    # Vérifier le bypass AVANT de vérifier le token JWT
+
+    # ===== MODE DEV: bypass avec header X-Dev-User-Id (uniquement en development) =====
     if settings.APP_ENV == "development" and settings.DEV_AUTH_BYPASS:
-        logger.info("🔧 DEV_AUTH_BYPASS activé")
-        
+        logger.info("🔧 DEV_AUTH_BYPASS enabled")
+
+        # Ordre de résolution:
+        # 1. Header X-Dev-User-Id
+        # 2. ENV variable DEV_USER_ID
+        # 3. User explicite dev@local.dev (créé si nécessaire)
+
+        user_identifier = None
+
         if x_dev_user_id:
-            logger.info(f"📥 Header X-Dev-User-Id reçu: {x_dev_user_id}")
-            try:
-                # Traiter X-Dev-User-Id comme UUID (string) pour validation
-                user_id_uuid = UUID(x_dev_user_id)
-                logger.info(f"✅ DEV_AUTH_BYPASS: UUID valide reçu - {user_id_uuid}")
-                
-                # Pour DEV_AUTH_BYPASS, on cherche ou crée un utilisateur de dev dans la DB
-                # car les routes (comme lunar_returns) ont besoin de user.id (Integer) pour fonctionner
-                # On cherche d'abord le premier utilisateur dans la DB
-                result = await db.execute(select(User).limit(1))
-                dev_user = result.scalar_one_or_none()
-                
-                if dev_user:
-                    logger.info(f"✅ DEV_AUTH_BYPASS: utilisation user existant - id={dev_user.id}, email={dev_user.email}")
-                    return dev_user
-                else:
-                    # Si aucun utilisateur dans la DB, créer un utilisateur de dev
-                    logger.warning("⚠️ DEV_AUTH_BYPASS: aucun utilisateur trouvé, création d'un utilisateur de dev")
-                    dev_user = User(
-                        email=f"dev-user-{str(user_id_uuid)[:8]}@dev.local",
-                        hashed_password=hash_password("dev-password"),
-                        is_active=True,
-                        is_premium=False
-                    )
-                    db.add(dev_user)
-                    await db.commit()
-                    await db.refresh(dev_user)
-                    logger.info(f"✅ DEV_AUTH_BYPASS: utilisateur de dev créé - id={dev_user.id}, email={dev_user.email}")
-                    return dev_user
-                    
-            except (ValueError, TypeError) as e:
-                logger.warning(f"⚠️ DEV_AUTH_BYPASS: X-Dev-User-Id n'est pas un UUID valide: {x_dev_user_id}, erreur: {e}")
-                # Si le header n'est pas valide, continuer vers JWT
-    
-    # Mode normal: JWT (si bypass non activé ou header manquant)
+            user_identifier = x_dev_user_id
+            logger.info(f"📥 DEV_AUTH_BYPASS: X-Dev-User-Id header={user_identifier}")
+        elif settings.DEV_USER_ID:
+            user_identifier = settings.DEV_USER_ID
+            logger.info(f"📥 DEV_AUTH_BYPASS: DEV_USER_ID env={user_identifier}")
+        else:
+            # Fallback: chercher ou créer user avec email dev@local.dev
+            logger.info("📥 DEV_AUTH_BYPASS: pas de header/env, fallback vers dev@local.dev")
+            result = await db.execute(select(User).where(User.email == "dev@local.dev"))
+            dev_user = result.scalar_one_or_none()
+
+            if dev_user:
+                logger.info(f"✅ DEV_AUTH_BYPASS resolved: user_id={dev_user.id}, method=dev_default")
+                return dev_user
+
+            # Créer le user dev@local.dev
+            logger.info("🆕 DEV_AUTH_BYPASS: création user dev@local.dev")
+            dev_user = User(
+                email="dev@local.dev",
+                hashed_password=hash_password("dev-password"),
+                is_active=True,
+                is_premium=False
+            )
+            db.add(dev_user)
+            await db.commit()
+            await db.refresh(dev_user)
+            logger.info(f"✅ DEV_AUTH_BYPASS created: user_id={dev_user.id}, method=dev_default")
+            return dev_user
+
+        # Si on a un user_identifier, résoudre via resolve_dev_user()
+        if user_identifier:
+            user, method = await resolve_dev_user(user_identifier, db)
+            logger.info(f"✅ DEV_AUTH_BYPASS resolved: user_id={user.id}, method={method}")
+            return user
+
+    # ===== MODE NORMAL: JWT =====
     if not token:
         logger.warning("❌ JWT: token manquant dans header Authorization")
         raise credentials_exception
-    
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str: str = payload.get("sub")
@@ -154,14 +243,14 @@ async def get_current_user(
     except JWTError as e:
         logger.warning(f"❌ JWT decode: erreur de signature/format: {e}")
         raise credentials_exception
-    
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if user is None:
         logger.warning(f"❌ User non trouvé en DB: user_id={user_id}")
         raise credentials_exception
-    
+
     return user
 
 

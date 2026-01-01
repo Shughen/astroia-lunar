@@ -5,6 +5,10 @@ Wrap des endpoints RapidAPI pour les fonctionnalités lunaires avancées
 
 from typing import Dict, Any
 from services import rapidapi_client
+from services.lunar_normalization import (
+    normalize_lunar_mansion_response,
+    normalize_lunar_return_report_response
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +36,7 @@ async def get_lunar_return_report(payload: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     Returns:
-        Données JSON du rapport lunaire complet
+        Données JSON normalisées du rapport lunaire avec schéma stable
 
     Raises:
         HTTPException: 422 si payload invalide, 502 si erreur provider
@@ -42,9 +46,17 @@ async def get_lunar_return_report(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Transform flat payload to RapidAPI nested format
     rapidapi_payload = _transform_to_rapidapi_format(payload)
 
-    result = await rapidapi_client.post_json(rapidapi_client.LUNAR_RETURN_REPORT_PATH, rapidapi_payload)
-    logger.info("✅ Lunar Return Report calculé avec succès")
-    return result
+    # Get raw response from RapidAPI
+    raw_result = await rapidapi_client.post_json(rapidapi_client.LUNAR_RETURN_REPORT_PATH, rapidapi_payload)
+
+    # Normalize response to stable schema
+    normalized_result = normalize_lunar_return_report_response(
+        raw_result,
+        request_month=payload.get('month')
+    )
+
+    logger.info("✅ Lunar Return Report calculé et normalisé avec succès")
+    return normalized_result
 
 
 def _transform_to_rapidapi_format(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -240,7 +252,7 @@ async def get_lunar_mansions(payload: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     Returns:
-        Données JSON avec le numéro de mansion, nom, et interprétation
+        Données JSON normalisées avec schéma stable (number, name toujours présents)
 
     Raises:
         HTTPException: 422 si payload invalide, 502 si erreur provider
@@ -250,9 +262,14 @@ async def get_lunar_mansions(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Transform flat payload to RapidAPI nested format
     rapidapi_payload = _transform_mansion_to_rapidapi_format(payload)
 
-    result = await rapidapi_client.post_json(rapidapi_client.LUNAR_MANSIONS_PATH, rapidapi_payload)
-    logger.info("✅ Lunar Mansion calculée avec succès")
-    return result
+    # Get raw response from RapidAPI
+    raw_result = await rapidapi_client.post_json(rapidapi_client.LUNAR_MANSIONS_PATH, rapidapi_payload)
+
+    # Normalize response to stable schema
+    normalized_result = normalize_lunar_mansion_response(raw_result)
+
+    logger.info("✅ Lunar Mansion calculée et normalisée avec succès")
+    return normalized_result
 
 
 def _transform_mansion_to_rapidapi_format(payload: Dict[str, Any]) -> Dict[str, Any]:

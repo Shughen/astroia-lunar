@@ -34,7 +34,11 @@ async def test_get_lunar_return_report_success():
     with patch('services.rapidapi_client.post_json', return_value=mock_response) as mock_post:
         result = await lunar_services.get_lunar_return_report(valid_payload)
 
-        assert result == mock_response
+        # Result is now normalized, not raw
+        assert result["month"] == "2025-01"
+        assert result["moon_sign"] == "Taurus"
+        assert result["moon_house"] == 2
+        assert result["summary"] == "Mois favorable aux finances"
         assert mock_post.call_count == 1
 
         # Vérifier que le bon path est utilisé
@@ -240,7 +244,8 @@ async def test_lunar_services_with_retry_logic():
         result = await lunar_services.get_lunar_return_report(valid_payload)
 
         # Le service ne devrait faire qu'un appel, le client gère les retries
-        assert result == mock_response
+        # Result is normalized now
+        assert "month" in result or "return_date" in result or "moon_sign" in result
         assert mock_post.call_count == 1
 
 
@@ -355,7 +360,8 @@ async def test_get_lunar_return_report_with_defaults():
     with patch('services.rapidapi_client.post_json', return_value=mock_response) as mock_post:
         result = await lunar_services.get_lunar_return_report(minimal_payload)
 
-        assert result == mock_response
+        # Result is normalized
+        assert result["moon_sign"] == "Gemini"
 
         # Vérifier les defaults
         transformed_payload = mock_post.call_args[0][1]
@@ -692,7 +698,9 @@ async def test_get_lunar_mansions_with_defaults():
     with patch('services.rapidapi_client.post_json', return_value=mock_response) as mock_post:
         result = await lunar_services.get_lunar_mansions(minimal_payload)
 
-        assert result == mock_response
+        # Result is normalized
+        assert result["mansion"]["number"] == 14
+        assert result["mansion"]["name"] == "Al-Simak"
 
         # Vérifier le default
         transformed_payload = mock_post.call_args[0][1]
