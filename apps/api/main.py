@@ -32,6 +32,14 @@ async def lifespan(app: FastAPI):
     logger.info(f"[corr={correlation_id}] 📊 Environment: {settings.APP_ENV}")
     logger.info(f"[corr={correlation_id}] 🔗 Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'local'}")
     
+    # Log état des routes DEV
+    import os
+    allow_dev_purge = os.getenv("ALLOW_DEV_PURGE", "").lower() in ("1", "true", "yes", "on")
+    if allow_dev_purge:
+        logger.info(f"[corr={correlation_id}] ✅ Route DEV /api/lunar-returns/dev/purge activée (ALLOW_DEV_PURGE={os.getenv('ALLOW_DEV_PURGE')})")
+    else:
+        logger.info(f"[corr={correlation_id}] 🔒 Route DEV /api/lunar-returns/dev/purge désactivée (ALLOW_DEV_PURGE non défini ou false)")
+    
     # Schema sanity check au démarrage
     try:
         from database import AsyncSessionLocal

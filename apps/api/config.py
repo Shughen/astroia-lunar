@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     DEV_MOCK_EPHEMERIS: bool = Field(default=False, description="Mode mock DEV : génère des données fake si clé API manquante")
     DEV_AUTH_BYPASS: bool = Field(default=False, description="Mode DEV: bypass JWT avec header X-Dev-User-Id (uniquement en development)")
     DEV_USER_ID: Optional[str] = Field(default=None, description="Mode DEV: ID utilisateur par défaut si X-Dev-User-Id absent (UUID ou integer)")
+    LUNAR_RETURNS_DEV_DELAY_MS: int = Field(default=0, description="Délai DEV (ms) pour ralentir la génération lazy des lunar returns (tests de concurrence)")
+    
+    # Swiss Ephemeris / Chiron
+    DISABLE_CHIRON: bool = Field(default=False, description="Désactiver le calcul de Chiron (si fichiers Swiss Ephemeris absents ou en prod)")
     
     # Supabase
     supabase_url: Optional[str] = Field(default=None, validation_alias="SUPABASE_URL")

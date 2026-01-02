@@ -1,6 +1,6 @@
 """Modèle NatalChart"""
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Time, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -16,28 +16,34 @@ class NatalChart(Base):
     # FK vers users.id (INTEGER) avec CASCADE
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     
-    # Données de naissance (NOT NULL selon schéma DB)
-    birth_date = Column(Date, nullable=False)  # DATE en DB
-    birth_time = Column(Time, nullable=False)  # TIME WITHOUT TIME ZONE en DB
-    birth_place = Column(String, nullable=False)  # TEXT en DB
-    latitude = Column(Numeric(9, 6), nullable=False)  # NUMERIC(9, 6) en DB
-    longitude = Column(Numeric(9, 6), nullable=False)  # NUMERIC(9, 6) en DB
-    timezone = Column(String, nullable=False)  # TEXT en DB (pas birth_timezone)
+    # Note: Les données de naissance (birth_date, birth_time, latitude, longitude, timezone)
+    # sont stockées dans la table users, pas dans natal_charts.
+    # Le schéma DB réel (inspecté) contient: user_id, sun_sign, moon_sign, ascendant, planets, houses, 
+    # aspects, raw_data, calculated_at, id, positions
     
-    # Données astrologiques (source de vérité : positions JSONB uniquement)
+    # Colonnes legacy (existent en DB mais peuvent être NULL)
+    sun_sign = Column(String, nullable=True)
+    moon_sign = Column(String, nullable=True)
+    ascendant = Column(String, nullable=True)
+    planets = Column(JSON, nullable=True)  # JSON (pas JSONB)
+    houses = Column(JSON, nullable=True)  # JSON (pas JSONB)
+    aspects = Column(JSON, nullable=True)  # JSON (pas JSONB)
+    raw_data = Column(JSON, nullable=True)  # JSON (pas JSONB)
+    
+    # Données astrologiques (source de vérité : positions JSONB)
     # positions (JSONB) - contient toutes les données astrologiques :
     #   - Big3 (sun, moon, ascendant) directement
     #   - planets, houses, aspects dans des clés séparées
-    positions = Column(JSONB, nullable=False)  # JSONB NOT NULL en DB
+    # Note: nullable=True temporairement pour permettre migration depuis raw_data
+    # Après migration complète, peut être rendu NOT NULL
+    positions = Column(JSONB, nullable=True)  # JSONB nullable (sera NOT NULL après migration)
     
     # Metadata
-    computed_at = Column(DateTime(timezone=True), server_default=func.now())  # computed_at (pas calculated_at)
-    version = Column(String, server_default="v1-simplified")  # Version du schéma
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # Note: La DB utilise calculated_at, pas computed_at
+    calculated_at = Column(DateTime(timezone=True), server_default=func.now())  # calculated_at en DB
     
     # Relations
     user = relationship("User", back_populates="natal_chart", foreign_keys=[user_id])
     
     def __repr__(self):
-        return f"<NatalChart user_id={self.user_id} id={self.id} birth_date={self.birth_date}>"
+        return f"<NatalChart user_id={self.user_id} id={self.id}>"

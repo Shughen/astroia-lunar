@@ -25,6 +25,34 @@ from config import settings
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Constante epsilon pour comparaison de coordonnées (tolérance float)
+COORDS_EPSILON = 0.001
+
+
+def _same_coords(
+    existing_lat: Optional[float],
+    existing_lon: Optional[float],
+    lat_in: float,
+    lon_in: float,
+    epsilon: float = COORDS_EPSILON
+) -> bool:
+    """
+    Compare deux paires de coordonnées avec tolérance epsilon.
+    
+    Args:
+        existing_lat: Latitude existante (Decimal converti en float, peut être None)
+        existing_lon: Longitude existante (Decimal converti en float, peut être None)
+        lat_in: Latitude input (float)
+        lon_in: Longitude input (float)
+        epsilon: Tolérance pour comparaison (défaut: 0.001)
+    
+    Returns:
+        True si les coordonnées sont identiques (dans la tolérance), False sinon
+    """
+    if existing_lat is None or existing_lon is None:
+        return False
+    return abs(existing_lat - lat_in) < epsilon and abs(existing_lon - lon_in) < epsilon
+
 
 # === SCHEMAS ===
 class NatalChartRequest(BaseModel):
@@ -33,7 +61,7 @@ class NatalChartRequest(BaseModel):
     latitude: float
     longitude: float
     place_name: str
-    timezone: str = "Europe/Paris"
+    timezone: Optional[str] = None  # Optionnel, ignoré - sera auto-détecté depuis lat/lon
 
 
 class NatalChartResponse(BaseModel):
@@ -56,22 +84,113 @@ async def calculate_natal_chart(
 ):
     """
     Calcule le thème natal et le sauvegarde
-    Si un thème existe déjà, il sera écrasé
+    IDEMPOTENT: Si un thème existe déjà avec les mêmes paramètres, retourne l'existant sans recalculer
     """
     # Fallback birth_time à "12:00" (midi) si manquant (comme dans l'ancienne app)
-    birth_time = data.time if data.time else "12:00"
-    
-    # Détecter automatiquement la timezone depuis les coordonnées GPS si non fournie ou valeur par défaut
-    from utils.timezone_utils import get_timezone_for_birth_place
-    detected_timezone = get_timezone_for_birth_place(
+    # Normaliser le format time en HH:MM (tronquer les secondes si présentes)
+    birth_time_raw = data.time if data.time else "12:00"
+    birth_time = birth_time_raw[:5] if len(birth_time_raw) >= 5 else birth_time_raw  # HH:MM
+
+    # Détecter automatiquement la timezone depuis les coordonnées GPS
+    # IGNORER le timezone fourni par le client, toujours auto-détecter
+    from utils.timezone_utils import guess_timezone_from_coords
+    detected_timezone = guess_timezone_from_coords(
         latitude=data.latitude,
-        longitude=data.longitude,
-        provided_timezone=data.timezone
+        longitude=data.longitude
     )
-    
-    if detected_timezone != data.timezone:
-        logger.info(f"🌍 Timezone auto-détectée: {data.timezone} → {detected_timezone} (lat={data.latitude}, lon={data.longitude})")
-    
+
+    logger.info(f"[TZ] auto-detected={detected_timezone} lat={data.latitude} lon={data.longitude}")
+
+    # IDEMPOTENCE CHECK: Vérifier si un chart existe déjà avec les mêmes paramètres
+    try:
+        result = await db.execute(
+            select(NatalChart).where(NatalChart.user_id == current_user.id)
+        )
+        existing_chart = result.scalar_one_or_none()
+
+        if existing_chart:
+            # Convertir birth_date/birth_time existants pour comparaison
+            existing_date_str = existing_chart.birth_date.isoformat() if existing_chart.birth_date else None
+            existing_time_str = existing_chart.birth_time.isoformat()[:5] if existing_chart.birth_time else None  # HH:MM
+
+            # Convertir Decimal (NUMERIC) en float pour comparaison (gérer NULL)
+            existing_lat = float(existing_chart.latitude) if existing_chart.latitude is not None else None
+            existing_lon = float(existing_chart.longitude) if existing_chart.longitude is not None else None
+
+            # Normaliser les inputs en float (sécurité)
+            lat_in = float(data.latitude)
+            lon_in = float(data.longitude)
+
+            # Comparer les paramètres de naissance avec fonction utilitaire
+            same_date = existing_date_str == data.date
+            same_time = existing_time_str == birth_time
+            same_coords = _same_coords(existing_lat, existing_lon, lat_in, lon_in)
+            same_timezone = existing_chart.timezone == detected_timezone
+
+            params_match = same_date and same_time and same_coords and same_timezone
+
+            if params_match:
+                # CACHE HIT: paramètres identiques, retourner l'existant sans recalculer
+                logger.info(
+                    f"[IDEMPOTENCE] HIT - natal_chart_id={existing_chart.id} user_id={current_user.id} "
+                    f"reason=same_inputs (date={data.date} time={birth_time} coords=({lat_in:.4f},{lon_in:.4f}) tz={detected_timezone})"
+                )
+
+                # Extraire Big3 depuis positions pour la réponse
+                big3 = extract_big3_from_positions(existing_chart.positions)
+
+                # Extraire planets, houses, aspects depuis positions JSONB
+                positions_data = existing_chart.positions or {}
+                planets = positions_data.get("planets", {})
+                houses = positions_data.get("houses", {})
+                raw_aspects = positions_data.get("aspects", [])
+
+                # Enrichir aspects avec métadonnées + copy v4 (si version v4 activée)
+                aspects = raw_aspects
+                if settings.ASPECTS_VERSION == 4:
+                    try:
+                        from services.aspect_explanation_service import enrich_aspects_v4
+                        aspects = enrich_aspects_v4(raw_aspects, planets, limit=10)
+                        logger.info(f"✅ Aspects enrichis v4: {len(aspects)} aspects avec copy")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Erreur enrichissement aspects v4 (fallback raw aspects): {e}")
+                        aspects = raw_aspects
+
+                return {
+                    "id": str(existing_chart.id),
+                    "sun_sign": big3["sun_sign"] or "Unknown",
+                    "moon_sign": big3["moon_sign"] or "Unknown",
+                    "ascendant": big3["ascendant_sign"] or "Unknown",
+                    "planets": planets,
+                    "houses": houses,
+                    "aspects": aspects
+                }
+            else:
+                # CACHE MISS: paramètres différents, recalcul nécessaire
+                reason_parts = []
+                if not same_date:
+                    reason_parts.append("date_changed")
+                if not same_time:
+                    reason_parts.append("time_changed")
+                if not same_coords:
+                    reason_parts.append("coords_changed")
+                if not same_timezone:
+                    reason_parts.append("timezone_changed")
+
+                reason_str = "|".join(reason_parts) if reason_parts else "unknown"
+                logger.info(
+                    f"[IDEMPOTENCE] MISS - natal_chart_id={existing_chart.id} user_id={current_user.id} "
+                    f"reason={reason_str}"
+                )
+        else:
+            # Pas de chart existant
+            logger.info(
+                f"[IDEMPOTENCE] MISS - user_id={current_user.id} reason=no_existing"
+            )
+    except Exception as e:
+        logger.error(f"❌ Erreur DB lors de la vérification idempotence: {e}", exc_info=True)
+        # Continuer malgré l'erreur de vérification, on recalculera
+
     logger.info(f"📊 Calcul thème natal - user_id={current_user.id}, email={current_user.email}, date={data.date} {birth_time}, timezone={detected_timezone}")
     
     # Calculer via RapidAPI (Best Astrology API)
@@ -314,7 +433,8 @@ async def calculate_natal_chart(
             detail=f"Erreur calcul thème natal: {str(e)}"
         )
     
-    # Vérifier si un thème existe déjà (utiliser user_id INTEGER)
+    # Note: existing_chart déjà récupéré lors du check d'idempotence au début de la fonction
+    # Récupérer à nouveau pour s'assurer d'avoir la dernière version (au cas où modifié entre-temps)
     try:
         result = await db.execute(
             select(NatalChart).where(NatalChart.user_id == current_user.id)
@@ -366,18 +486,21 @@ async def calculate_natal_chart(
     positions_keys = list(positions.keys())
     logger.info(f"📦 Positions JSONB construit - {len(positions_keys)} clé(s): {positions_keys}")
     
-    # Convertir les strings en types Date/Time pour SQLAlchemy
+    # Note: Les données de naissance (birth_date, birth_time, latitude, longitude, timezone)
+    # sont stockées dans la table users, pas dans natal_charts.
+    # Validation du format date/time pour s'assurer qu'elles sont valides avant stockage dans users
     try:
-        birth_date_obj = date.fromisoformat(data.date)  # String "YYYY-MM-DD" -> date
-        # Parser time: supporte "HH:MM" et "HH:MM:SS" (utiliser birth_time avec fallback)
+        # Valider le format de date (mais ne pas créer d'objet Date pour natal_charts)
+        date.fromisoformat(data.date)  # String "YYYY-MM-DD" -> validation
+        # Parser time: supporte "HH:MM" et "HH:MM:SS" (validation uniquement)
         time_str = birth_time
         if len(time_str.split(":")) == 2:
-            # "HH:MM" -> time(HH, MM)
+            # "HH:MM" -> time(HH, MM) pour validation
             hour, minute = map(int, time_str.split(":"))
-            birth_time_obj = time(hour, minute)
+            time(hour, minute)  # Validation uniquement
         else:
-            # "HH:MM:SS" -> time.fromisoformat()
-            birth_time_obj = time.fromisoformat(time_str)
+            # "HH:MM:SS" -> time.fromisoformat() pour validation
+            time.fromisoformat(time_str)  # Validation uniquement
     except (ValueError, AttributeError) as e:
         logger.error(f"❌ Erreur parsing date/time: date={data.date}, time={birth_time}, error={e}")
         raise HTTPException(
@@ -387,25 +510,19 @@ async def calculate_natal_chart(
     
     if existing_chart:
         # Mise à jour
+        # Note: Les données de naissance (birth_date, birth_time, latitude, longitude, timezone)
+        # sont stockées dans la table users, pas dans natal_charts.
+        # Le schéma DB réel de natal_charts ne contient que: id, user_id, positions, computed_at, version, created_at, updated_at
         existing_chart.positions = positions  # Tout dans positions JSONB
-        existing_chart.birth_date = birth_date_obj
-        existing_chart.birth_time = birth_time_obj
-        existing_chart.birth_place = data.place_name  # Mapper place_name -> birth_place
-        existing_chart.latitude = data.latitude
-        existing_chart.longitude = data.longitude
-        existing_chart.timezone = detected_timezone
         chart = existing_chart
         logger.debug(f"💾 Thème natal mis à jour - natal_chart_id={chart.id}")
     else:
         # Création
+        # Note: Les données de naissance (birth_date, birth_time, latitude, longitude, timezone)
+        # sont stockées dans la table users, pas dans natal_charts.
+        # Le schéma DB réel de natal_charts ne contient que: id, user_id, positions, computed_at, version, created_at, updated_at
         chart = NatalChart(
             user_id=current_user.id,  # Utiliser user_id INTEGER
-            birth_date=birth_date_obj,
-            birth_time=birth_time_obj,
-            birth_place=data.place_name,  # Mapper place_name -> birth_place
-            latitude=data.latitude,
-            longitude=data.longitude,
-            timezone=detected_timezone,
             positions=positions  # Tout dans positions JSONB
         )
         db.add(chart)
@@ -420,10 +537,11 @@ async def calculate_natal_chart(
     current_user.birth_timezone = detected_timezone
     
     # Log clair avant commit avec tous les champs qui vont en DB
-    logger.info(f"💾 Sauvegarde DB natal_chart - user_id={chart.user_id}, birth_date={chart.birth_date}, "
-                f"birth_time={chart.birth_time}, birth_place={chart.birth_place}, "
-                f"latitude={chart.latitude}, longitude={chart.longitude}, "
-                f"timezone={chart.timezone}, positions_keys={list(positions.keys())[:5]}...")
+    # Note: Les données de naissance sont stockées dans users, pas dans natal_charts
+    logger.info(f"💾 Sauvegarde DB natal_chart - user_id={chart.user_id}, "
+                f"positions_keys={list(positions.keys())[:5]}..., "
+                f"birth_data_in_users: date={data.date}, time={birth_time}, "
+                f"lat={data.latitude}, lon={data.longitude}, tz={detected_timezone}")
     
     try:
         await db.commit()
@@ -443,7 +561,21 @@ async def calculate_natal_chart(
     logger.info(f"✨ Big3 extrait - Sun={big3['sun_sign']}, Moon={big3['moon_sign']}, Asc={big3['ascendant_sign']}")
 
     # Extraire planets, houses, aspects depuis positions JSONB
-    positions_data = chart.positions or {}
+    # Fallback vers raw_data ou colonnes legacy si positions est NULL
+    positions_data = chart.positions
+    if not positions_data and hasattr(chart, 'raw_data') and chart.raw_data:
+        positions_data = chart.raw_data
+    if not positions_data:
+        # Fallback vers colonnes legacy (planets, houses, aspects JSON)
+        positions_data = {}
+        if hasattr(chart, 'planets') and chart.planets:
+            positions_data["planets"] = chart.planets
+        if hasattr(chart, 'houses') and chart.houses:
+            positions_data["houses"] = chart.houses
+        if hasattr(chart, 'aspects') and chart.aspects:
+            positions_data["aspects"] = chart.aspects
+    positions_data = positions_data or {}
+    
     planets = positions_data.get("planets", {})
     houses = positions_data.get("houses", {})
     raw_aspects = positions_data.get("aspects", [])
