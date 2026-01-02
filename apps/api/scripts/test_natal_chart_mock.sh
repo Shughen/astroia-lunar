@@ -49,8 +49,9 @@ http_code=$(curl -X POST "$API_URL/api/natal-chart" \
 
 echo "HTTP Status: $http_code"
 
-if [ "$http_code" = "200" ]; then
-    echo "✅ Succès - Thème natal créé/mis à jour"
+# Accepter 200 (OK) ou 201 (Created) comme succès
+if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+    echo "✅ Succès - Thème natal créé/mis à jour (HTTP $http_code)"
     echo "Réponse:"
     if [ -s "$tmpfile" ]; then
         python3 -m json.tool < "$tmpfile" || {
@@ -60,6 +61,18 @@ if [ "$http_code" = "200" ]; then
             rm -f "$tmpfile"
             exit 1
         }
+        
+        # Bonus: extraire l'ID du JSON (jq si dispo, sinon python)
+        if command -v jq >/dev/null 2>&1; then
+            natal_chart_id=$(jq -r '.id // empty' "$tmpfile" 2>/dev/null)
+        else
+            natal_chart_id=$(python3 -c "import json, sys; data = json.load(sys.stdin); print(data.get('id', ''))" < "$tmpfile" 2>/dev/null)
+        fi
+        
+        if [ -n "$natal_chart_id" ]; then
+            echo ""
+            echo "✅ natal_chart_id=$natal_chart_id"
+        fi
     else
         echo "⚠️ Body vide"
     fi
