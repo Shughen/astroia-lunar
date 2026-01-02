@@ -20,9 +20,12 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import i18n from '../i18n';
 import { requestNotificationPermissions, cancelAllNotifications } from '../services/notificationScheduler';
+import { resetAllUserData } from '../services/resetUserData';
+import { useResetStore } from '../stores/useResetStore';
 
 /**
  * Schedule QA test notifications with realistic data
@@ -139,11 +142,13 @@ async function handleCancelAll() {
   }
 }
 
+
 /**
  * DEV QA Section Component
  */
 function DevQASection() {
   const [loading, setLoading] = useState(false);
+  const { setIsResetting } = useResetStore();
 
   const handleScheduleQA = async () => {
     setLoading(true);
@@ -155,6 +160,52 @@ function DevQASection() {
     setLoading(true);
     await handleCancelAll();
     setLoading(false);
+  };
+
+  const handleResetUserData = async () => {
+    Alert.alert(
+      'Reset des Données Locales',
+      'Cette action va supprimer toutes les données locales :\n\n' +
+      '• Onboarding (welcome, profile, consent, etc.)\n' +
+      '• Journal (toutes les entrées)\n' +
+      '• Cache lunaire\n' +
+      '• Stores (cycle, natal, auth)\n' +
+      '• Notifications planifiées\n\n' +
+      'Vous serez redirigé vers l\'écran Welcome.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              console.log('[DEV QA] 🗑️ Début reset via DevQASection...');
+              
+              // Reset atomique
+              await resetAllUserData();
+              
+              console.log('[DEV QA] ✅ Reset terminé, navigation vers /welcome...');
+              
+              // Navigation après reset complet
+              router.replace('/welcome');
+              
+              // Relâcher le flag après un court délai
+              setTimeout(() => {
+                setIsResetting(false);
+                console.log('[DEV QA] ✅ Flag isResetting relâché');
+              }, 500);
+            } catch (error) {
+              console.error('[DEV QA] ❌ Erreur lors du reset:', error);
+              setIsResetting(false);
+              Alert.alert('Erreur', 'Une erreur est survenue lors du reset. Vérifiez la console.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -184,8 +235,23 @@ function DevQASection() {
         </Text>
       </TouchableOpacity>
 
+      <View style={styles.separator} />
+
+      <TouchableOpacity
+        style={[styles.button, styles.dangerButton]}
+        onPress={handleResetUserData}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Resetting...' : '🗑️ Reset User Data (Local)'}
+        </Text>
+      </TouchableOpacity>
+
       <Text style={styles.hint}>
         Notifications will trigger in 15s, 30s, and 45s. Tap them to test deep links.
+      </Text>
+      <Text style={styles.hint}>
+        Reset clears: onboarding, journal, cache, stores. Redirects to Welcome.
       </Text>
     </View>
   );
@@ -223,6 +289,14 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#4A5568',
+  },
+  dangerButton: {
+    backgroundColor: '#DC2626',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#4A5568',
+    marginVertical: 12,
   },
   buttonText: {
     color: '#FFFFFF',

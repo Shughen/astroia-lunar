@@ -16,10 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
+import { goToNextOnboardingStep } from '../../services/onboardingFlow';
+import { getOnboardingFlowState } from '../../utils/onboardingHelpers';
 
 export default function ConsentScreen() {
   const router = useRouter();
-  const { setConsentAccepted } = useOnboardingStore();
+  const onboardingStore = useOnboardingStore();
+  const { setConsentAccepted } = onboardingStore;
   const [accepted, setAccepted] = useState(false);
 
   const handleNext = async () => {
@@ -32,8 +35,7 @@ export default function ConsentScreen() {
     }
 
     await setConsentAccepted();
-    console.log('[CONSENT] Accepté → /onboarding/disclaimer');
-    router.push('/onboarding/disclaimer');
+    await goToNextOnboardingStep(router, 'CONSENT', getOnboardingFlowState);
   };
 
   return (
@@ -43,7 +45,7 @@ export default function ConsentScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Étape 2/4</Text>
+          <Text style={styles.headerTitle}>Étape 1/3</Text>
           <View style={{ width: 40 }} />
         </View>
 

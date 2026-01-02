@@ -25,10 +25,12 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
 import { useNotificationsStore } from '../stores/useNotificationsStore';
-import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevUserId } from '../services/api';
+import { useResetStore } from '../stores/useResetStore';
+import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader } from '../services/api';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { DailyRitualCard } from '../components/DailyRitualCard';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
+import { cleanupGhostFlags } from '../services/onboardingMigration';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -36,174 +38,116 @@ export default function HomeScreen() {
   const { isAuthenticated } = useAuthStore();
   const onboardingStore = useOnboardingStore();
   const { notificationsEnabled, hydrated, loadPreferences, scheduleAllNotifications } = useNotificationsStore();
+  const { isResetting } = useResetStore();
   const [currentLunarReturn, setCurrentLunarReturn] = useState<LunarReturn | null>(null);
   const [isCheckingRouting, setIsCheckingRouting] = useState(true);
-  const [shouldNavigate, setShouldNavigate] = useState<{ route: string } | null>(null);
-  const hasCheckedRoutingRef = useRef(false);
-  const isMountedRef = useRef(false);
   const [isOnline, setIsOnline] = useState(true);
-
-  // S'assurer que le composant est monté avant de naviguer
-  useLayoutEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  // Effectuer la navigation une fois que le composant est monté
-  useEffect(() => {
-    if (shouldNavigate && isMountedRef.current) {
-      const timer = setTimeout(() => {
-        try {
-          router.replace(shouldNavigate.route);
-        } catch (error) {
-          console.error('[INDEX] Erreur navigation:', error);
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [shouldNavigate, router]);
+  const routingInFlightRef = useRef(false);
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
-    console.log('[INDEX] 🔄 checkRouting() appelé, hydrated=', onboardingStore.hydrated, 'hasCompletedOnboarding=', onboardingStore.hasCompletedOnboarding);
-
     const checkRouting = async () => {
-      // Guard absolu: si onboarding complété et déjà checké, JAMAIS re-router
-      if (hasCheckedRoutingRef.current && onboardingStore.hasCompletedOnboarding) {
-        console.log('[INDEX] ⏭️ Onboarding déjà complété et checké, skip re-check');
+      // Guard absolu: ne pas router si reset en cours
+      if (isResetting) {
+        console.log('[INDEX] ⏸️ Reset en cours, skip routing');
         return;
       }
 
+      // Guard absolu: éviter double-run pendant un routing en cours
+      if (routingInFlightRef.current) {
+        console.log('[INDEX] ⏸️ Routing déjà en cours, skip double-run');
+        return;
+      }
+
+      // Marquer routing en cours
+      routingInFlightRef.current = true;
+
       try {
-        // Attendre que le composant soit monté
-        while (!isMountedRef.current) {
-          await new Promise(resolve => setTimeout(resolve, 10));
+        // Migration one-shot: nettoyer flags fantômes AVANT hydratation
+        if (!onboardingStore.hydrated) {
+          await cleanupGhostFlags();
+        }
+
+        // Guard absolu: hydratation BLOQUANTE
+        if (!onboardingStore.hydrated) {
+          console.log('[INDEX] ⏳ Hydratation en cours...');
+          await onboardingStore.hydrate();
+          console.log('[INDEX] ✅ Hydratation terminée');
         }
 
         console.log('[INDEX] 📍 Début checkRouting');
-        console.log('[INDEX] isAuthenticated =', isAuthenticated);
-
-        // Hydrater l'état onboarding depuis AsyncStorage (UNE SEULE FOIS grâce au guard hydrated)
-        await onboardingStore.hydrate();
-
-        // Log de tous les flags après hydratation
-        console.log('[INDEX] 📊 État onboarding après hydratation:', {
+        console.log('[INDEX] 📊 État onboarding:', {
           hasSeenWelcomeScreen: onboardingStore.hasSeenWelcomeScreen,
-          hasCompletedProfile: onboardingStore.hasCompletedProfile,
           hasAcceptedConsent: onboardingStore.hasAcceptedConsent,
+          hasCompletedProfile: onboardingStore.hasCompletedProfile,
           hasSeenDisclaimer: onboardingStore.hasSeenDisclaimer,
           hasCompletedOnboarding: onboardingStore.hasCompletedOnboarding,
-          hydrated: onboardingStore.hydrated,
         });
 
-        // En mode DEV_AUTH_BYPASS, log clair et skip uniquement auth (pas welcome)
+        // En mode DEV_AUTH_BYPASS, log clair et skip uniquement auth
         const isBypassActive = isDevAuthBypassActive();
-        console.log('[INDEX] isBypassActive =', isBypassActive);
         if (isBypassActive) {
-          console.log('[INDEX] ⚠️ DEV_AUTH_BYPASS: auth guard skipped (welcome actif)');
+          console.log('[INDEX] ⚠️ DEV_AUTH_BYPASS actif');
         }
 
-        // A) Vérifier auth en premier (sauf si DEV_AUTH_BYPASS actif)
-        console.log('[INDEX] 📍 Étape A: Vérification auth (bypass=', isBypassActive, ', auth=', isAuthenticated, ')');
+        // A) Vérifier auth (sauf si DEV_AUTH_BYPASS actif)
         if (!isBypassActive && !isAuthenticated) {
-          console.log('[INDEX] ❌ Pas authentifié → redirection vers /login');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          setShouldNavigate({ route: '/login' });
-          return;
-        }
-        console.log('[INDEX] ✅ Auth OK (bypassé ou authentifié)');
-
-        // ⚠️ GUARD HARD STOP : Si onboarding est complété, NE JAMAIS rediriger vers welcome/onboarding
-        if (onboardingStore.hasCompletedOnboarding) {
-          console.log('[INDEX] 🛑 GUARD HARD STOP: hasCompletedOnboarding=true → affichage Home (jamais welcome/onboarding)');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          // Ne pas naviguer, juste afficher le contenu Home
+          console.log('[INDEX] → Redirection /login (pas authentifié)');
+          router.replace('/login');
+          // NE PAS setIsCheckingRouting(false) : garder loader actif pendant redirect
           return;
         }
 
-        // B) Vérifier hasSeenWelcomeScreen (seulement si onboarding pas complété)
-        console.log('[INDEX] 📍 Étape B: Vérification hasSeenWelcomeScreen');
-        console.log('[INDEX] hasSeenWelcomeScreen =', onboardingStore.hasSeenWelcomeScreen);
-
+        // B) Vérifier hasSeenWelcomeScreen
         if (!onboardingStore.hasSeenWelcomeScreen) {
-          console.log('[INDEX] ✅ Welcome screen non vu → redirection vers /welcome');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          setShouldNavigate({ route: '/welcome' });
+          console.log('[INDEX] → Redirection /welcome');
+          router.replace('/welcome');
           return;
         }
 
-        console.log('[INDEX] Welcome déjà vu, continuation du flow');
-
-        // En mode DEV_AUTH_BYPASS, continuer le flow onboarding normalement
-        // Le bypass ne concerne QUE l'authentification, pas l'onboarding
-        if (isBypassActive) {
-          console.log('[INDEX] ⚠️ DEV_AUTH_BYPASS: auth skipped, onboarding flow continues');
-        }
-
-        // C) Vérifier profil setup (nom + date de naissance)
-        console.log('[INDEX] 📍 Étape C: Vérification profil');
-        console.log('[INDEX] hasCompletedProfile =', onboardingStore.hasCompletedProfile);
-        if (!onboardingStore.hasCompletedProfile) {
-          console.log('[INDEX] ✅ Profil incomplet → redirection vers /onboarding/profile-setup');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          setShouldNavigate({ route: '/onboarding/profile-setup' });
-          return;
-        }
-
-        // D) Vérifier consentement RGPD
-        console.log('[INDEX] 📍 Étape D: Vérification consentement');
-        console.log('[INDEX] hasAcceptedConsent =', onboardingStore.hasAcceptedConsent);
+        // C) Vérifier consentement RGPD
         if (!onboardingStore.hasAcceptedConsent) {
-          console.log('[INDEX] ✅ Consentement non accepté → redirection vers /onboarding/consent');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          setShouldNavigate({ route: '/onboarding/consent' });
+          console.log('[INDEX] → Redirection /onboarding/consent');
+          router.replace('/onboarding/consent');
+          return;
+        }
+
+        // D) Vérifier profil setup
+        if (!onboardingStore.hasCompletedProfile) {
+          console.log('[INDEX] → Redirection /onboarding/profile-setup');
+          router.replace('/onboarding/profile-setup');
           return;
         }
 
         // E) Vérifier disclaimer médical
-        console.log('[INDEX] 📍 Étape E: Vérification disclaimer');
-        console.log('[INDEX] hasSeenDisclaimer =', onboardingStore.hasSeenDisclaimer);
         if (!onboardingStore.hasSeenDisclaimer) {
-          console.log('[INDEX] ✅ Disclaimer non vu → redirection vers /onboarding/disclaimer');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          setShouldNavigate({ route: '/onboarding/disclaimer' });
+          console.log('[INDEX] → Redirection /onboarding/disclaimer');
+          router.replace('/onboarding/disclaimer');
           return;
         }
 
         // F) Vérifier onboarding complet (slides)
-        console.log('[INDEX] 📍 Étape F: Vérification onboarding slides');
-        console.log('[INDEX] hasCompletedOnboarding =', onboardingStore.hasCompletedOnboarding);
         if (!onboardingStore.hasCompletedOnboarding) {
-          console.log('[INDEX] ✅ Onboarding slides non terminés → redirection vers /onboarding');
-          hasCheckedRoutingRef.current = true;
-          setIsCheckingRouting(false);
-          setShouldNavigate({ route: '/onboarding' });
+          console.log('[INDEX] → Redirection /onboarding');
+          router.replace('/onboarding');
           return;
         }
 
-        // Tout est OK, afficher le contenu
-        console.log('[INDEX] ✅ Tous les guards passés, affichage Home');
-        hasCheckedRoutingRef.current = true;
+        // Tout est OK → Home
+        console.log('[INDEX] ✅ Tous les guards passés → Home');
         setIsCheckingRouting(false);
       } catch (error) {
-        console.error('[INDEX] Erreur dans checkRouting:', error);
-        hasCheckedRoutingRef.current = true;
-        setIsCheckingRouting(false);
-        // En cas d'erreur, rediriger vers login pour sécurité
-        setShouldNavigate({ route: '/login' });
+        console.error('[INDEX] ❌ Erreur dans checkRouting:', error);
+        router.replace('/login');
+        // NE PAS setIsCheckingRouting(false) : garder loader actif
+      } finally {
+        // Relâcher le flag in-flight (permet re-run si deps changent)
+        routingInFlightRef.current = false;
       }
     };
 
     checkRouting();
-  }, [isAuthenticated, router, onboardingStore.hydrated, onboardingStore.hasCompletedOnboarding]);
+  }, [isAuthenticated, isResetting, onboardingStore.hydrated, router]);
 
   // Hydratation store notifications au mount
   useEffect(() => {

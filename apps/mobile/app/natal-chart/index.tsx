@@ -39,7 +39,7 @@ export default function NatalChartIndexScreen() {
   const [editBirthDate, setEditBirthDate] = useState<Date>(new Date(2000, 0, 1));
   const [editBirthTime, setEditBirthTime] = useState('');
   const [editBirthPlace, setEditBirthPlace] = useState('');
-  const [editBirthTimezone, setEditBirthTimezone] = useState('');
+  // birthTimezone supprimé - sera auto-détecté par le backend
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -53,7 +53,7 @@ export default function NatalChartIndexScreen() {
       setEditBirthDate(profileData.birthDate instanceof Date ? profileData.birthDate : (profileData.birthDate ? new Date(profileData.birthDate) : new Date(2000, 0, 1)));
       setEditBirthTime(profileData.birthTime || '12:00');
       setEditBirthPlace(profileData.birthPlace || '');
-      setEditBirthTimezone(profileData.birthTimezone || 'Europe/Paris');
+      // birthTimezone supprimé - sera auto-détecté par le backend
     }
   }, [profileData, showEditModal]);
 
@@ -80,7 +80,7 @@ export default function NatalChartIndexScreen() {
     : 'Non renseigné';
   const displayTime = profileData?.birthTime || 'Non renseigné';
   const displayPlace = profileData?.birthPlace || 'Non renseigné';
-  const displayTimezone = profileData?.birthTimezone || 'Non renseigné';
+  // displayTimezone supprimé - timezone auto-détecté par le backend
   const displayCoords =
     profileData?.birthLatitude && profileData?.birthLongitude
       ? `${profileData.birthLatitude.toFixed(4)}, ${profileData.birthLongitude.toFixed(4)}`
@@ -115,7 +115,6 @@ export default function NatalChartIndexScreen() {
 
       const time = profileData.birthTime || '12:00';
       const birthPlace = profileData.birthPlace || 'Paris, France';
-      const timezone = profileData.birthTimezone || 'Europe/Paris';
 
       // Récupérer les coordonnées
       let coords;
@@ -134,14 +133,14 @@ export default function NatalChartIndexScreen() {
         coords = await geocodePlace(birthPlace);
       }
 
-      // Appel API Ephemeris
+      // Appel API Ephemeris (timezone auto-détecté par le backend)
       const response = await natalChart.calculate({
         date: date,
         time: time,
         latitude: coords.latitude,
         longitude: coords.longitude,
         place_name: birthPlace,
-        timezone: timezone,
+        // timezone supprimé - sera auto-détecté par le backend
       });
 
       // Sauvegarder le résultat dans le store
@@ -221,7 +220,7 @@ export default function NatalChartIndexScreen() {
         birthPlace: editBirthPlace.trim(),
         birthLatitude: coords.latitude,
         birthLongitude: coords.longitude,
-        birthTimezone: editBirthTimezone.trim() || 'Europe/Paris',
+        // birthTimezone supprimé - sera auto-détecté par le backend
       });
 
       console.log('[NATAL-CHART] ✅ Profil mis à jour');
@@ -322,11 +321,6 @@ export default function NatalChartIndexScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Lieu :</Text>
               <Text style={styles.infoValue}>{displayPlace}</Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Timezone :</Text>
-              <Text style={styles.infoValue}>{displayTimezone}</Text>
             </View>
 
             <View style={styles.infoRow}>
@@ -528,18 +522,6 @@ export default function NatalChartIndexScreen() {
                     value={editBirthPlace}
                     onChangeText={setEditBirthPlace}
                     autoCapitalize="words"
-                  />
-                </View>
-
-                {/* Timezone */}
-                <View style={styles.editInputGroup}>
-                  <Text style={styles.editLabel}>Timezone (optionnel)</Text>
-                  <TextInput
-                    style={styles.editInput}
-                    placeholder="Ex: Europe/Paris"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
-                    value={editBirthTimezone}
-                    onChangeText={setEditBirthTimezone}
                   />
                 </View>
               </ScrollView>

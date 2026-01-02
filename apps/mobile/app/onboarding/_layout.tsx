@@ -16,7 +16,6 @@ export default function OnboardingLayout() {
       <Stack.Screen name="profile-setup" />
       <Stack.Screen name="consent" />
       <Stack.Screen name="disclaimer" />
-      <Stack.Screen name="cycle-setup" />
     </Stack>
   );
 }

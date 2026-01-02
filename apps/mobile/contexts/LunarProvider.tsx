@@ -154,6 +154,11 @@ export function LunarProvider({ children }: LunarProviderProps) {
   // Ref pour accès stable à current sans dépendance dans getDayData
   const currentRef = useRef<LunarDayData | null>(null);
 
+  // Guards pour éviter boucle infinie de refresh
+  const refreshInFlight = useRef(false);
+  const lastRefreshAt = useRef<number>(0);
+  const REFRESH_TTL_MS = 60000; // 60 secondes minimum entre refreshs
+
   /**
    * Load lunar data with stale-while-revalidate strategy
    */
@@ -178,10 +183,30 @@ export function LunarProvider({ children }: LunarProviderProps) {
             lastUpdated: Date.now(),
           });
 
-          // Si stale, rafraîchir en background
+          // Si stale, rafraîchir en background (avec guard pour éviter boucle infinie)
           if (cached.isStale) {
-            console.log('[LunarProvider] Cache stale, refreshing in background...');
-            loadLunarData(date, true); // Refresh sans bloquer
+            const now = Date.now();
+            const timeSinceLastRefresh = now - lastRefreshAt.current;
+            
+            if (!refreshInFlight.current && timeSinceLastRefresh > REFRESH_TTL_MS) {
+              console.log('[LunarProvider] Cache stale, refreshing in background...');
+              refreshInFlight.current = true;
+              lastRefreshAt.current = now;
+              
+              // Refresh sans bloquer, reset inFlight dans finally
+              loadLunarData(date, true)
+                .catch((err) => {
+                  if (__DEV__) console.warn('[LunarProvider] Background refresh error:', err);
+                })
+                .finally(() => {
+                  refreshInFlight.current = false;
+                });
+            } else if (__DEV__) {
+              console.log(
+                `[LunarProvider] Skip refresh: inFlight=${refreshInFlight.current}, ` +
+                `timeSinceLastRefresh=${Math.round(timeSinceLastRefresh / 1000)}s`
+              );
+            }
           }
 
           return;
@@ -190,6 +215,7 @@ export function LunarProvider({ children }: LunarProviderProps) {
 
       // 2. Pas de cache (ou forceRefresh) → fetch API
       isFetchingRef.current = true;
+      lastRefreshAt.current = Date.now();
 
       setStatus((prev) => ({
         ...prev,
@@ -244,6 +270,7 @@ export function LunarProvider({ children }: LunarProviderProps) {
       await setLunarCache(date, localData, 'local');
     } finally {
       isFetchingRef.current = false;
+      refreshInFlight.current = false;
     }
   }, [current]);
 

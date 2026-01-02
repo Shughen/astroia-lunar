@@ -18,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
+import { goToNextOnboardingStep } from '../../services/onboardingFlow';
+import { getOnboardingFlowState } from '../../utils/onboardingHelpers';
 
 const { width } = Dimensions.get('window');
 
@@ -51,7 +53,8 @@ const STEPS = [
 
 export default function OnboardingIndexScreen() {
   const router = useRouter();
-  const { completeOnboarding } = useOnboardingStore();
+  const onboardingStore = useOnboardingStore();
+  const { completeOnboarding } = onboardingStore;
   const [currentStep, setCurrentStep] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -82,20 +85,31 @@ export default function OnboardingIndexScreen() {
     } else {
       // Dernier slide → marquer onboarding comme terminé
       console.log('[ONBOARDING] Dernier slide → completeOnboarding()');
-      await completeOnboarding();
-      // PAS de réhydratation ici : completeOnboarding() a déjà mis à jour le store
-      // Le index.tsx fera le re-check automatiquement
-      console.log('[ONBOARDING] completeOnboarding terminé, navigation vers /');
-      router.replace('/');
+
+      try {
+        await completeOnboarding();
+        console.log('[ONBOARDING] ✅ completeOnboarding réussi, navigation vers /');
+        router.replace('/');
+      } catch (error: any) {
+        console.error('[ONBOARDING] ❌ completeOnboarding échoué:', error.message);
+        // Rediriger vers l'étape manquante
+        await goToNextOnboardingStep(router, 'ONBOARDING_SLIDES_ERROR', getOnboardingFlowState);
+      }
     }
   };
 
   const handleSkip = async () => {
     console.log('[ONBOARDING] Skip → completeOnboarding()');
-    await completeOnboarding();
-    // PAS de réhydratation ici : completeOnboarding() a déjà mis à jour le store
-    console.log('[ONBOARDING] completeOnboarding terminé, navigation vers /');
-    router.replace('/');
+
+    try {
+      await completeOnboarding();
+      console.log('[ONBOARDING] ✅ completeOnboarding réussi, navigation vers /');
+      router.replace('/');
+    } catch (error: any) {
+      console.error('[ONBOARDING] ❌ completeOnboarding échoué:', error.message);
+      // Rediriger vers l'étape manquante
+      await goToNextOnboardingStep(router, 'ONBOARDING_SLIDES_SKIP_ERROR', getOnboardingFlowState);
+    }
   };
 
   const currentStepData = STEPS[currentStep];

@@ -16,10 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
+import { goToNextOnboardingStep } from '../../services/onboardingFlow';
+import { getOnboardingFlowState } from '../../utils/onboardingHelpers';
 
 export default function DisclaimerScreen() {
   const router = useRouter();
-  const { setDisclaimerSeen } = useOnboardingStore();
+  const onboardingStore = useOnboardingStore();
+  const { setDisclaimerSeen } = onboardingStore;
   const [understood, setUnderstood] = useState(false);
 
   const handleNext = async () => {
@@ -32,8 +35,7 @@ export default function DisclaimerScreen() {
     }
 
     await setDisclaimerSeen();
-    console.log('[DISCLAIMER] Accepté → /onboarding/cycle-setup');
-    router.push('/onboarding/cycle-setup');
+    await goToNextOnboardingStep(router, 'DISCLAIMER', getOnboardingFlowState);
   };
 
   return (
@@ -43,7 +45,7 @@ export default function DisclaimerScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Étape 3/4</Text>
+          <Text style={styles.headerTitle}>Étape 3/3</Text>
           <View style={{ width: 40 }} />
         </View>
 

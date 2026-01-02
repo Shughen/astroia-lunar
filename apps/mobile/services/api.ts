@@ -6,6 +6,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { getDevAuthHeaderType } from '../utils/devAuthBypass';
 
 // Détection device physique vs simulateur
 const isPhysicalDevice = (): boolean => {
@@ -136,44 +137,33 @@ const apiClient = axios.create({
 
 // Mode DEV_AUTH_BYPASS: détection et configuration
 const DEV_AUTH_BYPASS = process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS === 'true';
-// EXPO_PUBLIC_DEV_USER_ID doit être un UUID string (ex: "550e8400-e29b-41d4-a716-446655440000")
-// Si non défini, on utilise un UUID par défaut pour les tests
-const DEV_USER_ID_RAW = process.env.EXPO_PUBLIC_DEV_USER_ID || '550e8400-e29b-41d4-a716-446655440000';
+// EXPO_PUBLIC_DEV_USER_ID peut être: integer ID, UUID, ou email
+// Validation via getDevAuthHeaderType qui détermine le header approprié
+const DEV_AUTH_HEADER = getDevAuthHeaderType(process.env.EXPO_PUBLIC_DEV_USER_ID);
 
-// Validation UUID en dev (guard)
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isValidUUID = (str: string): boolean => {
-  return UUID_REGEX.test(str);
-};
-
-const DEV_USER_ID = (() => {
-  if (DEV_AUTH_BYPASS && !isValidUUID(DEV_USER_ID_RAW)) {
-    console.error(
-      `\n❌ ACTION REQUIRED: EXPO_PUBLIC_DEV_USER_ID n'est pas un UUID valide: "${DEV_USER_ID_RAW}"\n` +
-      `Format attendu: "550e8400-e29b-41d4-a716-446655440000"\n` +
-      `\nCorrigez votre fichier .env:\n` +
-      `  EXPO_PUBLIC_DEV_USER_ID=550e8400-e29b-41d4-a716-446655440000\n` +
-      `\nUtilisation d'un UUID par défaut pour éviter les erreurs (cette session uniquement).\n`
-    );
-    return '550e8400-e29b-41d4-a716-446655440000';
-  }
-  return DEV_USER_ID_RAW;
-})();
+// Log une seule fois si bypass actif mais user id invalide
+if (DEV_AUTH_BYPASS && DEV_AUTH_HEADER.type === 'invalid') {
+  console.warn(
+    '[API] DEV_AUTH_BYPASS actif mais DEV_USER_ID invalide -> aucun header envoyé (fallback API vers dev@local.dev)'
+  );
+} else if (DEV_AUTH_BYPASS && DEV_AUTH_HEADER.header) {
+  console.log(
+    `[API] DEV_AUTH_BYPASS configuré: header=${DEV_AUTH_HEADER.header}, value=${DEV_AUTH_HEADER.value}, type=${DEV_AUTH_HEADER.type}`
+  );
+}
 
 // Intercepteur pour ajouter le token ou le header DEV_AUTH_BYPASS
 apiClient.interceptors.request.use(
   async (config) => {
-    if (DEV_AUTH_BYPASS) {
-      // Mode bypass: utiliser X-Dev-User-Id au lieu du token JWT
-      config.headers['X-Dev-User-Id'] = DEV_USER_ID;
-      console.log('[API] Mode DEV_AUTH_BYPASS actif, header X-Dev-User-Id:', DEV_USER_ID);
+    if (DEV_AUTH_BYPASS && DEV_AUTH_HEADER.header) {
+      // Mode bypass: utiliser X-Dev-User-Id ou X-Dev-External-Id selon le type
+      config.headers[DEV_AUTH_HEADER.header] = DEV_AUTH_HEADER.value;
       // Ne PAS envoyer Authorization Bearer en mode bypass
     } else {
       // Mode normal: utiliser le token JWT
       const token = await AsyncStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('[API] Token JWT ajouté au header Authorization');
       } else {
         console.warn('[API] ⚠️ Aucun token trouvé dans AsyncStorage');
       }
@@ -227,7 +217,7 @@ apiClient.interceptors.response.use(
 
 // Export pour vérifier si le mode bypass est actif
 export const isDevAuthBypassActive = () => DEV_AUTH_BYPASS;
-export const getDevUserId = () => DEV_USER_ID;
+export const getDevAuthHeader = () => DEV_AUTH_HEADER;
 
 // Export de la fonction getApiUrl pour utilisation dans selftest.tsx
 export const getApiUrl = (): string => {
@@ -295,7 +285,7 @@ export const natalChart = {
     latitude: number;
     longitude: number;
     place_name: string;
-    timezone?: string;
+    // timezone supprimé - sera auto-détecté par le backend depuis lat/lon
   }) => {
     const response = await apiClient.post('/api/natal-chart', data);
     return response.data;

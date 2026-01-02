@@ -13,10 +13,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
+import { goToNextOnboardingStep } from '../services/onboardingFlow';
+import { getOnboardingFlowState } from '../utils/onboardingHelpers';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { setWelcomeSeen } = useOnboardingStore();
+  const onboardingStore = useOnboardingStore();
+  const { setWelcomeSeen } = onboardingStore;
 
   React.useEffect(() => {
     console.log('[WELCOME] ✅ Composant Welcome monté et affiché à l\'écran');
@@ -29,9 +32,9 @@ export default function WelcomeScreen() {
     await setWelcomeSeen();
     console.log('[WELCOME] hasSeenWelcomeScreen défini à true via useOnboardingStore');
 
-    // Rediriger vers l'index pour que les guards prennent le relais
-    console.log('[WELCOME] Redirection vers /');
-    router.replace('/');
+    // Utiliser le helper centralisé pour naviguer (lit l'état frais depuis Zustand)
+    // Pass getOnboardingFlowState to avoid require cycle
+    await goToNextOnboardingStep(router, 'WELCOME', getOnboardingFlowState);
   };
 
   return (

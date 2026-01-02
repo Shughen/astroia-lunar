@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { transits } from '../../services/api';
 import { useAuthStore } from '../../stores/useAuthStore';
-import { isDevAuthBypassActive, getDevUserId } from '../../services/api';
+import { isDevAuthBypassActive, getDevAuthHeader } from '../../services/api';
 import { tPlanet, tAspect, formatOrb } from '../../i18n/astro.format';
 
 const ASPECT_BADGES: Record<string, { emoji: string; color: string }> = {
@@ -53,7 +53,9 @@ export default function TransitsOverview() {
       // user_id est maintenant un UUID string (pas un entier)
       let userId: string;
       if (isDevAuthBypassActive()) {
-        userId = getDevUserId(); // Déjà un UUID string
+        const devHeader = getDevAuthHeader();
+        // En DEV_AUTH_BYPASS, utiliser la valeur du header (peut être ID ou UUID)
+        userId = devHeader.value || 'dev-user-id';
       } else if (user?.id) {
         // Convertir en string si nécessaire (peut être number ou string selon le store)
         userId = typeof user.id === 'string' ? user.id : String(user.id);

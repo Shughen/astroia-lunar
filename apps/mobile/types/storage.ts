@@ -31,6 +31,9 @@ export const STORAGE_KEYS = {
   // Notifications (Phase 1.4)
   NOTIFICATIONS_ENABLED: 'notifications_enabled',
   NOTIFICATIONS_LAST_SCHEDULED_AT: 'notifications_last_scheduled_at',
+
+  // Migrations
+  MIGRATION_GHOSTFLAGS_DONE: 'migration_ghostflags_done',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

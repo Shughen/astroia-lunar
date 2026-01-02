@@ -23,6 +23,8 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useNotificationsStore } from '../stores/useNotificationsStore';
+import { resetAllUserData } from '../services/resetUserData';
+import { useResetStore } from '../stores/useResetStore';
 
 // DEV ONLY: QA Helper for notifications (null in production)
 import DevQASection from '../components/DevQASection';
@@ -38,6 +40,7 @@ export default function SettingsScreen() {
   } = useNotificationsStore();
 
   const [isTogglingNotifications, setIsTogglingNotifications] = useState(false);
+  const { isResetting, setIsResetting } = useResetStore();
 
   useEffect(() => {
     // Charger préférences au mount
@@ -98,6 +101,52 @@ export default function SettingsScreen() {
         },
       },
     ]);
+  };
+
+  const handleResetUserData = () => {
+    Alert.alert(
+      'Supprimer mes données locales',
+      'Cette action va supprimer toutes vos données locales stockées sur cet appareil :\n\n' +
+      '• Onboarding (écran d\'accueil, consentement, profil)\n' +
+      '• Journal (toutes vos entrées)\n' +
+      '• Cache lunaire\n' +
+      '• Préférences et notifications\n\n' +
+      'Vous serez redirigé vers l\'écran d\'accueil pour recommencer.\n\n' +
+      'Note : Cette action ne supprime pas vos données sur le serveur.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('[Settings] 🗑️ Début reset des données locales...');
+              
+              // Reset atomique
+              await resetAllUserData();
+              
+              console.log('[Settings] ✅ Reset terminé, navigation vers /welcome...');
+              
+              // Navigation après reset complet
+              router.replace('/welcome');
+              
+              // Relâcher le flag après un court délai pour laisser la navigation se faire
+              setTimeout(() => {
+                setIsResetting(false);
+                console.log('[Settings] ✅ Flag isResetting relâché');
+              }, 500);
+            } catch (error) {
+              console.error('[Settings] ❌ Erreur lors du reset:', error);
+              setIsResetting(false);
+              Alert.alert(
+                'Erreur',
+                'Une erreur est survenue lors de la suppression des données. Vérifiez la console pour plus de détails.'
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -181,8 +230,22 @@ export default function SettingsScreen() {
 
       {/* Actions */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          disabled={isResetting}
+        >
           <Text style={styles.logoutButtonText}>Déconnexion</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.resetButton, isResetting && styles.resetButtonDisabled]}
+          onPress={handleResetUserData}
+          disabled={isResetting}
+        >
+          <Text style={styles.resetButtonText}>
+            {isResetting ? 'Suppression en cours...' : '🗑️ Supprimer mes données locales'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -305,8 +368,23 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    marginBottom: 12,
   },
   logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  resetButton: {
+    backgroundColor: '#DC2626',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  resetButtonDisabled: {
+    opacity: 0.5,
+  },
+  resetButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../types/storage';
+import { getNextOnboardingStep as getNextStep, type OnboardingState as FlowState } from '../services/onboardingFlow';
 
 interface ProfileData {
   name?: string;
@@ -14,7 +15,7 @@ interface ProfileData {
   birthPlace?: string; // Ex: "Paris, France"
   birthLatitude?: number;
   birthLongitude?: number;
-  birthTimezone?: string; // Ex: "Europe/Paris"
+  // birthTimezone supprimé - sera auto-détecté par le backend depuis lat/lon
 }
 
 interface OnboardingState {
@@ -38,6 +39,9 @@ interface OnboardingState {
   setDisclaimerSeen: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   reset: () => Promise<void>;
+
+  // Helper de navigation
+  getNextOnboardingStep: () => string;
 
   // Initialisation depuis AsyncStorage
   hydrate: () => Promise<void>;
@@ -77,32 +81,48 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   },
 
   completeOnboarding: async () => {
-    console.log('[OnboardingStore] ✅ completeOnboarding() - Avant:', {
-      hasSeenWelcomeScreen: get().hasSeenWelcomeScreen,
-      hasCompletedProfile: get().hasCompletedProfile,
-      hasAcceptedConsent: get().hasAcceptedConsent,
-      hasSeenDisclaimer: get().hasSeenDisclaimer,
-      hasCompletedOnboarding: get().hasCompletedOnboarding,
-    });
-    
-    // Mettre TOUS les flags finaux pour garantir la cohérence
-    await AsyncStorage.multiSet([
-      [STORAGE_KEYS.ONBOARDING_COMPLETED, 'true'],
-      [STORAGE_KEYS.HAS_SEEN_WELCOME_SCREEN, 'true'], // Important : aussi marquer welcome comme vu
-    ]);
-    
-    set({ 
-      hasCompletedOnboarding: true,
-      hasSeenWelcomeScreen: true, // Garantir cohérence
-    });
-    
-    console.log('[OnboardingStore] ✅ completeOnboarding() - Après:', {
-      hasSeenWelcomeScreen: true,
-      hasCompletedProfile: get().hasCompletedProfile,
-      hasAcceptedConsent: get().hasAcceptedConsent,
-      hasSeenDisclaimer: get().hasSeenDisclaimer,
-      hasCompletedOnboarding: true,
-    });
+    const state = get();
+
+    // GUARD: Vérifier que TOUTES les étapes sont complètes
+    const preconditions = {
+      hasSeenWelcomeScreen: state.hasSeenWelcomeScreen,
+      hasAcceptedConsent: state.hasAcceptedConsent,
+      hasCompletedProfile: state.hasCompletedProfile,
+      hasSeenDisclaimer: state.hasSeenDisclaimer,
+    };
+
+    const allComplete = Object.values(preconditions).every(v => v === true);
+
+    if (!allComplete) {
+      console.error('[OnboardingStore] ❌ completeOnboarding() - Préconditions manquantes:', preconditions);
+      throw new Error('Cannot complete onboarding: preconditions not met');
+    }
+
+    console.log('[OnboardingStore] ✅ completeOnboarding() - Toutes les préconditions OK');
+
+    // Marquer onboarding comme terminé
+    await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
+    set({ hasCompletedOnboarding: true });
+
+    console.log('[OnboardingStore] ✅ completeOnboarding() - Terminé');
+  },
+
+  /**
+   * Calcule la prochaine étape d'onboarding selon l'état actuel
+   * Ordre: welcome → consent → profile → disclaimer → slides → home
+   * Utilise la fonction pure du service onboardingFlow
+   */
+  getNextOnboardingStep: () => {
+    const state = get();
+    // Map store state to flow state type
+    const flowState: FlowState = {
+      hasSeenWelcomeScreen: state.hasSeenWelcomeScreen,
+      hasAcceptedConsent: state.hasAcceptedConsent,
+      hasCompletedProfile: state.hasCompletedProfile,
+      hasSeenDisclaimer: state.hasSeenDisclaimer,
+      hasCompletedOnboarding: state.hasCompletedOnboarding,
+    };
+    return getNextStep(flowState);
   },
 
   reset: async () => {
@@ -164,13 +184,25 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
         profileDataStr,
         consent,
         disclaimer,
+        // Migration: vérifier ancienne clé hasSeenWelcome (sans "Screen")
+        oldHasSeenWelcome,
       ] = await AsyncStorage.multiGet([
         STORAGE_KEYS.HAS_SEEN_WELCOME_SCREEN,
         STORAGE_KEYS.ONBOARDING_COMPLETED,
         STORAGE_KEYS.ONBOARDING_PROFILE,
         STORAGE_KEYS.ONBOARDING_CONSENT,
         STORAGE_KEYS.ONBOARDING_DISCLAIMER,
+        'hasSeenWelcome', // Ancienne clé pour migration
       ]);
+
+      // Migration: si ancienne clé hasSeenWelcome=true, migrer vers hasSeenWelcomeScreen
+      let hasSeenWelcomeScreenValue = hasSeenWelcome[1] === 'true';
+      if (!hasSeenWelcomeScreenValue && oldHasSeenWelcome[1] === 'true') {
+        console.log('[OnboardingStore] 🔄 Migration: hasSeenWelcome=true → hasSeenWelcomeScreen=true');
+        await AsyncStorage.setItem(STORAGE_KEYS.HAS_SEEN_WELCOME_SCREEN, 'true');
+        await AsyncStorage.removeItem('hasSeenWelcome'); // Nettoyer ancienne clé
+        hasSeenWelcomeScreenValue = true;
+      }
 
       let profileData: ProfileData | null = null;
       if (profileDataStr[1]) {
@@ -187,7 +219,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       }
 
       set({
-        hasSeenWelcomeScreen: hasSeenWelcome[1] === 'true',
+        hasSeenWelcomeScreen: hasSeenWelcomeScreenValue,
         hasCompletedOnboarding: onboardingCompleted[1] === 'true',
         hasCompletedProfile: !!profileData,
         hasAcceptedConsent: consent[1] === 'true',
@@ -196,9 +228,10 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
         hydrated: true, // Marquer comme hydraté
       });
       console.log('[OnboardingStore] ✅ Hydraté:', {
-        hasSeenWelcome: hasSeenWelcome[1] === 'true',
+        hasSeenWelcomeScreen: hasSeenWelcomeScreenValue,
         hasCompletedProfile: !!profileData,
         hasAcceptedConsent: consent[1] === 'true',
+        hasCompletedOnboarding: onboardingCompleted[1] === 'true',
       });
     } catch (error) {
       console.error('[OnboardingStore] Error hydrating from AsyncStorage:', error);
