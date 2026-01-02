@@ -50,7 +50,8 @@ async def generate_natal_interpretation(
     Raises:
         HTTPException 500: Si erreur génération ou DB
     """
-    user_id = current_user.id
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
 
     # Validation: Lilith non supportée en v3+ (versions senior)
     if PROMPT_VERSION >= 3 and request.subject == 'lilith':
@@ -383,7 +384,8 @@ async def delete_natal_interpretation(
     Returns:
         204 No Content
     """
-    user_id = current_user.id
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
 
     result = await db.execute(
         select(NatalInterpretation).where(

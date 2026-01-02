@@ -252,7 +252,7 @@ def _compute_rolling_months(now_utc: datetime) -> List[str]:
 
 async def _generate_rolling_returns(
     db: AsyncSession,
-    current_user: User,
+    user_id: int,
     correlation_id: str,
     months: List[str],
     natal_moon_degree: float,
@@ -264,10 +264,10 @@ async def _generate_rolling_returns(
 ) -> int:
     """
     Service centralisé pour générer les révolutions lunaires rolling.
-    
+
     Args:
         db: Session DB
-        current_user: Utilisateur courant
+        user_id: ID utilisateur (primitif int pour éviter MissingGreenlet)
         correlation_id: ID de corrélation pour les logs
         months: Liste des mois à générer (format YYYY-MM)
         natal_moon_degree: Degré de la Lune natale
@@ -283,7 +283,7 @@ async def _generate_rolling_returns(
     if delete_existing:
         try:
             delete_stmt = delete(LunarReturn).where(
-                LunarReturn.user_id == current_user.id
+                LunarReturn.user_id == user_id
             )
             delete_result = await db.execute(delete_stmt)
             deleted_count = extract_result_rowcount(delete_result)
@@ -354,22 +354,22 @@ async def _generate_rolling_returns(
         # Vérifier d'abord si l'entrée existe déjà (évite calcul inutile si doublon)
         check_result = await db.execute(
             select(LunarReturn).where(
-                LunarReturn.user_id == current_user.id,
+                LunarReturn.user_id == user_id,
                 LunarReturn.month == month
             )
         )
         existing = check_result.scalar_one_or_none()
-        
+
         if existing:
             logger.debug(
                 f"[corr={correlation_id}] ℹ️ {month} existe déjà (id={existing.id}), skip génération"
             )
             generated_count += 1
             continue
-        
+
         # Créer l'entrée
         lunar_return = LunarReturn(
-            user_id=current_user.id,
+            user_id=user_id,
             month=month,
             return_date=return_date,
             lunar_ascendant=lunar_ascendant,
@@ -406,7 +406,7 @@ async def _generate_rolling_returns(
             # Refaire un SELECT pour récupérer l'entrée existante
             result = await db.execute(
                 select(LunarReturn).where(
-                    LunarReturn.user_id == current_user.id,
+                    LunarReturn.user_id == user_id,
                     LunarReturn.month == month
                 )
             )
@@ -435,27 +435,29 @@ async def _generate_rolling_if_empty(
     """
     Génère les révolutions lunaires rolling si l'utilisateur n'a aucun retour en DB.
     Utilise un advisory lock PostgreSQL pour éviter les générations concurrentes.
-    
+
     Args:
         current_user: Utilisateur courant
         db: Session DB
         correlation_id: ID de corrélation pour les logs
-    
+
     Returns:
         True si génération effectuée, False si DB non vide, lock non obtenu, ou erreur
     """
-    # Définir lock_key dès le début (int pour advisory lock PostgreSQL)
-    lock_key = int(current_user.id)
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    # Ce helper fait des commits/flush, donc extraire primitives AVANT tout await
+    user_id = int(current_user.id)
+    lock_key = user_id
     lock_acquired = False
-    
+
     logger.info(
         f"[corr={correlation_id}] 🔍 ENTER _generate_rolling_if_empty user_id={lock_key}"
     )
-    
+
     try:
         # Vérifier si l'utilisateur a déjà des retours en DB avec COUNT(*) (plus efficace)
         count_result = await db.execute(
-            select(func.count(LunarReturn.id)).where(LunarReturn.user_id == current_user.id)
+            select(func.count(LunarReturn.id)).where(LunarReturn.user_id == user_id)
         )
         existing_returns_count = count_result.scalar() or 0
         
@@ -508,13 +510,13 @@ async def _generate_rolling_if_empty(
             
             # Vérifier que le thème natal existe
             result = await db.execute(
-                select(NatalChart).where(NatalChart.user_id == current_user.id)
+                select(NatalChart).where(NatalChart.user_id == user_id)
             )
             natal_chart = result.scalar_one_or_none()
             
             if not natal_chart:
                 logger.warning(
-                    f"[corr={correlation_id}] ❌ Thème natal manquant pour user_id={current_user.id}"
+                    f"[corr={correlation_id}] ❌ Thème natal manquant pour user_id={user_id}"
                 )
                 # Lever une exception HTTP 409 pour indiquer que le natal chart est requis
                 raise HTTPException(
@@ -539,18 +541,18 @@ async def _generate_rolling_if_empty(
             # donc on doit charger le vrai User depuis la DB
             from models.user import User
             user_result = await db.execute(
-                select(User).where(User.id == current_user.id)
+                select(User).where(User.id == user_id)
             )
             db_user = user_result.scalar_one_or_none()
             
             if not db_user:
                 logger.warning(
-                    f"[corr={correlation_id}] ❌ User {current_user.id} introuvable en DB"
+                    f"[corr={correlation_id}] ❌ User {user_id} introuvable en DB"
                 )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail={
-                        "detail": f"User {current_user.id} introuvable",
+                        "detail": f"User {user_id} introuvable",
                         "correlation_id": correlation_id,
                         "error_code": "USER_NOT_FOUND"
                     }
@@ -634,7 +636,7 @@ async def _generate_rolling_if_empty(
             # Générer les retours via service centralisé
             generated_count = await _generate_rolling_returns(
                 db=db,
-                current_user=current_user,
+                user_id=user_id,
                 correlation_id=correlation_id,
                 months=months,
                 natal_moon_degree=natal_moon_degree,
@@ -650,7 +652,7 @@ async def _generate_rolling_if_empty(
             
             # Vérifier que les inserts ont bien été commités
             count_after = await db.execute(
-                select(func.count(LunarReturn.id)).where(LunarReturn.user_id == current_user.id)
+                select(func.count(LunarReturn.id)).where(LunarReturn.user_id == user_id)
             )
             count_after_value = count_after.scalar() or 0
             
@@ -735,21 +737,28 @@ async def generate_lunar_returns(
     """
     correlation_id = str(uuid4())
 
+    # 🔒 CRITIQUE: Extraire primitives IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+    user_email = str(current_user.email) if hasattr(current_user, 'email') and current_user.email else 'N/A'
+    birth_latitude_raw = current_user.birth_latitude if hasattr(current_user, 'birth_latitude') else None
+    birth_longitude_raw = current_user.birth_longitude if hasattr(current_user, 'birth_longitude') else None
+    birth_timezone_raw = current_user.birth_timezone if hasattr(current_user, 'birth_timezone') else None
+
     logger.info(
         f"[corr={correlation_id}] 🌙 Génération révolutions lunaires - "
-        f"user_id={current_user.id}, email={current_user.email}"
+        f"user_id={user_id}, email={user_email}"
     )
 
     try:
         # Vérifier que le thème natal existe (utiliser user_id INTEGER)
         result = await db.execute(
-            select(NatalChart).where(NatalChart.user_id == current_user.id)
+            select(NatalChart).where(NatalChart.user_id == user_id)
         )
         natal_chart = result.scalar_one_or_none()
 
         if not natal_chart:
             logger.warning(
-                f"[corr={correlation_id}] ❌ Thème natal manquant pour user_id={current_user.id}"
+                f"[corr={correlation_id}] ❌ Thème natal manquant pour user_id={user_id}"
             )
             detail = {
                 "detail": "Thème natal manquant. Calculez-le d'abord via POST /api/natal-chart",
@@ -775,33 +784,33 @@ async def generate_lunar_returns(
         # Note: Le schéma DB réel de natal_charts ne contient que: id, user_id, positions, computed_at, version, created_at, updated_at
         logger.debug(
             f"[corr={correlation_id}] 📍 Récupération coordonnées depuis users: "
-            f"birth_latitude={current_user.birth_latitude}, "
-            f"birth_longitude={current_user.birth_longitude}, "
-            f"birth_timezone={current_user.birth_timezone}"
+            f"birth_latitude={birth_latitude_raw}, "
+            f"birth_longitude={birth_longitude_raw}, "
+            f"birth_timezone={birth_timezone_raw}"
         )
-        
+
         birth_latitude = None
         birth_longitude = None
         birth_timezone = None
-        
-        if current_user.birth_latitude:
+
+        if birth_latitude_raw:
             try:
-                birth_latitude = float(current_user.birth_latitude)
+                birth_latitude = float(birth_latitude_raw)
             except (ValueError, TypeError):
                 logger.warning(
-                    f"[corr={correlation_id}] ⚠️ birth_latitude invalide: {current_user.birth_latitude}"
+                    f"[corr={correlation_id}] ⚠️ birth_latitude invalide: {birth_latitude_raw}"
                 )
-        
-        if current_user.birth_longitude:
+
+        if birth_longitude_raw:
             try:
-                birth_longitude = float(current_user.birth_longitude)
+                birth_longitude = float(birth_longitude_raw)
             except (ValueError, TypeError):
                 logger.warning(
-                    f"[corr={correlation_id}] ⚠️ birth_longitude invalide: {current_user.birth_longitude}"
+                    f"[corr={correlation_id}] ⚠️ birth_longitude invalide: {birth_longitude_raw}"
                 )
-        
-        if current_user.birth_timezone:
-            birth_timezone = str(current_user.birth_timezone)
+
+        if birth_timezone_raw:
+            birth_timezone = str(birth_timezone_raw)
 
         if birth_latitude is None or birth_longitude is None or not birth_timezone:
             logger.warning(
@@ -907,7 +916,7 @@ async def generate_lunar_returns(
         try:
             generated_count = await _generate_rolling_returns(
                 db=db,
-                current_user=current_user,
+                user_id=user_id,
                 correlation_id=correlation_id,
                 months=months,
                 natal_moon_degree=natal_moon_degree,
@@ -952,7 +961,7 @@ async def generate_lunar_returns(
         try:
             count_result = await db.execute(
                 select(LunarReturn).where(
-                    LunarReturn.user_id == current_user.id,
+                    LunarReturn.user_id == user_id,
                     LunarReturn.return_date >= start_date,
                     LunarReturn.return_date < end_date
                 )
@@ -1013,10 +1022,13 @@ async def get_all_lunar_returns(
     db: AsyncSession = Depends(get_db)
 ):
     """Récupère toutes les révolutions lunaires de l'utilisateur"""
-    
+
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     result = await db.execute(
         select(LunarReturn)
-        .where(LunarReturn.user_id == current_user.id)
+        .where(LunarReturn.user_id == user_id)
         .order_by(LunarReturn.month)
     )
     returns = result.scalars().all()
@@ -1050,7 +1062,7 @@ async def get_current_lunar_return(
     try:
         # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
         # Après un commit/rollback, current_user.id peut déclencher un lazy-load sync
-        user_id = current_user.id  # Force evaluation NOW avant tout await
+        user_id = int(current_user.id)  # Force evaluation NOW avant tout await
 
         logger.info(f"[corr={correlation_id}] 🔍 Recherche révolution lunaire en cours pour user_id={user_id}")
 
@@ -1254,8 +1266,11 @@ async def get_current_lunar_report(
     """Récupère le rapport mensuel de la révolution lunaire en cours"""
     correlation_id = str(uuid4())
 
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     try:
-        logger.info(f"[corr={correlation_id}] 📊 Génération rapport mensuel pour user_id={current_user.id}")
+        logger.info(f"[corr={correlation_id}] 📊 Génération rapport mensuel pour user_id={user_id}")
 
         # 1. Récupérer révolution lunaire courante
         now = datetime.now(timezone.utc)
@@ -1264,7 +1279,7 @@ async def get_current_lunar_report(
         result = await db.execute(
             select(LunarReturn)
             .where(
-                LunarReturn.user_id == current_user.id,
+                LunarReturn.user_id == user_id,
                 LunarReturn.month == current_month
             )
         )
@@ -1309,15 +1324,18 @@ async def get_lunar_report_by_id(
     """
     correlation_id = str(uuid4())
 
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     try:
-        logger.info(f"[corr={correlation_id}] 📊 Génération rapport mensuel pour lunar_return_id={lunar_return_id}, user_id={current_user.id}")
+        logger.info(f"[corr={correlation_id}] 📊 Génération rapport mensuel pour lunar_return_id={lunar_return_id}, user_id={user_id}")
 
         # 1. Récupérer révolution lunaire par ID
         result = await db.execute(
             select(LunarReturn)
             .where(
                 LunarReturn.id == lunar_return_id,
-                LunarReturn.user_id == current_user.id  # Sécurité : user ne peut accéder qu'à ses propres cycles
+                LunarReturn.user_id == user_id  # Sécurité : user ne peut accéder qu'à ses propres cycles
             )
         )
         lunar_return = result.scalar_one_or_none()
@@ -1356,14 +1374,17 @@ async def get_next_lunar_return(
     """Récupère le prochain retour lunaire de l'utilisateur (>= maintenant)"""
     correlation_id = str(uuid4())
 
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     try:
-        logger.info(f"[corr={correlation_id}] 🔍 Recherche prochain retour lunaire pour user_id={current_user.id}")
+        logger.info(f"[corr={correlation_id}] 🔍 Recherche prochain retour lunaire pour user_id={user_id}")
 
         now = datetime.now(timezone.utc)
         result = await db.execute(
             select(LunarReturn)
             .where(
-                LunarReturn.user_id == current_user.id,
+                LunarReturn.user_id == user_id,
                 LunarReturn.return_date >= now
             )
             .order_by(LunarReturn.return_date.asc())
@@ -1381,11 +1402,11 @@ async def get_next_lunar_return(
             if hasattr(db, '_added_objects'):
                 items = [obj for obj in db._added_objects if isinstance(obj, LunarReturn)]
         
-        filtered = _post_filter_returns(items, current_user.id, now)
-        
+        filtered = _post_filter_returns(items, user_id, now)
+
         if not filtered:
             # Log en DEBUG plutôt qu'INFO car c'est un cas normal (pas d'erreur)
-            logger.debug(f"[corr={correlation_id}] Aucun retour lunaire à venir trouvé pour user_id={current_user.id}")
+            logger.debug(f"[corr={correlation_id}] Aucun retour lunaire à venir trouvé pour user_id={user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Aucun retour lunaire à venir. Utilisez POST /api/lunar-returns/generate pour générer les retours."
@@ -1415,25 +1436,28 @@ async def get_rolling_lunar_returns(
     Idéal pour la timeline mobile MVP sans se soucier des années.
     """
     correlation_id = str(uuid4())
-    
+
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     logger.info(
-        f"[corr={correlation_id}] 🔍 Recherche rolling 12 retours lunaires pour user_id={current_user.id}"
+        f"[corr={correlation_id}] 🔍 Recherche rolling 12 retours lunaires pour user_id={user_id}"
     )
-    
+
     now = datetime.now(timezone.utc)
-    
+
     # Essayer d'abord: les 12 prochains retours à partir de maintenant
     result = await db.execute(
         select(LunarReturn)
         .where(
-            LunarReturn.user_id == current_user.id,
+            LunarReturn.user_id == user_id,
             LunarReturn.return_date >= now
         )
         .order_by(LunarReturn.return_date.asc())
         .limit(12)
     )
     items = extract_scalars_all(result)
-    
+
     # Filtrer en Python (fallback pour tests avec FakeAsyncSession)
     # Si items est vide mais qu'on est en test (FakeResult), essayer de récupérer tous les objets
     if not items:
@@ -1441,8 +1465,8 @@ async def get_rolling_lunar_returns(
         # On essaie de récupérer directement depuis la session si possible
         if hasattr(db, '_added_objects'):
             items = [obj for obj in db._added_objects if isinstance(obj, LunarReturn)]
-    
-    returns = _post_filter_returns(items, current_user.id, now)
+
+    returns = _post_filter_returns(items, user_id, now)
     
     # Fallback: si < 12 trouvés, prendre les 12 derniers (triés DESC) puis retourner triés ASC
     if len(returns) < 12:
@@ -1452,7 +1476,7 @@ async def get_rolling_lunar_returns(
         )
         fallback_result = await db.execute(
             select(LunarReturn)
-            .where(LunarReturn.user_id == current_user.id)
+            .where(LunarReturn.user_id == user_id)
             .order_by(LunarReturn.return_date.desc())
             .limit(12)
         )
@@ -1460,14 +1484,14 @@ async def get_rolling_lunar_returns(
         # Filtrer par user_id seulement (pas de filtre date pour le fallback)
         fallback_filtered = [
             r for r in fallback_items
-            if getattr(r, "user_id", None) == current_user.id
+            if getattr(r, "user_id", None) == user_id
         ]
         # Trier ASC pour retourner du plus ancien au plus récent
         fallback_filtered.sort(key=lambda r: _ensure_dt_utc(getattr(r, "return_date", None)) or datetime.min.replace(tzinfo=timezone.utc))
         returns = fallback_filtered[:12]
     
     logger.info(
-        f"[corr={correlation_id}] ✅ {len(returns)} retour(s) trouvé(s) pour rolling (user_id={current_user.id})"
+        f"[corr={correlation_id}] ✅ {len(returns)} retour(s) trouvé(s) pour rolling (user_id={user_id})"
     )
     
     # Vérifier que le premier retour est >= now (si on a des retours)
@@ -1488,17 +1512,20 @@ async def get_lunar_returns_for_year(
 ):
     """Récupère tous les retours lunaires d'un utilisateur pour une année donnée"""
     correlation_id = str(uuid4())
-    
-    logger.info(f"[corr={correlation_id}] 🔍 Recherche retours lunaires année {year} pour user_id={current_user.id}")
-    
+
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
+    logger.info(f"[corr={correlation_id}] 🔍 Recherche retours lunaires année {year} pour user_id={user_id}")
+
     # Calculer le début et la fin de l'année en UTC
     start_date = datetime(year, 1, 1, tzinfo=timezone.utc)
     end_date = datetime(year, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
-    
+
     result = await db.execute(
         select(LunarReturn)
         .where(
-            LunarReturn.user_id == current_user.id,
+            LunarReturn.user_id == user_id,
             LunarReturn.return_date >= start_date,
             LunarReturn.return_date <= end_date
         )
@@ -1517,10 +1544,13 @@ async def get_lunar_return_by_month(
     db: AsyncSession = Depends(get_db)
 ):
     """Récupère une révolution lunaire spécifique par mois"""
-    
+
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     result = await db.execute(
         select(LunarReturn).where(
-            LunarReturn.user_id == current_user.id,
+            LunarReturn.user_id == user_id,
             LunarReturn.month == month
         )
     )
@@ -1542,19 +1572,19 @@ async def dev_purge_lunar_returns(
 ):
     """
     Route DEV: Purge tous les lunar returns de l'utilisateur courant.
-    
+
     Protection:
     - Uniquement disponible en mode development (APP_ENV=development)
     - Nécessite DEV_AUTH_BYPASS=1 OU authentification JWT valide
     - Nécessite ALLOW_DEV_PURGE=1 (flag de sécurité supplémentaire)
-    
+
     Usage pour tests de concurrence:
         # Avec DEV_AUTH_BYPASS
         export DEV_AUTH_BYPASS=1
         export ALLOW_DEV_PURGE=1
         curl -X POST http://127.0.0.1:8000/api/lunar-returns/dev/purge \
           -H "X-Dev-External-Id: dev-remi"
-        
+
         # Avec JWT
         TOKEN=$(curl -X POST http://127.0.0.1:8000/api/auth/login \
           -H "Content-Type: application/x-www-form-urlencoded" \
@@ -1562,7 +1592,7 @@ async def dev_purge_lunar_returns(
           | jq -r '.access_token')
         curl -X POST http://127.0.0.1:8000/api/lunar-returns/dev/purge \
           -H "Authorization: Bearer $TOKEN"
-    
+
     Returns:
         {
             "message": "Purge effectuée",
@@ -1573,7 +1603,12 @@ async def dev_purge_lunar_returns(
         }
     """
     correlation_id = str(uuid4())
-    
+
+    # 🔒 CRITIQUE: Extraire primitives IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+    user_email_initial = str(current_user.email) if hasattr(current_user, 'email') and current_user.email else None
+    user_external_id_initial = str(current_user.dev_external_id) if hasattr(current_user, 'dev_external_id') and current_user.dev_external_id else None
+
     # Vérification 1: Mode development uniquement
     if settings.APP_ENV != "development":
         logger.warning(
@@ -1583,7 +1618,7 @@ async def dev_purge_lunar_returns(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Route non disponible (uniquement en mode development)"
         )
-    
+
     # Vérification 2: ALLOW_DEV_PURGE doit être activé
     allow_dev_purge = os.getenv("ALLOW_DEV_PURGE", "").lower() in ("1", "true", "yes", "on")
     if not allow_dev_purge:
@@ -1594,60 +1629,53 @@ async def dev_purge_lunar_returns(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Route non disponible (ALLOW_DEV_PURGE non activé)"
         )
-    
+
     # Vérification 3: DEV_AUTH_BYPASS ou JWT valide (géré par get_current_user)
     # Si on arrive ici, l'authentification a réussi
-    
+
     try:
         # Récupérer l'email de l'utilisateur si disponible (peut être None en mode DEV_AUTH_BYPASS lightweight)
-        user_email = None
-        user_external_id = None
+        user_email = user_email_initial
+        user_external_id = user_external_id_initial
 
-        if hasattr(current_user, 'email') and current_user.email:
-            user_email = current_user.email
-
-        if hasattr(current_user, 'dev_external_id') and current_user.dev_external_id:
-            user_external_id = current_user.dev_external_id
-
-        if hasattr(current_user, 'id'):
-            # En mode DEV_AUTH_BYPASS lightweight, on peut avoir juste un SimpleNamespace avec id
-            # Essayer de récupérer l'email depuis la DB
-            try:
-                user_result = await db.execute(
-                    select(User).where(User.id == current_user.id)
-                )
-                user_obj = user_result.scalar_one_or_none()
-                if user_obj:
-                    user_email = user_obj.email or user_email
-                    user_external_id = user_obj.dev_external_id or user_external_id
-            except Exception as e:
-                logger.warning(f"[corr={correlation_id}] ⚠️ Échec récupération user details: {e}")
-                pass  # Si échec, user_email reste None
+        # En mode DEV_AUTH_BYPASS lightweight, on peut avoir juste un SimpleNamespace avec id
+        # Essayer de récupérer l'email depuis la DB
+        try:
+            user_result = await db.execute(
+                select(User).where(User.id == user_id)
+            )
+            user_obj = user_result.scalar_one_or_none()
+            if user_obj:
+                user_email = user_obj.email or user_email
+                user_external_id = user_obj.dev_external_id or user_external_id
+        except Exception as e:
+            logger.warning(f"[corr={correlation_id}] ⚠️ Échec récupération user details: {e}")
+            pass  # Si échec, user_email reste None
 
         logger.info(
-            f"[corr={correlation_id}] 🗑️  DEV Purge lunar returns pour user_id={current_user.id} "
+            f"[corr={correlation_id}] 🗑️  DEV Purge lunar returns pour user_id={user_id} "
             f"(email={user_email or 'N/A'}, external_id={user_external_id or 'N/A'})"
         )
         
         # Compter avant suppression pour log
         count_before = await db.execute(
-            select(LunarReturn).where(LunarReturn.user_id == current_user.id)
+            select(LunarReturn).where(LunarReturn.user_id == user_id)
         )
         count_before_list = extract_scalars_all(count_before)
         count_before_num = len(count_before_list)
-        
+
         # Suppression ciblée: uniquement les lunar_returns de l'utilisateur courant
         delete_stmt = delete(LunarReturn).where(
-            LunarReturn.user_id == current_user.id
+            LunarReturn.user_id == user_id
         )
         delete_result = await db.execute(delete_stmt)
         deleted_count = extract_result_rowcount(delete_result)
-        
+
         await db.commit()
-        
+
         # Vérification post-suppression
         count_after = await db.execute(
-            select(LunarReturn).where(LunarReturn.user_id == current_user.id)
+            select(LunarReturn).where(LunarReturn.user_id == user_id)
         )
         count_after_list = extract_scalars_all(count_after)
         count_after_num = len(count_after_list)
@@ -1660,7 +1688,7 @@ async def dev_purge_lunar_returns(
         
         return {
             "message": "Purge effectuée",
-            "user_id": current_user.id,
+            "user_id": user_id,
             "user_email": user_email,
             "user_external_id": user_external_id,
             "deleted_count": deleted_count if deleted_count is not None else count_before_num,

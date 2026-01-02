@@ -86,6 +86,16 @@ async def calculate_natal_chart(
     Calcule le thème natal et le sauvegarde
     IDEMPOTENT: Si un thème existe déjà avec les mêmes paramètres, retourne l'existant sans recalculer
     """
+
+    # 🔒 IMPORTANT: extraire tout de suite des primitives
+    user_id = int(current_user.id)
+    user_email = getattr(current_user, "email", f"dev+{user_id}@local.dev")
+    birth_date_existing = getattr(current_user, "birth_date", None)
+    birth_time_existing = getattr(current_user, "birth_time", None)
+    birth_latitude_existing = getattr(current_user, "birth_latitude", None)
+    birth_longitude_existing = getattr(current_user, "birth_longitude", None)
+    birth_timezone_existing = getattr(current_user, "birth_timezone", None)
+
     # Fallback birth_time à "12:00" (midi) si manquant (comme dans l'ancienne app)
     # Normaliser le format time en HH:MM (tronquer les secondes si présentes)
     birth_time_raw = data.time if data.time else "12:00"
@@ -104,19 +114,19 @@ async def calculate_natal_chart(
     # IDEMPOTENCE CHECK: Vérifier si un chart existe déjà avec les mêmes paramètres
     try:
         result = await db.execute(
-            select(NatalChart).where(NatalChart.user_id == current_user.id)
+            select(NatalChart).where(NatalChart.user_id == user_id)
         )
         existing_chart = result.scalar_one_or_none()
 
         if existing_chart:
             # Convertir birth_date/birth_time existants pour comparaison
             # Note: Les données de naissance sont dans User, pas dans NatalChart
-            existing_date_str = current_user.birth_date if current_user.birth_date else None
-            existing_time_str = current_user.birth_time[:5] if current_user.birth_time and len(current_user.birth_time) >= 5 else (current_user.birth_time if current_user.birth_time else None)  # HH:MM
+            existing_date_str = birth_date_existing
+            existing_time_str = birth_time_existing[:5] if birth_time_existing and len(birth_time_existing) >= 5 else birth_time_existing
 
             # Convertir Decimal (NUMERIC) en float pour comparaison (gérer NULL)
-            existing_lat = float(current_user.birth_latitude) if current_user.birth_latitude is not None else None
-            existing_lon = float(current_user.birth_longitude) if current_user.birth_longitude is not None else None
+            existing_lat = float(birth_latitude_existing) if birth_latitude_existing is not None else None
+            existing_lon = float(birth_longitude_existing) if birth_longitude_existing is not None else None
 
             # Normaliser les inputs en float (sécurité)
             lat_in = float(data.latitude)
@@ -126,14 +136,14 @@ async def calculate_natal_chart(
             same_date = existing_date_str == data.date
             same_time = existing_time_str == birth_time
             same_coords = _same_coords(existing_lat, existing_lon, lat_in, lon_in)
-            same_timezone = getattr(current_user, 'birth_timezone', None) == detected_timezone
+            same_timezone = birth_timezone_existing == detected_timezone
 
             params_match = same_date and same_time and same_coords and same_timezone
 
             if params_match:
                 # CACHE HIT: paramètres identiques, retourner l'existant sans recalculer
                 logger.info(
-                    f"[IDEMPOTENCE] HIT - natal_chart_id={existing_chart.id} user_id={current_user.id} "
+                    f"[IDEMPOTENCE] HIT - natal_chart_id={existing_chart.id} user_id={user_id} "
                     f"reason=same_inputs (date={data.date} time={birth_time} coords=({lat_in:.4f},{lon_in:.4f}) tz={detected_timezone})"
                 )
 
@@ -180,21 +190,19 @@ async def calculate_natal_chart(
 
                 reason_str = "|".join(reason_parts) if reason_parts else "unknown"
                 logger.info(
-                    f"[IDEMPOTENCE] MISS - natal_chart_id={existing_chart.id} user_id={current_user.id} "
+                    f"[IDEMPOTENCE] MISS - natal_chart_id={existing_chart.id} user_id={user_id} "
                     f"reason={reason_str}"
                 )
         else:
             # Pas de chart existant
             logger.info(
-                f"[IDEMPOTENCE] MISS - user_id={current_user.id} reason=no_existing"
+                f"[IDEMPOTENCE] MISS - user_id={user_id} reason=no_existing"
             )
     except Exception as e:
         logger.error(f"❌ Erreur DB lors de la vérification idempotence: {e}", exc_info=True)
         # Continuer malgré l'erreur de vérification, on recalculera
 
-    # Protéger l'accès à email (peut être un SimpleNamespace lightweight en DEV)
-    user_email = getattr(current_user, "email", f"dev+{current_user.id}@local.dev")
-    logger.info(f"📊 Calcul thème natal - user_id={current_user.id}, email={user_email}, date={data.date} {birth_time}, timezone={detected_timezone}")
+    logger.info(f"📊 Calcul thème natal - user_id={user_id}, email={user_email}, date={data.date} {birth_time}, timezone={detected_timezone}")
     
     # Mode DEV Mock: retourner un thème natal fake sans appeler RapidAPI
     if settings.APP_ENV == "development" and settings.DEV_MOCK_NATAL:
@@ -237,10 +245,10 @@ async def calculate_natal_chart(
         # Sauvegarder en DB (même logique que le vrai calcul)
         try:
             result = await db.execute(
-                select(NatalChart).where(NatalChart.user_id == current_user.id)
+                select(NatalChart).where(NatalChart.user_id == user_id)
             )
             existing_chart = result.scalar_one_or_none()
-            
+
             if existing_chart:
                 existing_chart.positions = positions
                 existing_chart.sun_sign = sun_sign
@@ -249,22 +257,30 @@ async def calculate_natal_chart(
                 chart = existing_chart
             else:
                 chart = NatalChart(
-                    user_id=current_user.id,
+                    user_id=user_id,
                     positions=positions,
                     sun_sign=sun_sign,
                     moon_sign=moon_sign,
                     ascendant=ascendant_sign
                 )
                 db.add(chart)
-            
-            # Mettre à jour les infos de naissance du user
-            current_user.birth_date = data.date
-            current_user.birth_time = birth_time
-            current_user.birth_latitude = str(data.latitude)
-            current_user.birth_longitude = str(data.longitude)
-            current_user.birth_place_name = data.place_name
-            current_user.birth_timezone = detected_timezone
-            
+
+            # 🔒 CRITIQUE: Mettre à jour les infos de naissance via SQLAlchemy Core (safe)
+            # NE JAMAIS modifier current_user.* directement car peut être detached/expired
+            from sqlalchemy import update
+            await db.execute(
+                update(User)
+                .where(User.id == user_id)
+                .values(
+                    birth_date=data.date,
+                    birth_time=birth_time,
+                    birth_latitude=str(data.latitude),
+                    birth_longitude=str(data.longitude),
+                    birth_place_name=data.place_name,
+                    birth_timezone=detected_timezone
+                )
+            )
+
             await db.commit()
             await db.refresh(chart)
             logger.info(f"✅ Thème natal mock sauvegardé - natal_chart_id={chart.id}")
@@ -555,7 +571,7 @@ async def calculate_natal_chart(
     # Récupérer à nouveau pour s'assurer d'avoir la dernière version (au cas où modifié entre-temps)
     try:
         result = await db.execute(
-            select(NatalChart).where(NatalChart.user_id == current_user.id)
+            select(NatalChart).where(NatalChart.user_id == user_id)
         )
         existing_chart = result.scalar_one_or_none()
     except Exception as e:
@@ -564,11 +580,11 @@ async def calculate_natal_chart(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erreur lors de l'accès à la base de données"
         )
-    
+
     if existing_chart:
-        logger.info(f"🔄 Mise à jour thème natal existant - natal_chart_id={existing_chart.id}, user_id={current_user.id}")
+        logger.info(f"🔄 Mise à jour thème natal existant - natal_chart_id={existing_chart.id}, user_id={user_id}")
     else:
-        logger.info(f"✨ Création nouveau thème natal - user_id={current_user.id}")
+        logger.info(f"✨ Création nouveau thème natal - user_id={user_id}")
     
     # Construire positions JSONB depuis raw_data (tout stocker dans positions)
     positions = {}
@@ -640,19 +656,27 @@ async def calculate_natal_chart(
         # sont stockées dans la table users, pas dans natal_charts.
         # Le schéma DB réel de natal_charts ne contient que: id, user_id, positions, computed_at, version, created_at, updated_at
         chart = NatalChart(
-            user_id=current_user.id,  # Utiliser user_id INTEGER
+            user_id=user_id,  # Utiliser user_id primitif
             positions=positions  # Tout dans positions JSONB
         )
         db.add(chart)
-        logger.debug(f"💾 Nouveau thème natal ajouté en session DB - user_id={current_user.id}")
-    
-    # Mettre à jour les infos de naissance du user (pour compatibilité)
-    current_user.birth_date = data.date
-    current_user.birth_time = birth_time
-    current_user.birth_latitude = str(data.latitude)
-    current_user.birth_longitude = str(data.longitude)
-    current_user.birth_place_name = data.place_name
-    current_user.birth_timezone = detected_timezone
+        logger.debug(f"💾 Nouveau thème natal ajouté en session DB - user_id={user_id}")
+
+    # 🔒 CRITIQUE: Mettre à jour les infos de naissance via SQLAlchemy Core (safe)
+    # NE JAMAIS modifier current_user.* directement car peut être detached/expired
+    from sqlalchemy import update
+    await db.execute(
+        update(User)
+        .where(User.id == user_id)
+        .values(
+            birth_date=data.date,
+            birth_time=birth_time,
+            birth_latitude=str(data.latitude),
+            birth_longitude=str(data.longitude),
+            birth_place_name=data.place_name,
+            birth_timezone=detected_timezone
+        )
+    )
     
     # Log clair avant commit avec tous les champs qui vont en DB
     # Note: Les données de naissance sont stockées dans users, pas dans natal_charts
@@ -809,10 +833,13 @@ async def get_natal_chart(
     db: AsyncSession = Depends(get_db)
 ):
     """Récupère le thème natal de l'utilisateur"""
-    
+
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     try:
         result = await db.execute(
-            select(NatalChart).where(NatalChart.user_id == current_user.id)
+            select(NatalChart).where(NatalChart.user_id == user_id)
         )
         chart = result.scalar_one_or_none()
     except Exception as e:

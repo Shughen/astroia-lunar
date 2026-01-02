@@ -193,11 +193,14 @@ async def lunar_return_report(
             - 422 si payload invalide (champs manquants ou mauvais format)
             - 502 si erreur provider RapidAPI
     """
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    user_id = int(current_user.id)
+
     try:
         # Conversion du modèle Pydantic en dict pour l'API
         payload = request.model_dump(exclude_none=True)
 
-        logger.info(f"📝 Génération Lunar Return Report - user: {current_user.id}, month: {request.month}")
+        logger.info(f"📝 Génération Lunar Return Report - user: {user_id}, month: {request.month}")
 
         # Appel au service RapidAPI (avec transformation du payload)
         result = await lunar_services.get_lunar_return_report(payload)
