@@ -1048,7 +1048,11 @@ async def get_current_lunar_return(
     correlation_id = str(uuid4())
 
     try:
-        logger.info(f"[corr={correlation_id}] 🔍 Recherche révolution lunaire en cours pour user_id={current_user.id}")
+        # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+        # Après un commit/rollback, current_user.id peut déclencher un lazy-load sync
+        user_id = current_user.id  # Force evaluation NOW avant tout await
+
+        logger.info(f"[corr={correlation_id}] 🔍 Recherche révolution lunaire en cours pour user_id={user_id}")
 
         now = datetime.now(timezone.utc)
 
@@ -1056,7 +1060,7 @@ async def get_current_lunar_return(
         result_past = await db.execute(
             select(LunarReturn)
             .where(
-                LunarReturn.user_id == current_user.id,
+                LunarReturn.user_id == user_id,
                 LunarReturn.return_date <= now
             )
             .order_by(LunarReturn.return_date.desc())
@@ -1069,7 +1073,7 @@ async def get_current_lunar_return(
             result_future = await db.execute(
                 select(LunarReturn)
                 .where(
-                    LunarReturn.user_id == current_user.id,
+                    LunarReturn.user_id == user_id,
                     LunarReturn.return_date >= now
                 )
                 .order_by(LunarReturn.return_date.asc())
@@ -1083,16 +1087,16 @@ async def get_current_lunar_return(
                 f"[corr={correlation_id}] ℹ️ Aucune révolution lunaire trouvée, "
                 f"vérification DB vide..."
             )
-            
+
             # Compter les retours existants AVANT génération pour diagnostic
             count_before = await db.execute(
-                select(func.count(LunarReturn.id)).where(LunarReturn.user_id == current_user.id)
+                select(func.count(LunarReturn.id)).where(LunarReturn.user_id == user_id)
             )
             count_before_value = count_before.scalar() or 0
-            
+
             logger.info(
                 f"[corr={correlation_id}] 📋 Avant _generate_rolling_if_empty: "
-                f"user_id={current_user.id}, now={now.isoformat()}, "
+                f"user_id={user_id}, now={now.isoformat()}, "
                 f"count_before={count_before_value}, calling _generate_rolling_if_empty"
             )
             
@@ -1129,7 +1133,7 @@ async def get_current_lunar_return(
                     result_past = await db.execute(
                         select(LunarReturn)
                         .where(
-                            LunarReturn.user_id == current_user.id,
+                            LunarReturn.user_id == user_id,
                             LunarReturn.return_date <= now
                         )
                         .order_by(LunarReturn.return_date.desc())
@@ -1149,7 +1153,7 @@ async def get_current_lunar_return(
                         result_future = await db.execute(
                             select(LunarReturn)
                             .where(
-                                LunarReturn.user_id == current_user.id,
+                                LunarReturn.user_id == user_id,
                                 LunarReturn.return_date >= now
                             )
                             .order_by(LunarReturn.return_date.asc())
@@ -1178,19 +1182,19 @@ async def get_current_lunar_return(
                 result_past = await db.execute(
                     select(LunarReturn)
                     .where(
-                        LunarReturn.user_id == current_user.id,
+                        LunarReturn.user_id == user_id,
                         LunarReturn.return_date <= now
                     )
                     .order_by(LunarReturn.return_date.desc())
                     .limit(1)
                 )
                 lunar_return = result_past.scalar_one_or_none()
-                
+
                 if not lunar_return:
                     result_future = await db.execute(
                         select(LunarReturn)
                         .where(
-                            LunarReturn.user_id == current_user.id,
+                            LunarReturn.user_id == user_id,
                             LunarReturn.return_date >= now
                         )
                         .order_by(LunarReturn.return_date.asc())
@@ -1201,7 +1205,7 @@ async def get_current_lunar_return(
             # Diagnostic final si toujours null
             if not lunar_return:
                 count_after = await db.execute(
-                    select(func.count(LunarReturn.id)).where(LunarReturn.user_id == current_user.id)
+                    select(func.count(LunarReturn.id)).where(LunarReturn.user_id == user_id)
                 )
                 count_after_value = count_after.scalar() or 0
                 
