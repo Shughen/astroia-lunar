@@ -56,6 +56,13 @@ jobs:
           done
           echo "❌ PostgreSQL failed to start after 30 attempts"
           exit 1
+      
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          cd apps/api
+          alembic upgrade head
           
       - name: Run tests
         run: |

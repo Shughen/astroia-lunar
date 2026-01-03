@@ -18,7 +18,9 @@ from models import user, natal_chart, lunar_return  # Import all models
 config = context.config
 
 # Override sqlalchemy.url with our settings
-config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+# Alembic is synchronous, so convert postgresql+asyncpg:// to postgresql://
+database_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+config.set_main_option('sqlalchemy.url', database_url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
