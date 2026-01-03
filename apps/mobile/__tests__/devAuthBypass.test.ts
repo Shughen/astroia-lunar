@@ -54,12 +54,12 @@ describe('getDevUserIdHeaderValue', () => {
   it('devrait logger un warning une seule fois pour valeur invalide', () => {
     const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     
-    // Premier appel avec UUID
-    getDevUserIdHeaderValue('550e8400-e29b-41d4-a716-446655440000');
+    // Premier appel avec valeur invalide
+    getDevUserIdHeaderValue('abc');
     expect(consoleSpy).toHaveBeenCalledTimes(1);
     
     // Deuxième appel avec autre valeur invalide
-    getDevUserIdHeaderValue('abc');
+    getDevUserIdHeaderValue('def');
     // Le warning ne devrait PAS être appelé une deuxième fois
     expect(consoleSpy).toHaveBeenCalledTimes(1);
     
@@ -72,6 +72,20 @@ describe('getDevUserIdHeaderValue', () => {
     getDevUserIdHeaderValue('1');
     getDevUserIdHeaderValue('123');
     
+    expect(consoleSpy).not.toHaveBeenCalled();
+    
+    consoleSpy.mockRestore();
+  });
+
+  it('ne devrait pas logger de warning pour UUID valide', () => {
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    // UUID est valide pour getDevAuthHeaderType mais getDevUserIdHeaderValue retourne null
+    // car il ne supporte que les entiers
+    const result = getDevUserIdHeaderValue('550e8400-e29b-41d4-a716-446655440000');
+    expect(result).toBeNull();
+    
+    // Aucun warning ne devrait être émis car l'UUID est valide (même si pas supporté par cette fonction)
     expect(consoleSpy).not.toHaveBeenCalled();
     
     consoleSpy.mockRestore();

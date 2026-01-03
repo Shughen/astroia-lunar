@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { getDevAuthHeaderType } from '../utils/devAuthBypass';
+import { guardedRequest } from '../utils/requestGuard';
 
 // Détection device physique vs simulateur
 const isPhysicalDevice = (): boolean => {
@@ -324,25 +325,32 @@ export interface LunarReturn {
 export const lunarReturns = {
   /**
    * Récupère la révolution lunaire en cours (mois actuel)
+   * Avec requestGuard: dédup + cache 60s
    */
   getCurrent: async (): Promise<LunarReturn | null> => {
-    try {
-      const response = await apiClient.get('/api/lunar-returns/current');
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        console.log('[API] Aucune révolution lunaire en cours (404)');
-        return null;
-      }
-      console.error('[API] Erreur getCurrent:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        url: error.config?.url,
-      });
-      throw error;
-    }
+    return guardedRequest(
+      'lunar-returns/current',
+      async () => {
+        try {
+          const response = await apiClient.get('/api/lunar-returns/current');
+          return response.data;
+        } catch (error: any) {
+          if (error.response?.status === 404) {
+            console.log('[API] Aucune révolution lunaire en cours (404)');
+            return null;
+          }
+          console.error('[API] Erreur getCurrent:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+            url: error.config?.url,
+          });
+          throw error;
+        }
+      },
+      { ttl: 60000 } // Cache 60s
+    );
   },
 
   /**
@@ -506,6 +514,7 @@ export const transits = {
 // === LUNAR PACK ===
 /**
  * Fonction standalone pour obtenir le rapport de révolution lunaire
+ * Avec requestGuard: dédup + cache 5min (données peu changeantes)
  */
 export const getLunarReturnReport = async (payload: {
   birth_date: string;
@@ -517,12 +526,20 @@ export const getLunarReturnReport = async (payload: {
   month?: string;
   [key: string]: any;
 }) => {
-  const response = await apiClient.post('/api/lunar/return/report', payload);
-  return response.data;
+  const params = { date: payload.date, month: payload.month };
+  return guardedRequest(
+    'lunar/return/report',
+    async () => {
+      const response = await apiClient.post('/api/lunar/return/report', payload);
+      return response.data;
+    },
+    { ttl: 300000, params } // Cache 5min avec params pour clé stable
+  );
 };
 
 /**
  * Fonction standalone pour obtenir le statut Void of Course
+ * Avec requestGuard: dédup + cache 2min (peut changer rapidement)
  */
 export const getVoidOfCourse = async (payload: {
   date: string;
@@ -532,12 +549,20 @@ export const getVoidOfCourse = async (payload: {
   timezone: string;
   [key: string]: any;
 }) => {
-  const response = await apiClient.post('/api/lunar/voc', payload);
-  return response.data;
+  const params = { date: payload.date, time: payload.time };
+  return guardedRequest(
+    'lunar/voc',
+    async () => {
+      const response = await apiClient.post('/api/lunar/voc', payload);
+      return response.data;
+    },
+    { ttl: 120000, params } // Cache 2min avec params pour clé stable
+  );
 };
 
 /**
  * Fonction standalone pour obtenir la mansion lunaire
+ * Avec requestGuard: dédup + cache 5min (données peu changeantes)
  */
 export const getLunarMansion = async (payload: {
   date: string;
@@ -547,8 +572,15 @@ export const getLunarMansion = async (payload: {
   timezone: string;
   [key: string]: any;
 }) => {
-  const response = await apiClient.post('/api/lunar/mansion', payload);
-  return response.data;
+  const params = { date: payload.date, time: payload.time };
+  return guardedRequest(
+    'lunar/mansion',
+    async () => {
+      const response = await apiClient.post('/api/lunar/mansion', payload);
+      return response.data;
+    },
+    { ttl: 300000, params } // Cache 5min avec params pour clé stable
+  );
 };
 
 /**

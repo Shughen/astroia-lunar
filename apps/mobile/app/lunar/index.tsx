@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { getLunarReturnReport, getVoidOfCourse, getLunarMansion } from '../../services/api';
 import { showNetworkErrorAlert } from '../../utils/errorHandler';
+import { isMockResponse, getProviderLabel, cleanInterpretationText } from '../../utils/mockUtils';
+import { isDev } from '../../utils/env';
 
 /**
  * Fonction utilitaire pour accéder aux propriétés imbriquées de manière sûre
@@ -138,17 +140,30 @@ export default function LunaPackScreen() {
   const renderSummary = () => {
     if (!result) return null;
 
-    const { kind, data, provider } = result;
+    const { kind, data } = result;
+    const isMock = isMockResponse(result);
+    const providerLabel = getProviderLabel(result);
 
     return (
       <View style={styles.resultContainer}>
-        <Text style={styles.resultTitle}>
-          {kind === 'lunar_return_report' && '🌙 Lunar Return Report'}
-          {kind === 'void_of_course' && '🌑 Void of Course'}
-          {kind === 'lunar_mansion' && '🏰 Lunar Mansion'}
-        </Text>
+        <View style={styles.resultHeader}>
+          <Text style={styles.resultTitle}>
+            {kind === 'lunar_return_report' && '🌙 Lunar Return Report'}
+            {kind === 'void_of_course' && '🌑 Void of Course'}
+            {kind === 'lunar_mansion' && '🏰 Lunar Mansion'}
+          </Text>
+          {/* Badge MOCK uniquement en dev */}
+          {isDev() && isMock && (
+            <View style={styles.mockBadge}>
+              <Text style={styles.mockBadgeText}>MOCK</Text>
+            </View>
+          )}
+        </View>
 
-        <Text style={styles.provider}>Provider: {provider}</Text>
+        {/* Provider label uniquement en dev */}
+        {isDev() && (
+          <Text style={styles.provider}>Provider: {providerLabel}</Text>
+        )}
 
         <View style={styles.summaryBox}>
           <Text style={styles.summaryTitle}>Résumé</Text>
@@ -179,9 +194,9 @@ export default function LunaPackScreen() {
                   🏠 Maison: {get(data, 'moon.house')}
                 </Text>
               )}
-              {get(data, 'interpretation') && (
+              {(isMock || get(data, 'interpretation')) && (
                 <Text style={styles.summaryText} numberOfLines={2}>
-                  💬 {get(data, 'interpretation', '').substring(0, 80)}...
+                  💬 {cleanInterpretationText(get(data, 'interpretation', ''), isMock)}
                 </Text>
               )}
             </>
@@ -240,9 +255,9 @@ export default function LunaPackScreen() {
                 </Text>
               )}
 
-              {get(data, 'mansion.interpretation') && (
+              {(isMock || get(data, 'mansion.interpretation')) && (
                 <Text style={styles.summaryText} numberOfLines={2}>
-                  💬 {get(data, 'mansion.interpretation')}
+                  💬 {cleanInterpretationText(get(data, 'mansion.interpretation'), isMock)}
                 </Text>
               )}
 
@@ -265,21 +280,26 @@ export default function LunaPackScreen() {
           )}
         </View>
 
-        <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={() => setShowRawJson(!showRawJson)}
-        >
-          <Text style={styles.toggleButtonText}>
-            {showRawJson ? '📋 Masquer JSON' : '🔍 Voir JSON complet'}
-          </Text>
-        </TouchableOpacity>
+        {/* Bouton "Voir JSON" uniquement en dev */}
+        {isDev() && (
+          <>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowRawJson(!showRawJson)}
+            >
+              <Text style={styles.toggleButtonText}>
+                {showRawJson ? '📋 Masquer JSON' : '🔍 Voir JSON complet'}
+              </Text>
+            </TouchableOpacity>
 
-        {showRawJson && (
-          <ScrollView style={styles.jsonContainer}>
-            <Text style={styles.jsonText}>
-              {JSON.stringify(result, null, 2)}
-            </Text>
-          </ScrollView>
+            {showRawJson && (
+              <ScrollView style={styles.jsonContainer}>
+                <Text style={styles.jsonText}>
+                  {JSON.stringify(result, null, 2)}
+                </Text>
+              </ScrollView>
+            )}
+          </>
         )}
       </View>
     );
@@ -430,11 +450,32 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#8B7BF7',
   },
+  resultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   resultTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 8,
+    flex: 1,
+  },
+  mockBadge: {
+    backgroundColor: 'rgba(139, 123, 247, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 123, 247, 0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  mockBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#B794F6',
+    letterSpacing: 0.5,
   },
   provider: {
     fontSize: 12,
