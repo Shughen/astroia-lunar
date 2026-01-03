@@ -10,6 +10,19 @@
     ],
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3b5f9eb2-5f25-4034-81cb-abe7f83345cb"
+      }
+    },
+    "owner": "shughen85",
+    "ios": {
+      "bundleIdentifier": "com.shughen85.astroialunar",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
   }
 }
