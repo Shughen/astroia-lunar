@@ -22,15 +22,17 @@ const LinearGradientComponent = LinearGradient || (({ colors, style, children, .
 });
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
 import { useNotificationsStore } from '../stores/useNotificationsStore';
 import { useResetStore } from '../stores/useResetStore';
-import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader } from '../services/api';
+import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader, lunaPack } from '../services/api';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { DailyRitualCard } from '../components/DailyRitualCard';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
 import { cleanupGhostFlags } from '../services/onboardingMigration';
+import { trackEvent } from '../utils/analytics';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -51,6 +53,12 @@ export default function HomeScreen() {
   const [isCheckingRouting, setIsCheckingRouting] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
   const routingInFlightRef = useRef(false);
+  const [dailyClimate, setDailyClimate] = useState<{
+    date: string;
+    moon: { sign: string; degree: number; phase: string };
+    insight: { title: string; text: string; keywords: string[]; version: string };
+  } | null>(null);
+  const [dailyClimateLoading, setDailyClimateLoading] = useState(false);
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
@@ -201,8 +209,49 @@ export default function HomeScreen() {
   useEffect(() => {
     if ((isAuthenticated || isDevAuthBypassActive()) && !isCheckingRouting) {
       loadCurrentLunarReturn();
+      loadDailyClimate();
     }
   }, [isAuthenticated, isCheckingRouting]);
+
+  // Précharger Daily Climate (sans lastViewedDate)
+  const loadDailyClimate = async () => {
+    if (dailyClimateLoading || dailyClimate) return;
+    setDailyClimateLoading(true);
+    try {
+      const data = await lunaPack.getDailyClimate();
+      setDailyClimate(data);
+    } catch (error) {
+      console.error('[INDEX] Erreur chargement Daily Climate:', error);
+    } finally {
+      setDailyClimateLoading(false);
+    }
+  };
+
+  // Gérer le clic sur la carte Daily Climate
+  const handleDailyClimatePress = async () => {
+    try {
+      // Lire lastViewedDate depuis AsyncStorage
+      const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      // Déterminer firstOfDay
+      const firstOfDay = lastViewedDate !== today;
+      
+      // Écrire lastViewedDate = aujourd'hui
+      await AsyncStorage.setItem('dailyClimate:lastViewedDate', today);
+      
+      // Track event
+      trackEvent({
+        name: 'daily_climate_view',
+        properties: { firstOfDay, source: 'home' },
+      });
+      
+      // Naviguer vers /lunar?focus=daily_climate
+      router.push('/lunar?focus=daily_climate');
+    } catch (error) {
+      console.error('[INDEX] Erreur lors du clic Daily Climate:', error);
+    }
+  };
 
   // Re-scheduler notifications au focus si nécessaire
   useFocusEffect(
@@ -280,6 +329,40 @@ export default function HomeScreen() {
 
         {/* Carte Rituel Quotidien (HERO) */}
         <DailyRitualCard />
+
+        {/* Carte Daily Climate Preview */}
+        {dailyClimate && (
+          <TouchableOpacity
+            style={styles.dailyClimateCard}
+            onPress={handleDailyClimatePress}
+            activeOpacity={0.8}
+          >
+            <View style={styles.dailyClimateHeader}>
+              <Text style={styles.dailyClimateTitle}>🌙 Daily Climate</Text>
+            </View>
+            
+            {/* Meta lune */}
+            <Text style={styles.dailyClimateMoon}>
+              {dailyClimate.moon.phase} en {dailyClimate.moon.sign}
+            </Text>
+            
+            {/* 3 lignes max de texte */}
+            <Text style={styles.dailyClimateText} numberOfLines={3}>
+              {dailyClimate.insight.text}
+            </Text>
+            
+            {/* Max 4 keywords */}
+            {dailyClimate.insight.keywords && dailyClimate.insight.keywords.length > 0 && (
+              <View style={styles.dailyClimateKeywords}>
+                {dailyClimate.insight.keywords.slice(0, 4).map((keyword, idx) => (
+                  <View key={idx} style={styles.keywordBadge}>
+                    <Text style={styles.keywordText}>{keyword}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
 
         {/* Menu principal MVP : Journal + Réglages uniquement */}
         <View style={styles.grid}>
@@ -444,6 +527,51 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginTop: spacing.xs,
     fontSize: 10,
+  },
+  dailyClimateCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(183, 148, 246, 0.1)',
+  },
+  dailyClimateHeader: {
+    marginBottom: spacing.sm,
+  },
+  dailyClimateTitle: {
+    ...fonts.h3,
+    color: colors.text,
+  },
+  dailyClimateMoon: {
+    ...fonts.bodySmall,
+    color: colors.accent,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dailyClimateText: {
+    ...fonts.body,
+    color: colors.text,
+    lineHeight: 22,
+    marginBottom: spacing.sm,
+  },
+  dailyClimateKeywords: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  keywordBadge: {
+    backgroundColor: 'rgba(183, 148, 246, 0.15)',
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  keywordText: {
+    ...fonts.caption,
+    color: colors.accent,
+    fontSize: 11,
   },
 });
 
