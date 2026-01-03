@@ -3,7 +3,7 @@
  * Interface pour tester les 3 fonctionnalités lunaires avancées
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLunarReturnReport, getVoidOfCourse, getLunarMansion, lunaPack } from '../../services/api';
 import { showNetworkErrorAlert } from '../../utils/errorHandler';
@@ -102,6 +102,13 @@ export default function LunaPackScreen() {
     }
   }, [focus]);
 
+  // Vérifier le badge au retour sur l'écran Lunar
+  useFocusEffect(
+    useCallback(() => {
+      checkAlreadyViewedToday();
+    }, [checkAlreadyViewedToday])
+  );
+
   // Scroll automatique vers Daily Climate section
   useEffect(() => {
     if (focus === 'daily_climate' && dailyClimateSectionY !== null && scrollViewRef.current) {
@@ -132,7 +139,7 @@ export default function LunaPackScreen() {
   };
 
   // Vérifier si déjà consulté aujourd'hui
-  const checkAlreadyViewedToday = async () => {
+  const checkAlreadyViewedToday = useCallback(async () => {
     try {
       const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
       const today = new Date().toISOString().split('T')[0];
@@ -140,7 +147,7 @@ export default function LunaPackScreen() {
     } catch (error) {
       console.error('[LUNAR] Erreur vérification lastViewedDate:', error);
     }
-  };
+  }, []);
 
   // Clear Daily Climate Cache (DEV)
   const handleClearDailyClimateCache = async () => {

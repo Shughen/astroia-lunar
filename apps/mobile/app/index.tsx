@@ -59,6 +59,7 @@ export default function HomeScreen() {
     insight: { title: string; text: string; keywords: string[]; version: string };
   } | null>(null);
   const [dailyClimateLoading, setDailyClimateLoading] = useState(false);
+  const [alreadyViewedToday, setAlreadyViewedToday] = useState(false);
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
@@ -239,6 +240,7 @@ export default function HomeScreen() {
       
       // Écrire lastViewedDate = aujourd'hui
       await AsyncStorage.setItem('dailyClimate:lastViewedDate', today);
+      setAlreadyViewedToday(true);
       
       // Track event
       trackEvent({
@@ -267,6 +269,17 @@ export default function HomeScreen() {
             }
           })();
         }
+        
+        // Vérifier si Daily Climate consulté aujourd'hui
+        (async () => {
+          try {
+            const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            setAlreadyViewedToday(lastViewedDate === today);
+          } catch (error) {
+            console.error('[INDEX] Erreur vérification lastViewedDate:', error);
+          }
+        })();
       }
     }, [isAuthenticated, isCheckingRouting, notificationsEnabled, hydrated, scheduleAllNotifications])
   );
@@ -339,6 +352,11 @@ export default function HomeScreen() {
           >
             <View style={styles.dailyClimateHeader}>
               <Text style={styles.dailyClimateTitle}>🌙 Daily Climate</Text>
+              {alreadyViewedToday && (
+                <View style={styles.viewedBadge}>
+                  <Text style={styles.viewedBadgeText}>✓ Consulté aujourd'hui</Text>
+                </View>
+              )}
             </View>
             
             {/* Meta lune */}
@@ -537,11 +555,29 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(183, 148, 246, 0.1)',
   },
   dailyClimateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: spacing.sm,
   },
   dailyClimateTitle: {
     ...fonts.h3,
     color: colors.text,
+    flex: 1,
+  },
+  viewedBadge: {
+    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    borderWidth: 1,
+    borderColor: '#4ade80',
+    borderRadius: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  viewedBadgeText: {
+    fontSize: 10,
+    color: '#4ade80',
+    fontWeight: '600',
   },
   dailyClimateMoon: {
     ...fonts.bodySmall,
