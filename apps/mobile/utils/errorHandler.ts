@@ -1,15 +1,39 @@
 /**
  * Helper pour gérer les erreurs réseau de manière UX-friendly
  * Remplace les messages techniques (502, timeout) par des messages humains
+ *
+ * Gestion des erreurs RapidAPI:
+ * - RAPIDAPI_NOT_SUBSCRIBED (503): "Fonction indisponible en dev (API non activée)"
+ * - RAPIDAPI_RATE_LIMIT (429): "Trop de requêtes, réessaie plus tard"
  */
 
 import { Alert } from 'react-native';
 import { AxiosError } from 'axios';
 
 /**
+ * Extrait le code d'erreur structuré de la réponse API (si présent)
+ */
+export function getErrorCode(error: any): string | null {
+  return error.response?.data?.detail?.code || error.response?.data?.code || null;
+}
+
+/**
  * Formate un message d'erreur humain à partir d'une erreur axios/fetch
  */
 export function getHumanErrorMessage(error: any): string {
+  // Vérifier si l'erreur contient un code structuré
+  const errorCode = getErrorCode(error);
+
+  // Erreur RapidAPI: Not Subscribed (API non activée en dev)
+  if (errorCode === 'RAPIDAPI_NOT_SUBSCRIBED') {
+    return 'Fonction indisponible en dev (API non activée).';
+  }
+
+  // Erreur RapidAPI: Rate Limit
+  if (errorCode === 'RAPIDAPI_RATE_LIMIT' || error.response?.status === 429) {
+    return 'Trop de requêtes. Réessayez dans quelques instants.';
+  }
+
   // Erreur réseau (backend down, timeout, etc.)
   if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
     return 'Le service est temporairement indisponible. Vérifiez votre connexion internet.';
@@ -32,7 +56,12 @@ export function getHumanErrorMessage(error: any): string {
 
   // Erreur 503 (Service Unavailable)
   if (error.response?.status === 503) {
-    return 'Le service est temporairement indisponible.';
+    // Si c'est un 503 mais sans code RAPIDAPI_NOT_SUBSCRIBED, c'est un autre type de 503
+    if (errorCode !== 'RAPIDAPI_NOT_SUBSCRIBED') {
+      return 'Le service est temporairement indisponible.';
+    }
+    // Sinon, on a déjà géré le cas RAPIDAPI_NOT_SUBSCRIBED ci-dessus
+    return 'Fonction indisponible en dev (API non activée).';
   }
 
   // Erreur 404 (Not Found) - cas spécifique
@@ -56,12 +85,17 @@ export function showNetworkErrorAlert(
   customMessage?: string
 ): void {
   const message = customMessage || getHumanErrorMessage(error);
+  const errorCode = getErrorCode(error);
+
+  // Vérifier si c'est une erreur "non-retriable" (not subscribed)
+  const isNotSubscribed = errorCode === 'RAPIDAPI_NOT_SUBSCRIBED';
 
   const buttons: any[] = [
     { text: 'OK', style: 'cancel' },
   ];
 
-  if (onRetry) {
+  // Ne pas afficher "Réessayer" pour les erreurs not subscribed (inutile)
+  if (onRetry && !isNotSubscribed) {
     buttons.unshift({
       text: 'Réessayer',
       onPress: onRetry,
