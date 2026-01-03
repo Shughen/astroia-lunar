@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     # Dev Purge
     ALLOW_DEV_PURGE: bool = Field(default=False, description="Mode DEV: autoriser purge des données (uniquement en development)")
     
+    # Dev VoC Populate
+    ALLOW_DEV_VOC_POPULATE: bool = Field(default=False, description="Mode DEV: autoriser l'endpoint /voc/populate (uniquement en development)")
+    
     # Supabase
     supabase_url: Optional[str] = Field(default=None, validation_alias="SUPABASE_URL")
     supabase_anon_key: Optional[str] = Field(default=None, validation_alias="SUPABASE_ANON_KEY")
