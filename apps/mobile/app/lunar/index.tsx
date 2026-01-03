@@ -3,7 +3,7 @@
  * Interface pour tester les 3 fonctionnalités lunaires avancées
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,14 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { getLunarReturnReport, getVoidOfCourse, getLunarMansion } from '../../services/api';
+import { useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLunarReturnReport, getVoidOfCourse, getLunarMansion, lunaPack } from '../../services/api';
 import { showNetworkErrorAlert } from '../../utils/errorHandler';
 import { isMockResponse, getProviderLabel, cleanInterpretationText } from '../../utils/mockUtils';
 import { isDev } from '../../utils/env';
+import { trackEvent } from '../../utils/analytics';
+import { invalidateCache } from '../../utils/requestGuard';
 
 /**
  * Fonction utilitaire pour accéder aux propriétés imbriquées de manière sûre
@@ -59,10 +63,27 @@ function formatShortDateTime(isoString: string | undefined): string {
 }
 
 export default function LunaPackScreen() {
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const dailyClimateSectionRef = useRef<View>(null);
+  
   const [loading, setLoading] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
   const [showRawJson, setShowRawJson] = useState(false);
+  
+  // Daily Climate state
+  const [dailyClimate, setDailyClimate] = useState<{
+    date: string;
+    moon: { sign: string; degree: number; phase: string };
+    insight: { title: string; text: string; keywords: string[]; version: string };
+  } | null>(null);
+  const [dailyClimateLoading, setDailyClimateLoading] = useState(false);
+  const [alreadyViewedToday, setAlreadyViewedToday] = useState(false);
+  const [dailyClimateSectionY, setDailyClimateSectionY] = useState<number | null>(null);
+  
+  // DEV section state
+  const [devSectionCollapsed, setDevSectionCollapsed] = useState(true);
 
   // Payload de test hardcodé (Paris, France - date actuelle)
   const testPayload = {
@@ -71,6 +92,80 @@ export default function LunaPackScreen() {
     latitude: 48.8566,
     longitude: 2.3522,
     timezone: 'Europe/Paris',
+  };
+
+  // Vérifier si focus=daily_climate et charger les données si nécessaire
+  useEffect(() => {
+    if (focus === 'daily_climate') {
+      loadDailyClimate();
+      checkAlreadyViewedToday();
+    }
+  }, [focus]);
+
+  // Scroll automatique vers Daily Climate section
+  useEffect(() => {
+    if (focus === 'daily_climate' && dailyClimateSectionY !== null && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: dailyClimateSectionY - 20, animated: true });
+      }, 300);
+    }
+  }, [focus, dailyClimateSectionY]);
+
+  // Handler pour mesurer la position de la section Daily Climate
+  const handleDailyClimateLayout = (event: any) => {
+    const { y } = event.nativeEvent.layout;
+    setDailyClimateSectionY(y);
+  };
+
+  // Charger Daily Climate
+  const loadDailyClimate = async () => {
+    if (dailyClimateLoading || dailyClimate) return;
+    setDailyClimateLoading(true);
+    try {
+      const data = await lunaPack.getDailyClimate();
+      setDailyClimate(data);
+    } catch (error) {
+      console.error('[LUNAR] Erreur chargement Daily Climate:', error);
+    } finally {
+      setDailyClimateLoading(false);
+    }
+  };
+
+  // Vérifier si déjà consulté aujourd'hui
+  const checkAlreadyViewedToday = async () => {
+    try {
+      const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
+      const today = new Date().toISOString().split('T')[0];
+      setAlreadyViewedToday(lastViewedDate === today);
+    } catch (error) {
+      console.error('[LUNAR] Erreur vérification lastViewedDate:', error);
+    }
+  };
+
+  // Clear Daily Climate Cache (DEV)
+  const handleClearDailyClimateCache = async () => {
+    try {
+      // Supprimer dailyClimate:lastViewedDate
+      await AsyncStorage.removeItem('dailyClimate:lastViewedDate');
+      
+      // Vider le cache métier Daily Climate (si clé dédiée)
+      // Note: on pourrait avoir une clé spécifique dans requestGuard
+      invalidateCache('lunar/daily-climate');
+      
+      // Reset UI
+      setAlreadyViewedToday(false);
+      setDailyClimate(null);
+      
+      // Track event
+      trackEvent({
+        name: 'daily_climate_reset_dev',
+        properties: { timestamp: Date.now() },
+      });
+      
+      console.log('[LUNAR] ✅ Daily Climate cache cleared');
+    } catch (error) {
+      console.error('[LUNAR] Erreur clear cache:', error);
+    }
   };
 
   const handleLunarReturnReport = async () => {
@@ -306,12 +401,63 @@ export default function LunaPackScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView ref={scrollViewRef} style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>🌙 Luna Pack</Text>
         <Text style={styles.subtitle}>
           Fonctionnalités lunaires avancées (P1)
         </Text>
+      </View>
+
+      {/* Section Daily Climate */}
+      <View 
+        ref={dailyClimateSectionRef} 
+        style={styles.dailyClimateSection}
+        onLayout={handleDailyClimateLayout}
+      >
+        <Text style={styles.sectionTitle}>🌙 Daily Climate</Text>
+        
+        {dailyClimateLoading && !dailyClimate ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#8B7BF7" />
+            <Text style={styles.loadingText}>Chargement...</Text>
+          </View>
+        ) : dailyClimate ? (
+          <View style={styles.dailyClimateCard}>
+            <View style={styles.dailyClimateHeader}>
+              <Text style={styles.dailyClimateTitle}>{dailyClimate.insight.title}</Text>
+              {alreadyViewedToday && (
+                <View style={styles.viewedBadge}>
+                  <Text style={styles.viewedBadgeText}>✓ Consulté aujourd'hui</Text>
+                </View>
+              )}
+            </View>
+            
+            <Text style={styles.dailyClimateMoon}>
+              {dailyClimate.moon.phase} en {dailyClimate.moon.sign}
+            </Text>
+            
+            <Text style={styles.dailyClimateText}>{dailyClimate.insight.text}</Text>
+            
+            {dailyClimate.insight.keywords && dailyClimate.insight.keywords.length > 0 && (
+              <View style={styles.dailyClimateKeywords}>
+                {dailyClimate.insight.keywords.map((keyword, idx) => (
+                  <View key={idx} style={styles.keywordBadge}>
+                    <Text style={styles.keywordText}>{keyword}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.button, styles.buttonTertiary]}
+            onPress={loadDailyClimate}
+            disabled={dailyClimateLoading}
+          >
+            <Text style={styles.buttonText}>Charger Daily Climate</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.buttonsContainer}>
@@ -370,6 +516,32 @@ export default function LunaPackScreen() {
           📅 Date: {testPayload.date} à {testPayload.time}
         </Text>
       </View>
+
+      {/* Section DEV (uniquement en __DEV__) */}
+      {__DEV__ && (
+        <View style={styles.devSection}>
+          <TouchableOpacity
+            style={styles.devSectionHeader}
+            onPress={() => setDevSectionCollapsed(!devSectionCollapsed)}
+          >
+            <Text style={styles.devSectionTitle}>🔧 DEV Tools</Text>
+            <Text style={styles.devSectionToggle}>
+              {devSectionCollapsed ? '▶' : '▼'}
+            </Text>
+          </TouchableOpacity>
+          
+          {!devSectionCollapsed && (
+            <View style={styles.devSectionContent}>
+              <TouchableOpacity
+                style={styles.devButton}
+                onPress={handleClearDailyClimateCache}
+              >
+                <Text style={styles.devButtonText}>🧹 Clear Daily Climate Cache</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -541,5 +713,113 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#A0A0B0',
     marginBottom: 4,
+  },
+  dailyClimateSection: {
+    margin: 20,
+    marginTop: 0,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 16,
+  },
+  dailyClimateCard: {
+    backgroundColor: '#1A1F3E',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#8B7BF7',
+  },
+  dailyClimateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dailyClimateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  viewedBadge: {
+    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+    borderWidth: 1,
+    borderColor: '#4ade80',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  viewedBadgeText: {
+    fontSize: 10,
+    color: '#4ade80',
+    fontWeight: '600',
+  },
+  dailyClimateMoon: {
+    fontSize: 14,
+    color: '#8B7BF7',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dailyClimateText: {
+    fontSize: 14,
+    color: '#C0C0D0',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  dailyClimateKeywords: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  keywordBadge: {
+    backgroundColor: 'rgba(139, 123, 247, 0.15)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  keywordText: {
+    fontSize: 12,
+    color: '#8B7BF7',
+  },
+  devSection: {
+    margin: 20,
+    backgroundColor: '#1A1F3E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3D4571',
+    overflow: 'hidden',
+  },
+  devSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  devSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  devSectionToggle: {
+    fontSize: 12,
+    color: '#A0A0B0',
+  },
+  devSectionContent: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  devButton: {
+    backgroundColor: '#2D3561',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  devButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
