@@ -20,6 +20,7 @@ import { isMockResponse, getProviderLabel, cleanInterpretationText } from '../..
 import { isDev } from '../../utils/env';
 import { trackEvent } from '../../utils/analytics';
 import { invalidateCache } from '../../utils/requestGuard';
+import { JOURNAL_STORAGE_KEY } from '../../constants/storageKeys';
 
 /**
  * Fonction utilitaire pour accéder aux propriétés imbriquées de manière sûre
@@ -82,6 +83,7 @@ export default function LunaPackScreen() {
   const [dailyClimateLoading, setDailyClimateLoading] = useState(false);
   const [alreadyViewedToday, setAlreadyViewedToday] = useState(false);
   const [dailyClimateSectionY, setDailyClimateSectionY] = useState<number | null>(null);
+  const [journalDoneToday, setJournalDoneToday] = useState(false);
   
   // DEV section state
   const [devSectionCollapsed, setDevSectionCollapsed] = useState(true);
@@ -106,6 +108,37 @@ export default function LunaPackScreen() {
     }
   }, []);
 
+  // Helper pour vérifier si une entrée de journal existe aujourd'hui
+  const hasJournalEntryToday = (entries: Array<{ createdAtISO: string }>): boolean => {
+    if (!entries || entries.length === 0) return false;
+    
+    const today = new Date().toDateString();
+    return entries.some((entry) => {
+      try {
+        const entryDate = new Date(entry.createdAtISO);
+        return entryDate.toDateString() === today;
+      } catch {
+        return false;
+      }
+    });
+  };
+
+  // Charger le statut du journal (entrée aujourd'hui ou non)
+  const loadJournalStatus = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
+      if (stored) {
+        const entries = JSON.parse(stored);
+        setJournalDoneToday(hasJournalEntryToday(entries));
+      } else {
+        setJournalDoneToday(false);
+      }
+    } catch (error) {
+      console.error('[LUNAR] Erreur chargement statut journal:', error);
+      setJournalDoneToday(false);
+    }
+  };
+
   // Vérifier si focus=daily_climate et charger les données si nécessaire
   useEffect(() => {
     if (focus === 'daily_climate') {
@@ -118,6 +151,7 @@ export default function LunaPackScreen() {
   useFocusEffect(
     useCallback(() => {
       checkAlreadyViewedToday();
+      loadJournalStatus();
     }, [checkAlreadyViewedToday])
   );
 
@@ -534,6 +568,26 @@ export default function LunaPackScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Tuile Journal */}
+      <View style={styles.journalCard}>
+        <TouchableOpacity
+          style={styles.journalCardButton}
+          onPress={() => router.push('/journal')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.journalCardHeader}>
+            <Text style={styles.journalCardEmoji}>📖</Text>
+            {journalDoneToday && (
+              <View style={styles.journalBadge}>
+                <Text style={styles.journalBadgeText}>✅ Aujourd'hui</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.journalCardTitle}>Journal</Text>
+          <Text style={styles.journalCardDesc}>Mes entrées récentes</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.buttonsContainer}>
         <TouchableOpacity
           style={[styles.button, styles.buttonPrimary]}
@@ -909,6 +963,57 @@ const styles = StyleSheet.create({
   devButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  journalCard: {
+    margin: 20,
+    marginTop: 0,
+  },
+  journalCardButton: {
+    backgroundColor: '#1A1F3E',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#8B7BF7',
+    alignItems: 'center',
+  },
+  journalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 12,
+    position: 'relative',
+  },
+  journalCardEmoji: {
+    fontSize: 48,
+  },
+  journalCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  journalCardDesc: {
+    fontSize: 13,
+    color: '#A0A0B0',
+    textAlign: 'center',
+  },
+  journalBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    borderWidth: 1,
+    borderColor: '#4ade80',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  journalBadgeText: {
+    fontSize: 10,
+    color: '#4ade80',
     fontWeight: '600',
   },
 });
