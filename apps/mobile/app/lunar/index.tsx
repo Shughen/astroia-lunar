@@ -12,7 +12,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLunarReturnReport, getVoidOfCourse, getLunarMansion, lunaPack } from '../../services/api';
 import { showNetworkErrorAlert } from '../../utils/errorHandler';
@@ -64,6 +64,7 @@ function formatShortDateTime(isoString: string | undefined): string {
 
 export default function LunaPackScreen() {
   const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const dailyClimateSectionRef = useRef<View>(null);
   
@@ -177,6 +178,29 @@ export default function LunaPackScreen() {
       console.error('[LUNAR] Erreur vérification lastViewedDate:', error);
     }
   }, []);
+
+  // Construire le texte prefill pour le journal
+  const buildJournalPrefill = (): string => {
+    if (!dailyClimate) return '';
+    
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const title = dailyClimate.insight.title || 'Daily Climate';
+    
+    return `${today}\n\n${title}\n\nCe que je ressens aujourd'hui: …\n\nMon intention du jour: …`;
+  };
+
+  // Gérer le clic sur "Écrire une note"
+  const handleWriteNote = () => {
+    if (!dailyClimate) return;
+    
+    const prefill = buildJournalPrefill();
+    const encodedPrefill = encodeURIComponent(prefill);
+    
+    // Track event (optionnel, console-based)
+    console.log('[LUNAR] daily_climate_journal_cta', { source: 'lunar' });
+    
+    router.push(`/journal?prefill=${encodedPrefill}`);
+  };
 
   // Clear Daily Climate Cache (DEV)
   const handleClearDailyClimateCache = async () => {
@@ -484,6 +508,15 @@ export default function LunaPackScreen() {
                 ))}
               </View>
             )}
+            
+            {/* Bouton "Écrire une note" */}
+            <TouchableOpacity
+              style={styles.writeNoteButton}
+              onPress={handleWriteNote}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
@@ -819,6 +852,21 @@ const styles = StyleSheet.create({
   keywordText: {
     fontSize: 12,
     color: '#8B7BF7',
+  },
+  writeNoteButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(139, 123, 247, 0.15)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 123, 247, 0.3)',
+    alignItems: 'center',
+  },
+  writeNoteButtonText: {
+    fontSize: 14,
+    color: '#8B7BF7',
+    fontWeight: '500',
   },
   devSection: {
     margin: 20,

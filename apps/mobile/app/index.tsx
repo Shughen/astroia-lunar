@@ -255,6 +255,29 @@ export default function HomeScreen() {
     }
   };
 
+  // Construire le texte prefill pour le journal
+  const buildJournalPrefill = (): string => {
+    if (!dailyClimate) return '';
+    
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const title = dailyClimate.insight.title || 'Daily Climate';
+    
+    return `${today}\n\n${title}\n\nCe que je ressens aujourd'hui: …\n\nMon intention du jour: …`;
+  };
+
+  // Gérer le clic sur "Écrire une note"
+  const handleWriteNote = () => {
+    if (!dailyClimate) return;
+    
+    const prefill = buildJournalPrefill();
+    const encodedPrefill = encodeURIComponent(prefill);
+    
+    // Track event (optionnel, console-based)
+    console.log('[INDEX] daily_climate_journal_cta', { source: 'home' });
+    
+    router.push(`/journal?prefill=${encodedPrefill}`);
+  };
+
   // Re-scheduler notifications au focus si nécessaire
   useFocusEffect(
     useCallback(() => {
@@ -345,41 +368,51 @@ export default function HomeScreen() {
 
         {/* Carte Daily Climate Preview */}
         {dailyClimate && (
-          <TouchableOpacity
-            style={styles.dailyClimateCard}
-            onPress={handleDailyClimatePress}
-            activeOpacity={0.8}
-          >
-            <View style={styles.dailyClimateHeader}>
-              <Text style={styles.dailyClimateTitle}>🌙 Daily Climate</Text>
-              {alreadyViewedToday && (
-                <View style={styles.viewedBadge}>
-                  <Text style={styles.viewedBadgeText}>✓ Consulté aujourd'hui</Text>
+          <View style={styles.dailyClimateCard}>
+            <TouchableOpacity
+              onPress={handleDailyClimatePress}
+              activeOpacity={0.8}
+            >
+              <View style={styles.dailyClimateHeader}>
+                <Text style={styles.dailyClimateTitle}>🌙 Daily Climate</Text>
+                {alreadyViewedToday && (
+                  <View style={styles.viewedBadge}>
+                    <Text style={styles.viewedBadgeText}>✓ Consulté aujourd'hui</Text>
+                  </View>
+                )}
+              </View>
+              
+              {/* Meta lune */}
+              <Text style={styles.dailyClimateMoon}>
+                {dailyClimate.moon.phase} en {dailyClimate.moon.sign}
+              </Text>
+              
+              {/* 3 lignes max de texte */}
+              <Text style={styles.dailyClimateText} numberOfLines={3}>
+                {dailyClimate.insight.text}
+              </Text>
+              
+              {/* Max 4 keywords */}
+              {dailyClimate.insight.keywords && dailyClimate.insight.keywords.length > 0 && (
+                <View style={styles.dailyClimateKeywords}>
+                  {dailyClimate.insight.keywords.slice(0, 4).map((keyword, idx) => (
+                    <View key={idx} style={styles.keywordBadge}>
+                      <Text style={styles.keywordText}>{keyword}</Text>
+                    </View>
+                  ))}
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
             
-            {/* Meta lune */}
-            <Text style={styles.dailyClimateMoon}>
-              {dailyClimate.moon.phase} en {dailyClimate.moon.sign}
-            </Text>
-            
-            {/* 3 lignes max de texte */}
-            <Text style={styles.dailyClimateText} numberOfLines={3}>
-              {dailyClimate.insight.text}
-            </Text>
-            
-            {/* Max 4 keywords */}
-            {dailyClimate.insight.keywords && dailyClimate.insight.keywords.length > 0 && (
-              <View style={styles.dailyClimateKeywords}>
-                {dailyClimate.insight.keywords.slice(0, 4).map((keyword, idx) => (
-                  <View key={idx} style={styles.keywordBadge}>
-                    <Text style={styles.keywordText}>{keyword}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </TouchableOpacity>
+            {/* Bouton "Écrire une note" */}
+            <TouchableOpacity
+              style={styles.writeNoteButton}
+              onPress={handleWriteNote}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Menu principal MVP : Journal + Réglages uniquement */}
@@ -608,6 +641,21 @@ const styles = StyleSheet.create({
     ...fonts.caption,
     color: colors.accent,
     fontSize: 11,
+  },
+  writeNoteButton: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: 'rgba(183, 148, 246, 0.15)',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(183, 148, 246, 0.3)',
+    alignItems: 'center',
+  },
+  writeNoteButtonText: {
+    ...fonts.body,
+    color: colors.accent,
+    fontSize: 14,
   },
 });
 

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 
 const LinearGradientComponent = LinearGradient || (({ colors, style, children, ...props }: any) => {
@@ -31,15 +32,30 @@ interface JournalEntry {
 const STORAGE_KEY = 'journal_entries';
 
 export default function JournalScreen() {
+  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [currentText, setCurrentText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [prefillApplied, setPrefillApplied] = useState(false);
 
   // Charger les entrées au mount
   useEffect(() => {
     loadEntries();
   }, []);
+
+  // Appliquer le prefill si disponible et si le champ est vide
+  useEffect(() => {
+    if (prefill && !prefillApplied && !currentText.trim()) {
+      try {
+        const decodedPrefill = decodeURIComponent(prefill);
+        setCurrentText(decodedPrefill);
+        setPrefillApplied(true);
+      } catch (error) {
+        console.error('[JOURNAL] Erreur décodage prefill:', error);
+      }
+    }
+  }, [prefill, prefillApplied, currentText]);
 
   const loadEntries = async () => {
     try {
