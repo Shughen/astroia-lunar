@@ -11,14 +11,27 @@ Le système `requestGuard` implémente 2 mécanismes pour éviter le spam résea
 
 ## Endpoints concernés
 
-| Endpoint | TTL | Dédup | Raison |
-|----------|-----|-------|--------|
-| `lunar-returns/current` | 60s | ✅ | Peu changeant, appelé au mount de plusieurs écrans |
-| `lunar/voc` | 5min | ✅ | Peut changer rapidement (fenêtres VoC) |
-| `lunar/mansion` | 5min | ✅ | Données peu changeantes (1 mansion/jour) |
-| `lunar/return/report` | 5min | ✅ | Données stables (rapport mensuel) |
+| Endpoint | TTL | Dédup | Cache key params | Raison |
+|----------|-----|-------|------------------|--------|
+| `lunar-returns/current` | 60s | ✅ | N/A | Peu changeant, appelé au mount de plusieurs écrans |
+| `lunar/voc` | 5min | ✅ | `{date}` | Cache key stable: time exclu pour éviter refetch minute par minute |
+| `lunar/mansion` | 5min | ✅ | `{date}` | Cache key stable: time exclu pour éviter refetch minute par minute |
+| `lunar/return/report` | 5min | ✅ | `{date, month}` | Données stables (rapport mensuel) |
+| `lunar/daily-climate` | **5min** | ✅ | `{date}` | Cache key stable: time exclu. Daily climate + insights (appelé par LunarProvider) |
 
-**Note importante** : Les endpoints `lunar/voc` et `lunar/mansion` utilisent uniquement `date` dans la cache key (le paramètre `time` est exclu). Cela garantit une cache key stable tout au long de la journée, évitant les refetch inutiles chaque minute. Le payload complet (incluant `time`) est toujours envoyé au backend, mais le cache ignore ce paramètre.
+**Notes importantes** :
+
+1. **Cache key stability** : Les endpoints `lunar/voc`, `lunar/mansion`, et `lunar/daily-climate` utilisent uniquement `{date}` dans la cache key (le paramètre `time` est exclu). Cela garantit une cache key stable tout au long de la journée, évitant les refetch inutiles chaque minute. Le payload complet (incluant `time` si applicable) est toujours envoyé au backend, mais la cache key ignore ce paramètre pour rester stable.
+
+2. **Double cache system** :
+   - **requestGuard** (module-scope Map) : Cache court terme (60s-5min) pour dedup + anti-spam réseau
+   - **lunarCache** (AsyncStorage) : Cache long terme (24h, stale après 1h) pour persistence offline
+   - Ces 2 systèmes travaillent ensemble : requestGuard empêche les refetch < 5min, lunarCache permet la persistence entre sessions
+
+3. **LunarProvider refresh guards** :
+   - Minimum 60s entre 2 background refreshes (via `REFRESH_TTL_MS`)
+   - Pas de boucle infinie grâce à `refreshInFlight` ref + `lastRefreshAt` timestamp
+   - `loadLunarData` avec deps stables (`[]`) pour éviter re-création à chaque update
 
 ---
 
@@ -282,17 +295,24 @@ if (!forceRefresh && cached) {
 ## Checklist finale
 
 - [ ] Vérifier logs dedup pour `lunar-returns/current`
-- [ ] Vérifier cache TTL pour Luna Pack (mansion/voc/report)
+- [ ] Vérifier cache TTL pour Luna Pack (mansion/voc/report/daily-climate)
 - [ ] Tester navigation rapide (< 1s) → pas de doublons
 - [ ] Tester re-focus après 30s → cache hit
 - [ ] Tester re-focus après 5min → cache expired
 - [ ] Vérifier que reload Expo nettoie le cache
 - [ ] Vérifier qu'en prod, pas de logs RequestGuard
+- [ ] **NOUVEAU** : Vérifier qu'il n'y a PLUS de spam "Skip refresh: timeSinceLastRefresh=0s"
+- [ ] **NOUVEAU** : Vérifier que getDailyClimate ne refetch pas avant 5min
 
 ---
 
 ## Références
 
-- Code : `apps/mobile/utils/requestGuard.ts`
-- Usage : `apps/mobile/services/api.ts` (lignes 331-353, 530-584)
-- UX prod : `apps/mobile/app/lunar/index.tsx` (masquage debug)
+- **Cache system** :
+  - `apps/mobile/utils/requestGuard.ts` (dedup + TTL court terme)
+  - `apps/mobile/services/lunarCache.ts` (persistence long terme)
+- **Usage** :
+  - `apps/mobile/services/api.ts` (lignes 330-353, 519-644)
+  - `apps/mobile/contexts/LunarProvider.tsx` (stale-while-revalidate strategy)
+- **UX prod** : `apps/mobile/app/lunar/index.tsx` (masquage debug)
+- **Tests manuels** : `AUDIT_CACHE_MANUAL_TEST.md` (procédure complète avec logs attendus, à la racine du repo)

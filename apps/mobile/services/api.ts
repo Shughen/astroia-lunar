@@ -614,6 +614,7 @@ export const lunaPack = {
   /**
    * Récupère le Daily Lunar Climate avec insight stable sur 24h
    * Cache serveur 24h (invalidation automatique au changement de date)
+   * Cache client requestGuard 5min pour éviter refetch inutiles
    * @returns Daily climate avec position lunaire + insight déterministe
    */
   getDailyClimate: async (): Promise<{
@@ -630,8 +631,17 @@ export const lunaPack = {
       version: string;
     };
   }> => {
-    const response = await apiClient.get('/api/lunar/daily-climate');
-    return response.data;
+    // Cache key stable: date uniquement (time exclu pour éviter refetch minute par minute)
+    // Le payload complet est toujours envoyé au backend, mais la cache key ignore time
+    const today = new Date().toISOString().split('T')[0];
+    return guardedRequest(
+      'lunar/daily-climate',
+      async () => {
+        const response = await apiClient.get('/api/lunar/daily-climate');
+        return response.data;
+      },
+      { ttl: 300000, params: { date: today } } // Cache 5min (300000ms) avec clé stable {date}
+    );
   },
 };
 

@@ -139,7 +139,9 @@ function generateHelpers(data: LunarDayData | null): LunarHelpers {
 }
 
 export function LunarProvider({ children }: LunarProviderProps) {
-  const [currentDay] = useState(getTodayDateString());
+  // currentDay en ref stable (ne change jamais durant la session)
+  const currentDay = useRef(getTodayDateString()).current;
+
   const [current, setCurrent] = useState<LunarDayData | null>(null);
   const [status, setStatus] = useState<LunarContextStatus>({
     isLoading: true,
@@ -161,6 +163,7 @@ export function LunarProvider({ children }: LunarProviderProps) {
 
   /**
    * Load lunar data with stale-while-revalidate strategy
+   * NOTE: Ne dépend PAS de `current` pour éviter re-création à chaque update
    */
   const loadLunarData = useCallback(async (date: string, forceRefresh = false) => {
     // Éviter les fetchs parallèles
@@ -187,12 +190,12 @@ export function LunarProvider({ children }: LunarProviderProps) {
           if (cached.isStale) {
             const now = Date.now();
             const timeSinceLastRefresh = now - lastRefreshAt.current;
-            
+
             if (!refreshInFlight.current && timeSinceLastRefresh > REFRESH_TTL_MS) {
-              console.log('[LunarProvider] Cache stale, refreshing in background...');
+              if (__DEV__) console.log('[LunarProvider] Cache stale, refreshing in background...');
               refreshInFlight.current = true;
               lastRefreshAt.current = now;
-              
+
               // Refresh sans bloquer, reset inFlight dans finally
               loadLunarData(date, true)
                 .catch((err) => {
@@ -217,10 +220,11 @@ export function LunarProvider({ children }: LunarProviderProps) {
       isFetchingRef.current = true;
       lastRefreshAt.current = Date.now();
 
+      // Utiliser setter fonctionnel pour éviter dépendance sur `current`
       setStatus((prev) => ({
         ...prev,
-        isLoading: !current, // Loading si pas de données existantes
-        isStale: !!current, // Stale si on a déjà des données
+        isLoading: !currentRef.current, // Loading si pas de données existantes
+        isStale: !!currentRef.current, // Stale si on a déjà des données
       }));
 
       const { data, source } = await fetchLunarDataFromAPI(date);
@@ -237,7 +241,7 @@ export function LunarProvider({ children }: LunarProviderProps) {
       // Cache les données
       await setLunarCache(date, data, source);
     } catch (apiError) {
-      console.log('[LunarProvider] API failed, trying cache...');
+      if (__DEV__) console.log('[LunarProvider] API failed, trying cache...');
 
       // 3. API failed → essayer cache même expiré
       const cached = await getLunarCache(date);
@@ -254,7 +258,7 @@ export function LunarProvider({ children }: LunarProviderProps) {
       }
 
       // 4. Fallback total : calcul local
-      console.log('[LunarProvider] Using local calculation fallback');
+      if (__DEV__) console.log('[LunarProvider] Using local calculation fallback');
       const localData = calculateLocalLunarData(date);
 
       setCurrent(localData);
@@ -272,14 +276,15 @@ export function LunarProvider({ children }: LunarProviderProps) {
       isFetchingRef.current = false;
       refreshInFlight.current = false;
     }
-  }, [current]);
+  }, []); // ✅ Aucune dépendance - fonction stable
 
   /**
    * Force refresh depuis API
+   * Note: currentDay est stable (ref), loadLunarData est stable (deps [])
    */
   const refresh = useCallback(async () => {
     await loadLunarData(currentDay, true);
-  }, [currentDay, loadLunarData]);
+  }, [loadLunarData]); // currentDay stable donc pas besoin en deps
 
   /**
    * Récupère les données d'un jour spécifique
@@ -321,7 +326,7 @@ export function LunarProvider({ children }: LunarProviderProps) {
   const clearCache = useCallback(async () => {
     await clearAllLunarCache();
     await loadLunarData(currentDay, true);
-  }, [currentDay, loadLunarData]);
+  }, [loadLunarData]); // currentDay stable
 
   /**
    * Sync currentRef with current state
@@ -331,11 +336,12 @@ export function LunarProvider({ children }: LunarProviderProps) {
   }, [current]);
 
   /**
-   * Load data au montage
+   * Load data au montage uniquement (deps stables)
    */
   useEffect(() => {
     loadLunarData(currentDay);
-  }, [currentDay, loadLunarData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ✅ Run ONCE au mount - currentDay et loadLunarData stables
 
   const helpers = generateHelpers(current);
 
