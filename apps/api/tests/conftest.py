@@ -7,6 +7,7 @@ Fournit:
 """
 
 import pytest
+import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock
 from typing import AsyncGenerator, Optional, Dict, Any
 from sqlalchemy.engine.result import Result
@@ -17,6 +18,48 @@ from models.user import User
 from models.natal_chart import NatalChart
 from models.lunar_return import LunarReturn
 from datetime import datetime, timezone
+import asyncio
+import time
+import threading
+
+
+# Liste des tests qui nécessitent une isolation complète des connexions DB
+_DB_INTENSIVE_TESTS = [
+    "test_lunar_current_missinggreenlet",
+    "test_lunar_report_userid_security"
+]
+
+# Verrou threading global pour forcer l'exécution séquentielle des tests DB intensifs
+_db_test_lock = threading.Lock()
+
+def _get_db_test_lock():
+    """Récupère le verrou threading pour les tests DB intensifs"""
+    return _db_test_lock
+
+def pytest_runtest_setup(item):
+    """
+    Hook appelé avant chaque test pour forcer un délai entre les tests
+    qui utilisent des connexions DB réelles.
+    """
+    test_file = str(item.fspath)
+    # Vérifier si ce test nécessite une isolation complète
+    if any(test_name in test_file for test_name in _DB_INTENSIVE_TESTS):
+        # Délai très long pour laisser le temps aux connexions et boucles d'événements de se nettoyer
+        # et éviter les conflits avec d'autres tests
+        time.sleep(1.0)
+
+
+def pytest_runtest_teardown(item):
+    """
+    Hook appelé après chaque test pour forcer un délai.
+    On évite de nettoyer le pool de connexions car cela peut affecter d'autres tests.
+    """
+    test_file = str(item.fspath)
+    # Vérifier si ce test nécessite une isolation complète
+    if any(test_name in test_file for test_name in _DB_INTENSIVE_TESTS):
+        # Délai très long pour laisser le temps aux connexions de se fermer proprement
+        # et aux boucles d'événements de se nettoyer
+        time.sleep(1.0)
 
 
 class FakeAsyncSession:
@@ -135,6 +178,10 @@ class FakeAsyncSession:
     async def commit(self):
         self._committed = True
     
+    async def flush(self):
+        """No-op pour les tests"""
+        pass
+    
     async def rollback(self):
         self._committed = False
     
@@ -150,6 +197,21 @@ class FakeAsyncSession:
     
     def close(self):
         pass  # No-op pour les tests
+    
+    async def begin_nested(self):
+        """Retourne un context manager pour savepoint (no-op dans les tests)"""
+        class FakeNestedTransaction:
+            async def __aenter__(self):
+                return self
+            
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                pass
+            
+            async def commit(self):
+                """No-op pour les tests"""
+                pass
+        
+        return FakeNestedTransaction()
     
     async def __aenter__(self):
         return self

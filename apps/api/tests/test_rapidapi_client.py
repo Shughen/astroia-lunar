@@ -18,7 +18,9 @@ async def test_post_json_success():
     mock_response.status_code = 200
     mock_response.json.return_value = {"status": "success", "data": {"moon": "Taurus"}}
     
-    with patch.object(rapidapi_client.client, 'post', return_value=mock_response) as mock_post:
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post', return_value=mock_response) as mock_post:
         result = await rapidapi_client.post_json("/test/path", {"key": "value"})
         
         assert result == {"status": "success", "data": {"moon": "Taurus"}}
@@ -40,7 +42,9 @@ async def test_post_json_retry_on_429():
     mock_response_success.status_code = 200
     mock_response_success.json.return_value = {"status": "success"}
     
-    with patch.object(rapidapi_client.client, 'post') as mock_post:
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post') as mock_post:
         mock_post.side_effect = [
             mock_response_error,
             mock_response_success
@@ -68,7 +72,9 @@ async def test_post_json_retry_on_500():
     mock_response_success.status_code = 200
     mock_response_success.json.return_value = {"status": "success"}
     
-    with patch.object(rapidapi_client.client, 'post') as mock_post:
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post') as mock_post:
         mock_post.side_effect = [
             mock_response_error,
             mock_response_success
@@ -91,7 +97,9 @@ async def test_post_json_max_retries_exceeded():
         "503", request=MagicMock(), response=mock_response_error
     )
     
-    with patch.object(rapidapi_client.client, 'post', return_value=mock_response_error):
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post', return_value=mock_response_error):
         with patch('asyncio.sleep', return_value=None):
             with pytest.raises(HTTPException) as exc_info:
                 await rapidapi_client.post_json("/test/path", {})
@@ -113,7 +121,9 @@ async def test_post_json_non_retriable_error():
         "401", request=MagicMock(), response=mock_response_error
     )
     
-    with patch.object(rapidapi_client.client, 'post', return_value=mock_response_error):
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post', return_value=mock_response_error):
         with pytest.raises(HTTPException) as exc_info:
             await rapidapi_client.post_json("/test/path", {})
         
@@ -128,7 +138,9 @@ async def test_post_json_non_retriable_error():
 @pytest.mark.asyncio
 async def test_post_json_timeout_retry():
     """Test retry sur timeout"""
-    with patch.object(rapidapi_client.client, 'post') as mock_post:
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post') as mock_post:
         # Premier appel: timeout, deuxième: succès
         mock_response_success = MagicMock()
         mock_response_success.status_code = 200
@@ -149,7 +161,9 @@ async def test_post_json_timeout_retry():
 @pytest.mark.asyncio
 async def test_post_json_timeout_max_retries():
     """Test échec après MAX_RETRIES timeouts"""
-    with patch.object(rapidapi_client.client, 'post', side_effect=httpx.TimeoutException("Timeout")):
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post', side_effect=httpx.TimeoutException("Timeout")):
         with patch('asyncio.sleep', return_value=None):
             with pytest.raises(HTTPException) as exc_info:
                 await rapidapi_client.post_json("/test/path", {})
@@ -175,7 +189,9 @@ async def test_exponential_backoff():
     async def mock_sleep(seconds):
         sleep_times.append(seconds)
     
-    with patch.object(rapidapi_client.client, 'post', return_value=mock_response_error):
+    # Désactiver le mode mock pour ce test
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False), \
+         patch.object(rapidapi_client.client, 'post', return_value=mock_response_error):
         with patch('asyncio.sleep', side_effect=mock_sleep):
             try:
                 await rapidapi_client.post_json("/test/path", {})

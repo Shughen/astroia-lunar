@@ -26,7 +26,12 @@ async def test_lunar_report_uses_authenticated_user_not_request_userid():
     1. User A s'authentifie avec X-Dev-External-Id: UUID_A
     2. User A envoie un payload avec month (user_id n'existe plus dans le modèle)
     3. Vérifier que le rapport est sauvegardé avec user_id = User A (pas un autre)
+    
+    Note: Ce test utilise des connexions DB réelles et peut échouer si exécuté
+    en parallèle avec d'autres tests DB. Exécuter individuellement ou avec pytest-xdist -n 1.
     """
+    import asyncio
+    
     # UUIDs pour 2 utilisateurs distincts
     user_a_uuid = "550e8400-e29b-41d4-a716-446655440000"
     user_b_uuid = "660e8400-e29b-41d4-a716-446655440001"
@@ -52,6 +57,7 @@ async def test_lunar_report_uses_authenticated_user_not_request_userid():
          patch('config.settings.APP_ENV', 'development'), \
          patch('services.lunar_services.get_lunar_return_report', return_value=mock_report_response):
         
+        # Créer un nouveau client pour ce test (isolation)
         async with AsyncClient(app=app, base_url="http://test") as client:
             # User A s'authentifie et envoie le payload
             response = await client.post(
@@ -68,50 +74,60 @@ async def test_lunar_report_uses_authenticated_user_not_request_userid():
             assert data["kind"] == "lunar_return_report"
             
             # Vérifier en DB que le rapport est lié à User A (pas User B)
-            async with AsyncSessionLocal() as db:
-                # Récupérer User A depuis la DB
-                from models.user import User
-                from sqlalchemy import select
-                
-                user_a_result = await db.execute(
-                    select(User).where(User.dev_external_id == user_a_uuid)
-                )
-                user_a = user_a_result.scalar_one_or_none()
-                
-                assert user_a is not None, f"User A (UUID: {user_a_uuid}) doit exister en DB"
-                user_a_id = user_a.id
-                
-                # Vérifier que le rapport existe avec user_id = User A
-                report_result = await db.execute(
-                    select(LunarReport).where(
-                        LunarReport.user_id == user_a_id,
-                        LunarReport.month == "2025-01"
+            # Utiliser une nouvelle session avec un délai pour éviter les conflits de transaction
+            # Délai plus long pour s'assurer que la transaction est complètement terminée
+            await asyncio.sleep(0.5)
+            
+            from database import AsyncSessionLocal
+            # Créer une nouvelle session propre pour la vérification (isolation complète)
+            async with AsyncSessionLocal() as db_check:
+                try:
+                    # Récupérer User A depuis la DB
+                    from models.user import User
+                    from sqlalchemy import select
+                    
+                    user_a_result = await db_check.execute(
+                        select(User).where(User.dev_external_id == user_a_uuid)
                     )
-                )
-                report = report_result.scalar_one_or_none()
-                
-                assert report is not None, "Le rapport doit être sauvegardé en DB"
-                assert report.user_id == user_a_id, \
-                    f"Le rapport doit être lié à User A (id={user_a_id}), pas à {report.user_id}"
-                assert report.month == "2025-01"
-                
-                # Vérifier que User B n'a PAS de rapport pour ce mois
-                user_b_result = await db.execute(
-                    select(User).where(User.dev_external_id == user_b_uuid)
-                )
-                user_b = user_b_result.scalar_one_or_none()
-                
-                if user_b is not None:
-                    user_b_id = user_b.id
-                    report_b_result = await db.execute(
+                    user_a = user_a_result.scalar_one_or_none()
+                    
+                    assert user_a is not None, f"User A (UUID: {user_a_uuid}) doit exister en DB"
+                    user_a_id = user_a.id
+                    
+                    # Vérifier que le rapport existe avec user_id = User A
+                    report_result = await db_check.execute(
                         select(LunarReport).where(
-                            LunarReport.user_id == user_b_id,
+                            LunarReport.user_id == user_a_id,
                             LunarReport.month == "2025-01"
                         )
                     )
-                    report_b = report_b_result.scalar_one_or_none()
-                    assert report_b is None, \
-                        f"User B (id={user_b_id}) ne doit PAS avoir de rapport pour ce mois"
+                    report = report_result.scalar_one_or_none()
+                    
+                    assert report is not None, "Le rapport doit être sauvegardé en DB"
+                    assert report.user_id == user_a_id, \
+                        f"Le rapport doit être lié à User A (id={user_a_id}), pas à {report.user_id}"
+                    assert report.month == "2025-01"
+                    
+                    # Vérifier que User B n'a PAS de rapport pour ce mois
+                    user_b_result = await db_check.execute(
+                        select(User).where(User.dev_external_id == user_b_uuid)
+                    )
+                    user_b = user_b_result.scalar_one_or_none()
+                    
+                    if user_b is not None:
+                        user_b_id = user_b.id
+                        report_b_result = await db_check.execute(
+                            select(LunarReport).where(
+                                LunarReport.user_id == user_b_id,
+                                LunarReport.month == "2025-01"
+                            )
+                        )
+                        report_b = report_b_result.scalar_one_or_none()
+                        assert report_b is None, \
+                            f"User B (id={user_b_id}) ne doit PAS avoir de rapport pour ce mois"
+                finally:
+                    await db_check.rollback()  # Nettoyer toute transaction en cours
+                    await db_check.close()  # Fermer proprement la session
 
 
 @pytest.mark.asyncio

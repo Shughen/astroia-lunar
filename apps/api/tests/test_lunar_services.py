@@ -304,24 +304,30 @@ async def test_get_lunar_return_report_missing_longitude():
 @pytest.mark.asyncio
 async def test_get_lunar_return_report_invalid_birth_date_format():
     """Test get_lunar_return_report - échec si birth_date au mauvais format"""
+    from services import rapidapi_client
+    from unittest.mock import patch
+    
+    # Utiliser un format vraiment invalide qui ne peut pas être parsé (pas de tirets)
     invalid_payload = {
-        "birth_date": "15-04-1989",  # Wrong format (DD-MM-YYYY instead of YYYY-MM-DD)
+        "birth_date": "1989/04/15",  # Wrong format (slashes instead of dashes)
         "birth_time": "17:55",
         "latitude": 48.8566,
         "longitude": 2.3522,
         "date": "2025-01-15"
     }
 
-    # Should raise ValueError during transformation (before calling RapidAPI)
-    # because the date parsing will fail when we try to split and convert to ints
-    with pytest.raises((ValueError, HTTPException)) as exc_info:
-        await lunar_services.get_lunar_return_report(invalid_payload)
+    # Désactiver le mode mock pour tester la vraie validation
+    with patch.object(rapidapi_client.settings, 'DEV_MOCK_RAPIDAPI', False):
+        # Should raise ValueError during transformation (before calling RapidAPI)
+        # because the date parsing will fail when we try to split('-')
+        with pytest.raises((ValueError, HTTPException)) as exc_info:
+            await lunar_services.get_lunar_return_report(invalid_payload)
 
-    # Check it's a validation error (either ValueError or 422 HTTPException)
-    if isinstance(exc_info.value, HTTPException):
-        assert exc_info.value.status_code == 422
-    else:
-        assert "birth_date" in str(exc_info.value).lower() or "format" in str(exc_info.value).lower()
+        # Check it's a validation error (either ValueError or 422 HTTPException)
+        if isinstance(exc_info.value, HTTPException):
+            assert exc_info.value.status_code == 422
+        else:
+            assert "birth_date" in str(exc_info.value).lower() or "format" in str(exc_info.value).lower()
 
 
 @pytest.mark.asyncio

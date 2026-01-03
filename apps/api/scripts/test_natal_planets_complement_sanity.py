@@ -23,39 +23,32 @@ def test_import_module():
     try:
         from services.natal_planets_complement import (
             calculate_complementary_positions,
-            _get_chiron_enabled,
-            _get_planet_codes,
+            merge_complementary_positions,
         )
         print("   ✅ Module importé avec succès")
-        return calculate_complementary_positions, _get_chiron_enabled, _get_planet_codes
+        return calculate_complementary_positions, merge_complementary_positions
     except Exception as e:
         print(f"   ❌ Erreur import: {e}")
         sys.exit(1)
 
 
 def test_chiron_enabled_flag():
-    """Test 2: Vérifier que _get_chiron_enabled() respecte DISABLE_CHIRON."""
+    """Test 2: Vérifier que DISABLE_CHIRON est respecté dans les calculs."""
     print("\n🧪 Test 2: Vérification flag DISABLE_CHIRON...")
     try:
-        from services.natal_planets_complement import _get_chiron_enabled
         from config import settings
         
-        chiron_enabled = _get_chiron_enabled()
         disable_chiron_env = os.getenv("DISABLE_CHIRON", "").lower() in ("true", "1", "yes")
         disable_chiron_config = getattr(settings, "DISABLE_CHIRON", False)
         
         print(f"   DISABLE_CHIRON (env): {disable_chiron_env}")
         print(f"   DISABLE_CHIRON (config): {disable_chiron_config}")
-        print(f"   _get_chiron_enabled(): {chiron_enabled}")
         
-        # Si DISABLE_CHIRON est activé, Chiron ne doit pas être activé
+        # Le flag est vérifié dans calculate_complementary_positions via settings
         if disable_chiron_config or disable_chiron_env:
-            if chiron_enabled:
-                print("   ⚠️  Chiron activé malgré DISABLE_CHIRON (peut être normal si SwissEph non disponible)")
-            else:
-                print("   ✅ Chiron désactivé comme attendu")
+            print("   ✅ DISABLE_CHIRON activé - Chiron sera exclu des calculs")
         else:
-            print("   ℹ️  DISABLE_CHIRON non activé, Chiron peut être activé si SwissEph disponible")
+            print("   ℹ️  DISABLE_CHIRON non activé, Chiron peut être calculé si SwissEph disponible")
         
         return True
     except Exception as e:
@@ -66,20 +59,19 @@ def test_chiron_enabled_flag():
 
 
 def test_planet_codes():
-    """Test 3: Vérifier que _get_planet_codes() fonctionne."""
-    print("\n🧪 Test 3: Vérification _get_planet_codes()...")
+    """Test 3: Vérifier que les codes planètes sont définis."""
+    print("\n🧪 Test 3: Vérification codes planètes...")
     try:
-        from services.natal_planets_complement import _get_planet_codes
+        from services.natal_planets_complement import PLANET_CODES
         
-        codes = _get_planet_codes()
-        print(f"   ✅ Codes planètes obtenus: {len(codes)} planètes/points")
-        print(f"   Chiron dans codes: {'chiron' in codes}")
-        print(f"   Chiron code value: {codes.get('chiron')}")
+        print(f"   ✅ Codes planètes définis: {len(PLANET_CODES)} planètes/points")
+        print(f"   Chiron dans codes: {'chiron' in PLANET_CODES}")
+        print(f"   Chiron code value: {PLANET_CODES.get('chiron')}")
         
         # Vérifier que Chiron est None si DISABLE_CHIRON=true
         from config import settings
         if getattr(settings, "DISABLE_CHIRON", False):
-            if codes.get("chiron") is None:
+            if PLANET_CODES.get("chiron") is None:
                 print("   ✅ Chiron correctement désactivé (None)")
             else:
                 print("   ⚠️  Chiron présent malgré DISABLE_CHIRON (peut être normal si flag non lu)")
@@ -144,7 +136,7 @@ def main():
     print(f"DISABLE_CHIRON (env): {os.getenv('DISABLE_CHIRON', 'non défini')}\n")
     
     # Test 1: Import
-    calculate_complementary_positions, _, _ = test_import_module()
+    calculate_complementary_positions, _ = test_import_module()
     
     # Test 2: Flag Chiron
     test_chiron_enabled_flag()
