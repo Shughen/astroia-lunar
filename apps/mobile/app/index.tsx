@@ -29,6 +29,7 @@ import { useNotificationsStore } from '../stores/useNotificationsStore';
 import { useResetStore } from '../stores/useResetStore';
 import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader, lunaPack } from '../services/api';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
+import { JOURNAL_STORAGE_KEY } from '../constants/storageKeys';
 import { DailyRitualCard } from '../components/DailyRitualCard';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
 import { cleanupGhostFlags } from '../services/onboardingMigration';
@@ -60,6 +61,7 @@ export default function HomeScreen() {
   } | null>(null);
   const [dailyClimateLoading, setDailyClimateLoading] = useState(false);
   const [alreadyViewedToday, setAlreadyViewedToday] = useState(false);
+  const [journalDoneToday, setJournalDoneToday] = useState(false);
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
@@ -265,6 +267,37 @@ export default function HomeScreen() {
     return `${today}\n\n${title}\n\nCe que je ressens aujourd'hui: …\n\nMon intention du jour: …`;
   };
 
+  // Helper pour vérifier si une entrée de journal existe aujourd'hui
+  const hasJournalEntryToday = (entries: Array<{ createdAtISO: string }>): boolean => {
+    if (!entries || entries.length === 0) return false;
+    
+    const today = new Date().toDateString();
+    return entries.some((entry) => {
+      try {
+        const entryDate = new Date(entry.createdAtISO);
+        return entryDate.toDateString() === today;
+      } catch {
+        return false;
+      }
+    });
+  };
+
+  // Charger le statut du journal (entrée aujourd'hui ou non)
+  const loadJournalStatus = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
+      if (stored) {
+        const entries = JSON.parse(stored);
+        setJournalDoneToday(hasJournalEntryToday(entries));
+      } else {
+        setJournalDoneToday(false);
+      }
+    } catch (error) {
+      console.error('[INDEX] Erreur chargement statut journal:', error);
+      setJournalDoneToday(false);
+    }
+  };
+
   // Gérer le clic sur "Écrire une note"
   const handleWriteNote = () => {
     const hasPrefill = !!dailyClimate;
@@ -308,6 +341,9 @@ export default function HomeScreen() {
             console.error('[INDEX] Erreur vérification lastViewedDate:', error);
           }
         })();
+
+        // Charger le statut du journal
+        loadJournalStatus();
       }
     }, [isAuthenticated, isCheckingRouting, notificationsEnabled, hydrated, scheduleAllNotifications])
   );
@@ -428,7 +464,14 @@ export default function HomeScreen() {
             style={styles.menuCard}
             onPress={() => router.push('/journal')}
           >
-            <Text style={styles.menuEmoji}>📖</Text>
+            <View style={styles.menuCardHeader}>
+              <Text style={styles.menuEmoji}>📖</Text>
+              {journalDoneToday && (
+                <View style={styles.journalBadge}>
+                  <Text style={styles.journalBadgeText}>✅ Aujourd'hui</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.menuTitle}>Journal</Text>
             <Text style={styles.menuDesc}>Mes entrées récentes</Text>
           </TouchableOpacity>
@@ -513,9 +556,32 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     alignItems: 'center',
   },
+  menuCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: spacing.sm,
+    position: 'relative',
+  },
   menuEmoji: {
     fontSize: 48,
-    marginBottom: spacing.sm,
+  },
+  journalBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    borderWidth: 1,
+    borderColor: '#4ade80',
+    borderRadius: 12,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+  },
+  journalBadgeText: {
+    fontSize: 10,
+    color: '#4ade80',
+    fontWeight: '600',
   },
   menuTitle: {
     ...fonts.h3,

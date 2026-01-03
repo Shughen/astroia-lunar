@@ -3,7 +3,7 @@
  * Permet un rituel quotidien simple avec sauvegarde locale
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,14 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
+import { JOURNAL_STORAGE_KEY } from '../constants/storageKeys';
 
 const LinearGradientComponent = LinearGradient || (({ colors, style, children, ...props }: any) => {
   return <View style={[{ backgroundColor: colors?.[0] || '#1a0b2e' }, style]} {...props}>{children}</View>;
@@ -29,16 +32,19 @@ interface JournalEntry {
   text: string;
 }
 
-const STORAGE_KEY = 'journal_entries';
-
 export default function JournalScreen() {
   const { prefill } = useLocalSearchParams<{ prefill?: string }>();
   const router = useRouter();
+  const inputRef = useRef<TextInput | null>(null);
+  const scrollRef = useRef<ScrollView | null>(null);
+  const inputCardRef = useRef<View | null>(null);
+  const savingLockRef = useRef(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [currentText, setCurrentText] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [prefillApplied, setPrefillApplied] = useState(false);
+  const [inputCardY, setInputCardY] = useState<number | null>(null);
 
   // Charger les entrées au mount
   useEffect(() => {
@@ -52,16 +58,34 @@ export default function JournalScreen() {
         const decodedPrefill = decodeURIComponent(prefill);
         setCurrentText(decodedPrefill);
         setPrefillApplied(true);
+        
+        // Focus automatique, positionnement du curseur à la fin et scroll
+        setTimeout(() => {
+          inputRef.current?.focus();
+          inputRef.current?.setNativeProps({
+            selection: { start: decodedPrefill.length, end: decodedPrefill.length },
+          });
+          
+          // Scroll automatique pour que l'input soit visible
+          if (inputCardY !== null && scrollRef.current) {
+            requestAnimationFrame(() => {
+              scrollRef.current?.scrollTo({
+                y: inputCardY - 24,
+                animated: true,
+              });
+            });
+          }
+        }, 0);
       } catch (error) {
         console.error('[JOURNAL] Erreur décodage prefill:', error);
       }
     }
-  }, [prefill, prefillApplied, currentText]);
+  }, [prefill, prefillApplied, currentText, inputCardY]);
 
   const loadEntries = async () => {
     try {
       setLoading(true);
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const stored = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
 
       if (stored) {
         const parsed: JournalEntry[] = JSON.parse(stored);
@@ -80,14 +104,20 @@ export default function JournalScreen() {
   };
 
   const saveEntry = async () => {
+    // Protection contre les doubles sauvegardes (lock immédiat)
+    if (savingLockRef.current) {
+      return;
+    }
+
     if (!currentText.trim()) {
       Alert.alert('Attention', 'Veuillez écrire quelque chose avant de sauvegarder');
       return;
     }
 
-    try {
-      setSaving(true);
+    savingLockRef.current = true;
+    setSaving(true);
 
+    try {
       const newEntry: JournalEntry = {
         id: Date.now().toString(),
         createdAtISO: new Date().toISOString(),
@@ -101,7 +131,7 @@ export default function JournalScreen() {
       const trimmed = updated.slice(0, 7);
 
       // Sauvegarder
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      await AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(trimmed));
 
       // Mettre à jour l'état
       setEntries(trimmed);
@@ -112,6 +142,15 @@ export default function JournalScreen() {
         'Votre entrée a été enregistrée avec succès',
         [
           {
+            text: 'Continuer',
+            style: 'cancel',
+            onPress: () => {
+              setTimeout(() => {
+                inputRef.current?.focus();
+              }, 0);
+            },
+          },
+          {
             text: '🌙 Retour au rituel',
             onPress: () => router.replace('/'),
           },
@@ -121,6 +160,7 @@ export default function JournalScreen() {
       console.error('[JOURNAL] Erreur sauvegarde:', error);
       Alert.alert('Erreur', 'Impossible de sauvegarder votre entrée');
     } finally {
+      savingLockRef.current = false;
       setSaving(false);
     }
   };
@@ -140,7 +180,7 @@ export default function JournalScreen() {
           onPress: async () => {
             try {
               const filtered = entries.filter((e) => e.id !== id);
-              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+              await AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(filtered));
               setEntries(filtered);
             } catch (error) {
               console.error('[JOURNAL] Erreur suppression:', error);
@@ -184,7 +224,16 @@ export default function JournalScreen() {
 
   return (
     <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={80}
+      >
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>📖 Journal Quotidien</Text>
@@ -194,9 +243,17 @@ export default function JournalScreen() {
         </View>
 
         {/* Zone de saisie */}
-        <View style={styles.inputCard}>
+        <View
+          ref={inputCardRef}
+          style={styles.inputCard}
+          onLayout={(event) => {
+            const { y } = event.nativeEvent.layout;
+            setInputCardY(y);
+          }}
+        >
           <Text style={styles.cardTitle}>Nouvelle entrée</Text>
           <TextInput
+            ref={inputRef}
             style={styles.textInput}
             value={currentText}
             onChangeText={setCurrentText}
@@ -208,9 +265,12 @@ export default function JournalScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            style={[
+              styles.saveButton,
+              (saving || currentText.trim().length === 0) && styles.saveButtonDisabled,
+            ]}
             onPress={saveEntry}
-            disabled={saving}
+            disabled={saving || currentText.trim().length === 0}
           >
             {saving ? (
               <ActivityIndicator color={colors.text} />
@@ -264,7 +324,8 @@ export default function JournalScreen() {
             ))
           )}
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradientComponent>
   );
 }
@@ -276,7 +337,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 60,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: 140,
   },
   loadingContainer: {
     flex: 1,
