@@ -95,13 +95,24 @@ export default function LunaPackScreen() {
     timezone: 'Europe/Paris',
   };
 
+  // Vérifier si déjà consulté aujourd'hui
+  const checkAlreadyViewedToday = useCallback(async () => {
+    try {
+      const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
+      const today = new Date().toISOString().split('T')[0];
+      setAlreadyViewedToday(lastViewedDate === today);
+    } catch (error) {
+      console.error('[LUNAR] Erreur vérification lastViewedDate:', error);
+    }
+  }, []);
+
   // Vérifier si focus=daily_climate et charger les données si nécessaire
   useEffect(() => {
     if (focus === 'daily_climate') {
       loadDailyClimate();
       checkAlreadyViewedToday();
     }
-  }, [focus]);
+  }, [focus, checkAlreadyViewedToday]);
 
   // Vérifier le badge au retour sur l'écran Lunar
   useFocusEffect(
@@ -167,17 +178,6 @@ export default function LunaPackScreen() {
       setDailyClimateLoading(false);
     }
   };
-
-  // Vérifier si déjà consulté aujourd'hui
-  const checkAlreadyViewedToday = useCallback(async () => {
-    try {
-      const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
-      const today = new Date().toISOString().split('T')[0];
-      setAlreadyViewedToday(lastViewedDate === today);
-    } catch (error) {
-      console.error('[LUNAR] Erreur vérification lastViewedDate:', error);
-    }
-  }, []);
 
   // Construire le texte prefill pour le journal
   const buildJournalPrefill = (): string => {
@@ -517,7 +517,7 @@ export default function LunaPackScreen() {
         ) : (
           <TouchableOpacity
             style={[styles.button, styles.buttonTertiary]}
-            onPress={loadDailyClimate}
+            onPress={() => loadDailyClimate()}
             disabled={dailyClimateLoading}
           >
             <Text style={styles.buttonText}>Charger Daily Climate</Text>
