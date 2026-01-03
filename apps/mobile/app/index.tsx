@@ -267,15 +267,20 @@ export default function HomeScreen() {
 
   // Gérer le clic sur "Écrire une note"
   const handleWriteNote = () => {
-    if (!dailyClimate) return;
-    
-    const prefill = buildJournalPrefill();
-    const encodedPrefill = encodeURIComponent(prefill);
+    const hasPrefill = !!dailyClimate;
     
     // Track event (optionnel, console-based)
-    console.log('[INDEX] daily_climate_journal_cta', { source: 'home' });
+    console.log('[INDEX] daily_climate_journal_cta', { source: 'home', prefill: hasPrefill });
     
-    router.push(`/journal?prefill=${encodedPrefill}`);
+    if (hasPrefill) {
+      // Comportement actuel : prefill avec insight du jour
+      const prefill = buildJournalPrefill();
+      const encodedPrefill = encodeURIComponent(prefill);
+      router.push(`/journal?prefill=${encodedPrefill}`);
+    } else {
+      // Ouvrir Journal vide (sans prefill)
+      router.push('/journal');
+    }
   };
 
   // Re-scheduler notifications au focus si nécessaire
@@ -403,17 +408,19 @@ export default function HomeScreen() {
                 </View>
               )}
             </TouchableOpacity>
-            
-            {/* Bouton "Écrire une note" */}
-            <TouchableOpacity
-              style={styles.writeNoteButton}
-              onPress={handleWriteNote}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
-            </TouchableOpacity>
           </View>
         )}
+
+        {/* Bouton "Écrire une note" - toujours disponible */}
+        <View style={styles.writeNoteCard}>
+          <TouchableOpacity
+            style={styles.writeNoteButton}
+            onPress={handleWriteNote}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Menu principal MVP : Journal + Réglages uniquement */}
         <View style={styles.grid}>
@@ -642,8 +649,15 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 11,
   },
+  writeNoteCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(183, 148, 246, 0.1)',
+  },
   writeNoteButton: {
-    marginTop: spacing.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: 'rgba(183, 148, 246, 0.15)',

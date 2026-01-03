@@ -191,15 +191,20 @@ export default function LunaPackScreen() {
 
   // Gérer le clic sur "Écrire une note"
   const handleWriteNote = () => {
-    if (!dailyClimate) return;
-    
-    const prefill = buildJournalPrefill();
-    const encodedPrefill = encodeURIComponent(prefill);
+    const hasPrefill = !!dailyClimate;
     
     // Track event (optionnel, console-based)
-    console.log('[LUNAR] daily_climate_journal_cta', { source: 'lunar' });
+    console.log('[LUNAR] daily_climate_journal_cta', { source: 'lunar', prefill: hasPrefill });
     
-    router.push(`/journal?prefill=${encodedPrefill}`);
+    if (hasPrefill) {
+      // Comportement actuel : prefill avec insight du jour
+      const prefill = buildJournalPrefill();
+      const encodedPrefill = encodeURIComponent(prefill);
+      router.push(`/journal?prefill=${encodedPrefill}`);
+    } else {
+      // Ouvrir Journal vide (sans prefill)
+      router.push('/journal');
+    }
   };
 
   // Clear Daily Climate Cache (DEV)
@@ -508,15 +513,6 @@ export default function LunaPackScreen() {
                 ))}
               </View>
             )}
-            
-            {/* Bouton "Écrire une note" */}
-            <TouchableOpacity
-              style={styles.writeNoteButton}
-              onPress={handleWriteNote}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
@@ -527,6 +523,15 @@ export default function LunaPackScreen() {
             <Text style={styles.buttonText}>Charger Daily Climate</Text>
           </TouchableOpacity>
         )}
+
+        {/* Bouton "Écrire une note" - toujours disponible */}
+        <TouchableOpacity
+          style={styles.writeNoteButton}
+          onPress={handleWriteNote}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.buttonsContainer}>
