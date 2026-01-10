@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`calculateLocalMoonPhase matches known snapshots for reference dates 1`] = `"Waning Gibbous"`;
+
+exports[`calculateLocalMoonPhase matches known snapshots for reference dates 2`] = `"Waxing Gibbous"`;
+
+exports[`calculateLocalMoonSign matches known snapshots for reference dates 1`] = `"Aries"`;
+
+exports[`calculateLocalMoonSign matches known snapshots for reference dates 2`] = `"Libra"`;
+
+exports[`calculateLocalMoonSign matches known snapshots for reference dates 3`] = `"Capricorn"`;

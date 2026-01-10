@@ -1,0 +1,272 @@
+/**
+ * Écran d'onboarding : Inscription + Données de naissance
+ */
+
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useAuthStore } from '../stores/useAuthStore';
+import { auth, natalChart, lunarReturns } from '../services/api';
+import { colors, fonts, spacing, borderRadius } from '../constants/theme';
+
+export default function OnboardingScreen() {
+  const router = useRouter();
+  const { setUser } = useAuthStore();
+  
+  const [step, setStep] = useState(1); // 1: Auth, 2: Birth data
+  const [loading, setLoading] = useState(false);
+  
+  // Step 1: Auth
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Step 2: Birth data
+  const [birthDate, setBirthDate] = useState(''); // YYYY-MM-DD
+  const [birthTime, setBirthTime] = useState(''); // HH:MM
+  const [birthPlace, setBirthPlace] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+
+  const handleAuthSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Merci de remplir tous les champs');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await auth.register(email, password);
+      const user = await auth.getMe();
+      setUser(user);
+      setStep(2); // Passer aux données de naissance
+    } catch (error: any) {
+      Alert.alert('Erreur', error.response?.data?.detail || 'Inscription échouée');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBirthDataSubmit = async () => {
+    if (!birthDate || !birthTime || !latitude || !longitude) {
+      Alert.alert('Erreur', 'Merci de remplir tous les champs');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Calculer le thème natal
+      await natalChart.calculate({
+        date: birthDate,
+        time: birthTime,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        place_name: birthPlace,
+      });
+
+      // Générer les révolutions lunaires
+      await lunarReturns.generate();
+
+      // Rediriger vers l'accueil
+      router.replace('/');
+    } catch (error: any) {
+      Alert.alert('Erreur', error.response?.data?.detail || 'Calcul échoué');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <LinearGradient colors={colors.darkBg} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Step 1: Authentification */}
+        {step === 1 && (
+          <>
+            <Text style={styles.title}>🌙 Bienvenue sur Lunation</Text>
+            <Text style={styles.subtitle}>
+              Découvre tes révolutions lunaires mensuelles
+            </Text>
+
+            <View style={styles.form}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Mot de passe"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleAuthSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Continuer →</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Step 2: Données de naissance */}
+        {step === 2 && (
+          <>
+            <Text style={styles.title}>📅 Tes données de naissance</Text>
+            <Text style={styles.subtitle}>
+              Nécessaires pour calculer ton thème lunaire personnel
+            </Text>
+
+            <View style={styles.form}>
+              <Text style={styles.label}>Date de naissance (AAAA-MM-JJ)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="1990-05-15"
+                placeholderTextColor={colors.textMuted}
+                value={birthDate}
+                onChangeText={setBirthDate}
+              />
+
+              <Text style={styles.label}>Heure de naissance (HH:MM)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="14:30"
+                placeholderTextColor={colors.textMuted}
+                value={birthTime}
+                onChangeText={setBirthTime}
+              />
+
+              <Text style={styles.label}>Lieu de naissance</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Paris, France"
+                placeholderTextColor={colors.textMuted}
+                value={birthPlace}
+                onChangeText={setBirthPlace}
+              />
+
+              <Text style={styles.label}>Latitude</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="48.8566"
+                placeholderTextColor={colors.textMuted}
+                value={latitude}
+                onChangeText={setLatitude}
+                keyboardType="decimal-pad"
+              />
+
+              <Text style={styles.label}>Longitude</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="2.3522"
+                placeholderTextColor={colors.textMuted}
+                value={longitude}
+                onChangeText={setLongitude}
+                keyboardType="decimal-pad"
+              />
+
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleBirthDataSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Calculer mon thème lunaire ✨</Text>
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.disclaimer}>
+                💡 Astuce : Utilise Google Maps pour trouver tes coordonnées exactes
+              </Text>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 60,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+  },
+  title: {
+    ...fonts.h1,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    ...fonts.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  form: {
+    width: '100%',
+  },
+  label: {
+    ...fonts.bodySmall,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+    marginTop: spacing.md,
+  },
+  input: {
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.sm,
+    padding: spacing.md,
+    ...fonts.body,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  button: {
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    ...fonts.button,
+    color: colors.text,
+  },
+  disclaimer: {
+    ...fonts.caption,
+    color: colors.textDark,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+  },
+});
+

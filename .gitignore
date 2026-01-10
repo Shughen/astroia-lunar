@@ -1,14 +1,4 @@
-# macOS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-
-# Cursor
-.cursor/
-
-# Python
+# === PYTHON ===
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,50 +8,76 @@ venv/
 env/
 ENV/
 .venv
-*.egg-info/
+pip-log.txt
+pip-delete-this-directory.txt
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.pnpm-store/
-
-# Environment
-.env
-.env.local
-.env.production
-.env*.local
-
-# Build outputs
+*.egg-info/
 dist/
 build/
-out/
-*.tsbuildinfo
 
-# Logs
+# === NODE / EXPO ===
+node_modules/
+.expo/
+.expo-shared/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
 *.log
-logs/
 
-# IDE
+# === ENV ===
+.env
+.env.local
+.env.*.local
+.env.production
+
+# === DATABASE ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === IDE ===
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.DS_Store
 
-# Database
-*.sqlite
-*.db
+# === LOGS ===
+logs/
+*.log
 
-# Temporary
+# === COVERAGE ===
+coverage/
+.nyc_output/
+
+# === MISC ===
+.cursor/
+.turbo/
+
+apps/api/.env.bak
+apps/api/.env.bak2
+
+*.bak
+*.save
+.schema_inspection.json
+
+# === BUILD OUTPUTS ===
+out/
+*.tsbuildinfo
+
+# === TEMPORARY ===
 tmp/
 temp/
 *.tmp
 
-# Archives (optionnel - peut être retiré si vous voulez committer les zip)
-# *.zip
+# === ARCHIVES ===
+*.zip

@@ -1,0 +1,245 @@
+{
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to Lunation",
+      "body": "Lunation tracks your lunar returns — a personal 28-day cycle based on your birth chart. No daily notifications, no anxious predictions.",
+      "cta": "Get Started"
+    },
+    "profile": {
+      "title": "Create Your Profile",
+      "body": "We calculate your lunar cycles from your birth date and location. This data remains private and is never shared.",
+      "nameLabel": "Your first name",
+      "namePlaceholder": "Alice",
+      "birthLabel": "Birth date",
+      "birthPlaceholder": "MM/DD/YYYY",
+      "locationLabel": "Birth location",
+      "locationPlaceholder": "Paris, France",
+      "cta": "Continue"
+    },
+    "consent": {
+      "title": "Your Data Privacy",
+      "body": "Lunation stores your astrological information locally on your device. No personal data is sold or transmitted to third parties.",
+      "checkbox": "I accept the privacy policy",
+      "cta": "Accept and Continue"
+    },
+    "disclaimer": {
+      "title": "Disclaimer",
+      "body": "Lunation provides monthly symbolic analyses. This content does not replace medical, legal, or professional advice.",
+      "checkbox": "I understand",
+      "cta": "Start My First Cycle"
+    },
+    "slides": {
+      "slide1": {
+        "title": "🌙 Your Monthly Cycle",
+        "body": "Each month, the Moon returns to its natal position. This is your lunar return — a unique monthly chart."
+      },
+      "slide2": {
+        "title": "🌑 Void of Course",
+        "body": "Lunar windows where the Moon forms no major aspects. Ideal for observing, not forcing."
+      },
+      "slide3": {
+        "title": "📅 Structured Timeline",
+        "body": "Visualize 12 months of upcoming cycles. Prepare for key transits without overwhelm."
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "birthDate": "Birth date",
+      "birthPlace": "Birth location",
+      "editCta": "Edit"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "lunarCycle": "New Lunar Cycle",
+      "lunarCycleDesc": "1 notification per month at the start of your lunar return",
+      "voidOfCourse": "Void of Course",
+      "voidOfCourseDesc": "Optional alerts for upcoming VoC windows",
+      "permissionRequired": "Permission Required",
+      "permissionDesc": "Allow notifications in system settings.",
+      "openSettings": "Open Settings",
+      "enabledSuccess": "Notifications enabled"
+    },
+    "legal": {
+      "title": "Legal Information",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "disclaimer": "Medical Disclaimer"
+    },
+    "app": {
+      "title": "App",
+      "version": "Version",
+      "logout": "Log Out"
+    }
+  },
+  "emptyStates": {
+    "noCycles": {
+      "title": "No Lunar Returns Generated",
+      "body": "Generate your next 12 monthly cycles to view your report and timeline.",
+      "cta": "Generate My Cycles"
+    },
+    "noVoC": {
+      "title": "No Upcoming Void of Course",
+      "body": "Upcoming VoC windows are not yet calculated. Check back later."
+    },
+    "noJournal": {
+      "title": "No Cycle Notes",
+      "body": "Record your weekly observations to better understand your lunar cycles."
+    }
+  },
+  "errors": {
+    "network": {
+      "title": "Network Error",
+      "body": "Unable to contact server. Check your internet connection.",
+      "cta": "Retry"
+    },
+    "notFound": {
+      "title": "Cycle Not Found",
+      "body": "The requested cycle does not exist or has not been generated yet.",
+      "cta": "Go Back"
+    },
+    "generic": {
+      "title": "Error",
+      "body": "An unexpected error occurred. ID: {correlation_id}",
+      "cta": "Go Back"
+    },
+    "api": {
+      "title": "Server Error",
+      "body": "The service is temporarily unavailable. Please try again in a few moments."
+    }
+  },
+  "notifications": {
+    "newCycle": {
+      "title": "🌙 New Lunar Cycle",
+      "body": "{month} — Moon in {sign}, Ascendant {ascendant}. View your monthly report."
+    },
+    "vocStart": {
+      "title": "🌑 Void of Course",
+      "body": "Moon enters VoC until {endTime}. Observation window."
+    },
+    "vocEnd": {
+      "title": "🌑 VoC Ends in 30 min",
+      "body": "Moon leaves Void of Course at {endTime}."
+    },
+    "journalReminder": {
+      "title": "🌙 Weekly Note",
+      "body": "Week {weekNumber} of your cycle. Record your observations if you wish."
+    }
+  },
+  "paywalls": {
+    "journal": {
+      "title": "Cycle Journal",
+      "features": [
+        "Private weekly notes",
+        "Cycle/event correlations",
+        "Monthly PDF export"
+      ],
+      "price": "{price}/month",
+      "cta": "Unlock Journal",
+      "trial": "7 days free"
+    },
+    "timeline": {
+      "title": "12-Month Timeline",
+      "features": [
+        "Visualize your next 12 cycles",
+        "Major aspects per month",
+        "Prepare for key transits"
+      ],
+      "price": "{price}/month",
+      "cta": "Unlock Timeline",
+      "trial": "7 days free"
+    }
+  },
+  "journal": {
+    "title": "Lunar Journal",
+    "cycleJournal": {
+      "title": "Cycle Journal",
+      "weekLabel": "Week {weekNumber}",
+      "placeholder": "Record your observations (50 characters max)",
+      "charCount": "{count}/50",
+      "saved": "Saved",
+      "empty": "No note for this week"
+    },
+    "entryTitle": "How are you feeling today?",
+    "placeholder": "Note your feelings, observations, what stands out today...",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "saved": "Entry saved",
+    "deleted": "Entry deleted",
+    "moonContext": "{{phase}} in {{sign}}",
+    "emptyState": "No note for today",
+    "deleteConfirm": "Delete this entry?",
+    "characterCount": "{{count}} characters",
+    "maxLength": "Maximum {{max}} characters"
+  },
+  "disclaimers": {
+    "medical": {
+      "title": "Medical Disclaimer",
+      "body": "Lunation provides monthly symbolic analyses based on astronomical calculations and classical astrological interpretations.\n\nThis content is provided for informational purposes only and does not constitute medical, psychological, legal, or financial advice.\n\nIf you have concerns about your physical or mental health, consult a qualified healthcare professional. Lunation content should never replace medical diagnosis or treatment."
+    },
+    "rgpd": {
+      "title": "Privacy Policy",
+      "body": "Lunation stores your birth data and preferences locally on your device.\n\nNo personal data is transmitted to third parties for commercial purposes.\n\nYou can export or delete your data at any time from Settings."
+    }
+  },
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "seeMore": "See More",
+    "seeLess": "See Less"
+  },
+  "ritualCard": {
+    "header": "Today",
+    "guidance": {
+      "new_moon": "Renewal energy. Time for intentions.",
+      "waxing_crescent": "Creative momentum. Lay your first stones.",
+      "first_quarter": "Fertile tension. Adjust your actions.",
+      "waxing_gibbous": "Refine your projects. Full light approaches.",
+      "full_moon": "Emotional apex. Contemplate what reveals itself.",
+      "waning_gibbous": "Active gratitude. Share what has ripened.",
+      "last_quarter": "Release what weighs. Make space.",
+      "waning_crescent": "Gentle transition. Interiority before renewal.",
+      "fallback": "Listen to your lunar intuition."
+    },
+    "vocActive": "Floating Moon until {{endTime}}",
+    "cachedData": "Data from {{date}}",
+    "cta": "View lunar climate",
+    "journalPrompt": "Note your feelings",
+    "journalEdited": "Review / Edit"
+  },
+  "timeline": {
+    "title": "Lunar Timeline",
+    "subtitle": "This week's lunar context",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "daysAgo": "{{count}} days ago",
+    "inDays": "In {{count}} days",
+    "vocBadge": "VoC",
+    "hasJournal": "Entry written",
+    "noJournal": "No note",
+    "tapToWrite": "Tap to write",
+    "tapToRead": "Tap to read",
+    "futureReadOnly": "Coming soon",
+    "loadingTimeline": "Loading timeline...",
+    "emptyState": {
+      "title": "No data available",
+      "subtitle": "Timeline cannot be generated at the moment"
+    },
+    "offline": {
+      "title": "Offline mode",
+      "subtitle": "Lunar data calculated locally"
+    }
+  }
+}

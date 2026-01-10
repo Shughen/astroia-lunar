@@ -1,0 +1,255 @@
+{
+  "onboarding": {
+    "welcome": {
+      "title": "Bienvenue sur Lunation",
+      "body": "Lunation suit vos révolutions lunaires — un cycle personnel de 28 jours basé sur votre thème natal. Pas de notifications quotidiennes, pas de prédictions anxiogènes.",
+      "cta": "Commencer"
+    },
+    "profile": {
+      "title": "Créer votre profil",
+      "body": "Nous calculons vos cycles lunaires à partir de votre date et lieu de naissance. Ces données restent privées et ne sont jamais partagées.",
+      "nameLabel": "Votre prénom",
+      "namePlaceholder": "Alice",
+      "birthLabel": "Date de naissance",
+      "birthPlaceholder": "JJ/MM/AAAA",
+      "locationLabel": "Lieu de naissance",
+      "locationPlaceholder": "Paris, France",
+      "cta": "Continuer"
+    },
+    "consent": {
+      "title": "Respect de vos données",
+      "body": "Lunation stocke vos informations astrologiques localement sur votre appareil. Aucune donnée personnelle n'est vendue ou transmise à des tiers.",
+      "checkbox": "J'accepte la politique de confidentialité",
+      "cta": "Accepter et continuer"
+    },
+    "disclaimer": {
+      "title": "Avertissement",
+      "body": "Lunation propose des analyses symboliques mensuelles. Ce contenu ne remplace en aucun cas un avis médical, juridique ou professionnel.",
+      "checkbox": "J'ai compris",
+      "cta": "Commencer mon premier cycle"
+    },
+    "slides": {
+      "slide1": {
+        "title": "🌙 Votre cycle mensuel",
+        "body": "Chaque mois, la Lune revient à sa position natale. C'est votre révolution lunaire — un thème mensuel unique."
+      },
+      "slide2": {
+        "title": "🌑 Void of Course",
+        "body": "Fenêtres lunaires où la Lune ne forme aucun aspect majeur. Idéal pour observer, pas pour forcer."
+      },
+      "slide3": {
+        "title": "📅 Timeline structurée",
+        "body": "Visualisez 12 mois de cycles à venir. Préparez-vous aux transits clés sans surcharge."
+      }
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "profile": {
+      "title": "Profil",
+      "name": "Nom",
+      "birthDate": "Date de naissance",
+      "birthPlace": "Lieu de naissance",
+      "editCta": "Modifier"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "lunarCycle": "Nouveau cycle lunaire",
+      "lunarCycleDesc": "1 notification par mois au début de votre révolution lunaire",
+      "voidOfCourse": "Void of Course",
+      "voidOfCourseDesc": "Alertes optionnelles pour les fenêtres VoC à venir",
+      "permissionRequired": "Permission requise",
+      "permissionDesc": "Autorisez les notifications dans les réglages système.",
+      "openSettings": "Ouvrir les réglages",
+      "enabledSuccess": "Notifications activées"
+    },
+    "legal": {
+      "title": "Informations légales",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "disclaimer": "Avertissement médical"
+    },
+    "app": {
+      "title": "Application",
+      "version": "Version",
+      "logout": "Se déconnecter"
+    }
+  },
+  "emptyStates": {
+    "noCycles": {
+      "title": "Aucune révolution lunaire générée",
+      "body": "Générez vos 12 prochains cycles mensuels pour voir votre rapport et votre timeline.",
+      "cta": "Générer mes cycles"
+    },
+    "noVoC": {
+      "title": "Aucun Void of Course à venir",
+      "body": "Les prochaines fenêtres VoC ne sont pas encore calculées. Revenez plus tard."
+    },
+    "noJournal": {
+      "title": "Aucune note de cycle",
+      "body": "Notez vos observations hebdomadaires pour mieux comprendre vos cycles lunaires."
+    }
+  },
+  "errors": {
+    "network": {
+      "title": "Erreur réseau",
+      "body": "Impossible de contacter le serveur. Vérifiez votre connexion internet.",
+      "cta": "Réessayer"
+    },
+    "notFound": {
+      "title": "Cycle non trouvé",
+      "body": "Le cycle demandé n'existe pas ou n'a pas encore été généré.",
+      "cta": "Retour"
+    },
+    "generic": {
+      "title": "Erreur",
+      "body": "Une erreur inattendue s'est produite. ID: {correlation_id}",
+      "cta": "Retour"
+    },
+    "api": {
+      "title": "Erreur serveur",
+      "body": "Le service est temporairement indisponible. Réessayez dans quelques instants."
+    }
+  },
+  "notifications": {
+    "newCycle": {
+      "title": "🌙 Nouveau cycle lunaire",
+      "body": "{month} — Lune en {sign}, Ascendant {ascendant}. Consultez votre rapport mensuel."
+    },
+    "vocStart": {
+      "title": "🌑 Void of Course",
+      "body": "La Lune entre en VoC jusqu'à {endTime}. Fenêtre d'observation."
+    },
+    "vocEnd": {
+      "title": "🌑 Fin du VoC dans 30 min",
+      "body": "La Lune quitte le Void of Course à {endTime}."
+    },
+    "journalReminder": {
+      "title": "🌙 Note hebdomadaire",
+      "body": "Semaine {weekNumber} de votre cycle. Notez vos observations si vous le souhaitez."
+    }
+  },
+  "paywalls": {
+    "journal": {
+      "title": "Journal de Cycle",
+      "features": [
+        "Notes hebdomadaires privées",
+        "Corrélations cycle/événements",
+        "Export PDF mensuel"
+      ],
+      "price": "{price}/mois",
+      "cta": "Débloquer le Journal",
+      "trial": "7 jours gratuits"
+    },
+    "timeline": {
+      "title": "Timeline 12 mois",
+      "features": [
+        "Visualisez vos 12 prochains cycles",
+        "Aspects majeurs par mois",
+        "Préparez vos transits clés"
+      ],
+      "price": "{price}/mois",
+      "cta": "Débloquer la Timeline",
+      "trial": "7 jours gratuits"
+    }
+  },
+  "journal": {
+    "title": "Journal Lunaire",
+    "cycleJournal": {
+      "title": "Journal de Cycle",
+      "weekLabel": "Semaine {weekNumber}",
+      "placeholder": "Notez vos observations (50 caractères max)",
+      "charCount": "{count}/50",
+      "saved": "Sauvegardé",
+      "empty": "Aucune note pour cette semaine"
+    },
+    "entryTitle": "Comment vous sentez-vous aujourd'hui ?",
+    "placeholder": "Notez votre ressenti, vos observations, ce qui vous marque aujourd'hui...",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "saved": "Entrée enregistrée",
+    "deleted": "Entrée supprimée",
+    "moonContext": "{{phase}} en {{sign}}",
+    "emptyState": "Aucune note pour aujourd'hui",
+    "deleteConfirm": "Supprimer cette entrée ?",
+    "characterCount": "{{count}} caractères",
+    "maxLength": "Maximum {{max}} caractères",
+    "prompts": {
+      "new_moon": "Quelles intentions douces as-tu envie de poser aujourd'hui, même toutes petites ?",
+      "waxing_crescent": "Qu'est-ce qui commence à prendre forme en toi, sans être encore très clair ?",
+      "first_quarter": "Y a-t-il quelque chose que tu pourrais ajuster légèrement, pour te sentir plus alignée ?",
+      "waxing_gibbous": "Qu'est-ce qui est en train de mûrir dans ta vie, même discrètement ?",
+      "full_moon": "Qu'est-ce qui se révèle en ce moment, en toi ou autour de toi ?",
+      "waning_gibbous": "Qu'est-ce que tu as envie de reconnaître ou d'honorer, sans forcément le partager ?",
+      "last_quarter": "Y a-t-il quelque chose que tu pourrais relâcher, même partiellement ?",
+      "waning_crescent": "De quoi aurais-tu besoin pour te reposer un peu plus, à ta manière ?"
+    }
+  },
+  "disclaimers": {
+    "medical": {
+      "title": "Avertissement médical",
+      "body": "Lunation propose des analyses symboliques mensuelles basées sur des calculs astronomiques et des interprétations astrologiques classiques.\n\nCe contenu est fourni à titre informatif et ne constitue en aucun cas un avis médical, psychologique, juridique ou financier.\n\nEn cas de doute sur votre santé physique ou mentale, consultez un professionnel de santé qualifié. Les contenus de Lunation ne doivent jamais remplacer un diagnostic ou un traitement médical."
+    },
+    "rgpd": {
+      "title": "Politique de confidentialité",
+      "body": "Lunation stocke vos données de naissance et vos préférences localement sur votre appareil.\n\nAucune donnée personnelle n'est transmise à des tiers à des fins commerciales.\n\nVous pouvez à tout moment exporter ou supprimer vos données depuis les Paramètres."
+    }
+  },
+  "common": {
+    "back": "Retour",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "loading": "Chargement...",
+    "retry": "Réessayer",
+    "seeMore": "Voir plus",
+    "seeLess": "Voir moins"
+  },
+  "ritualCard": {
+    "header": "Aujourd'hui",
+    "guidance": {
+      "new_moon": "C'est un temps pour poser des intentions douces, sans urgence.",
+      "waxing_crescent": "L'élan se dessine. Tu peux nourrir ce qui commence à germer en toi.",
+      "first_quarter": "Une tension fertile. Tu peux ajuster ta direction avec douceur.",
+      "waxing_gibbous": "Tout continue de mûrir. Tu peux affiner, sans forcer.",
+      "full_moon": "C'est un sommet émotionnel. Tu peux contempler ce qui se révèle.",
+      "waning_gibbous": "La lumière commence à décroître. Tu peux partager ce qui a porté ses fruits.",
+      "last_quarter": "Un temps pour relâcher ce qui pèse. Tu peux faire de la place.",
+      "waning_crescent": "Tout ralentit en douceur. Tu peux te reposer avant le renouveau.",
+      "fallback": "Écoutez votre intuition lunaire."
+    },
+    "vocActive": "Lune flottante jusqu'à {{endTime}}",
+    "cachedData": "Données du {{date}}",
+    "cta": "Voir le climat lunaire",
+    "journalPrompt": "Noter mon ressenti",
+    "journalEdited": "Relire / Modifier"
+  },
+  "timeline": {
+    "title": "Timeline Lunaire",
+    "subtitle": "Contexte lunaire de la semaine",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "tomorrow": "Demain",
+    "daysAgo": "Il y a {{count}} jours",
+    "inDays": "Dans {{count}} jours",
+    "vocBadge": "VoC",
+    "hasJournal": "Entrée écrite",
+    "noJournal": "Aucune note",
+    "tapToWrite": "Toucher pour écrire",
+    "tapToRead": "Toucher pour lire",
+    "futureReadOnly": "À venir",
+    "loadingTimeline": "Chargement de la timeline...",
+    "emptyState": {
+      "title": "Aucune donnée disponible",
+      "subtitle": "La timeline ne peut pas être générée pour le moment"
+    },
+    "offline": {
+      "title": "Mode hors ligne",
+      "subtitle": "Les données lunaires sont calculées localement"
+    }
+  }
+}
