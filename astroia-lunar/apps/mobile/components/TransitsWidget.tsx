@@ -86,9 +86,36 @@ export function TransitsWidget() {
 
         // Filtrer pour ne garder que les 4 aspects majeurs MVP
         const MAJOR_ASPECTS_MVP = ['conjunction', 'opposition', 'square', 'trine'];
-        const majorOnlyAspects = allAspects.filter((aspect: any) =>
-          MAJOR_ASPECTS_MVP.includes(aspect.aspect)
-        );
+
+        // Planètes réelles uniquement (exclure nœuds, Chiron, etc.)
+        const PLANETARY_BODIES = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+        const EXCLUDED_KEYWORDS = ['node', 'Node', 'chiron', 'Chiron', 'lilith', 'Lilith', 'Fortune', 'Vertex'];
+
+        const majorOnlyAspects = allAspects.filter((aspect: any) => {
+          // Filtrer les aspects majeurs
+          if (!MAJOR_ASPECTS_MVP.includes(aspect.aspect)) {
+            return false;
+          }
+
+          // Filtrer les points non-planétaires
+          const transitPlanet = aspect.transit_planet || '';
+          const natalPlanet = aspect.natal_planet || '';
+
+          // Exclure si contient un mot-clé interdit
+          const hasExcludedKeyword = EXCLUDED_KEYWORDS.some(keyword =>
+            transitPlanet.includes(keyword) || natalPlanet.includes(keyword)
+          );
+
+          if (hasExcludedKeyword) {
+            return false;
+          }
+
+          // Garder si les deux planètes sont dans la liste blanche
+          const transitIsValid = PLANETARY_BODIES.some(planet => transitPlanet.includes(planet));
+          const natalIsValid = PLANETARY_BODIES.some(planet => natalPlanet.includes(planet));
+
+          return transitIsValid && natalIsValid;
+        });
 
         // Garder uniquement les 3 aspects les plus serrés (orbe le plus petit)
         const sortedAspects = [...majorOnlyAspects]

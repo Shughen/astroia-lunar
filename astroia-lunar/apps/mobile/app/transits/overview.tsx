@@ -175,9 +175,36 @@ export default function TransitsOverview() {
 
   // Filtrer pour ne garder que les 4 aspects majeurs MVP
   const MAJOR_ASPECTS_MVP = ['conjunction', 'opposition', 'square', 'trine'];
-  const majorAspects = allAspects.filter((aspect: any) =>
-    MAJOR_ASPECTS_MVP.includes(aspect.aspect)
-  );
+
+  // Planètes réelles uniquement (exclure nœuds, Chiron, etc.)
+  const PLANETARY_BODIES = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+  const EXCLUDED_KEYWORDS = ['node', 'Node', 'chiron', 'Chiron', 'lilith', 'Lilith', 'Fortune', 'Vertex'];
+
+  const majorAspects = allAspects.filter((aspect: any) => {
+    // Filtrer les aspects majeurs
+    if (!MAJOR_ASPECTS_MVP.includes(aspect.aspect)) {
+      return false;
+    }
+
+    // Filtrer les points non-planétaires
+    const transitPlanet = aspect.transit_planet || '';
+    const natalPlanet = aspect.natal_planet || '';
+
+    // Exclure si contient un mot-clé interdit
+    const hasExcludedKeyword = EXCLUDED_KEYWORDS.some(keyword =>
+      transitPlanet.includes(keyword) || natalPlanet.includes(keyword)
+    );
+
+    if (hasExcludedKeyword) {
+      return false;
+    }
+
+    // Garder si au moins une des planètes est dans la liste blanche
+    const transitIsValid = PLANETARY_BODIES.some(planet => transitPlanet.includes(planet));
+    const natalIsValid = PLANETARY_BODIES.some(planet => natalPlanet.includes(planet));
+
+    return transitIsValid && natalIsValid;
+  });
 
   return (
     <LinearGradient colors={['#1a0b2e', '#2d1b4e']} style={styles.container}>
@@ -209,13 +236,22 @@ export default function TransitsOverview() {
                     Cycle lunaire en cours
                   </Text>
                   <Text style={styles.lunarReturnSubtitle}>
-                    {new Date(currentLunarReturn.start_date).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                    })} - {new Date(currentLunarReturn.end_date).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                    })}
+                    {currentLunarReturn.start_date && currentLunarReturn.end_date ? (
+                      `${new Date(currentLunarReturn.start_date).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                      })} - ${new Date(currentLunarReturn.end_date).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                      })}`
+                    ) : currentLunarReturn.month ? (
+                      new Date(currentLunarReturn.month + '-01').toLocaleDateString('fr-FR', {
+                        month: 'long',
+                        year: 'numeric',
+                      })
+                    ) : (
+                      'Mois en cours'
+                    )}
                   </Text>
                 </View>
                 <Text style={styles.lunarReturnArrow}>→</Text>

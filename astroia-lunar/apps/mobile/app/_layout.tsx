@@ -5,6 +5,12 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
+import { LogBox } from 'react-native';
+
+// Ignore warning expo-notifications Android (Expo Go SDK 53+)
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+]);
 
 // Initialize i18n (side effect import)
 import '../i18n';
