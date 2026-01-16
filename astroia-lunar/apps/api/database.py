@@ -5,6 +5,8 @@ Configuration SQLAlchemy (async)
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
+from sqlalchemy import JSON
+from sqlalchemy.dialects import postgresql
 from config import settings
 import os
 import sys
@@ -51,6 +53,21 @@ AsyncSessionLocal = async_sessionmaker(
 class Base(DeclarativeBase):
     """Base pour tous les modèles SQLAlchemy"""
     pass
+
+
+# Helper pour type JSON compatible multi-dialectes
+# PostgreSQL: utilise JSONB (meilleur performance)
+# SQLite: utilise JSON
+def JSONBColumn(*args, **kwargs):
+    """
+    Retourne JSONB pour PostgreSQL, JSON pour autres dialectes (ex: SQLite en test)
+    Usage: data = JSONBColumn(nullable=False) au lieu de Column(JSONB, nullable=False)
+    """
+    # Déterminer le dialecte depuis l'URL
+    if "postgresql" in DATABASE_URL:
+        return postgresql.JSONB(*args, **kwargs)
+    else:
+        return JSON(*args, **kwargs)
 
 
 async def get_db():

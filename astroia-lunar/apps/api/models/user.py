@@ -39,6 +39,7 @@ class User(Base):
     )
     lunar_returns = relationship("LunarReturn", back_populates="user", cascade="all, delete-orphan")
     lunar_reports = relationship("LunarReport", back_populates="user", cascade="all, delete-orphan")
+    journal_entries = relationship("JournalEntry", back_populates="user", cascade="all, delete-orphan")
     # Note: transits_overviews et transits_events ne sont plus en relation car
     # user_id pointe vers auth.users.id (UUID Supabase) et non vers users.id (Integer FastAPI)
     # Les RLS policies gèrent l'accès basé sur auth.uid()

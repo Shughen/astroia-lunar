@@ -32,7 +32,7 @@ async def test_create_journal_entry_without_auth_returns_401():
 
 
 @pytest.mark.asyncio
-async def test_create_journal_entry_with_dev_bypass_succeeds():
+async def test_create_journal_entry_with_dev_bypass_succeeds(setup_test_db):
     """
     Test: Créer une entrée de journal avec DEV_AUTH_BYPASS actif.
     Doit retourner 201 Created.
@@ -69,7 +69,7 @@ async def test_create_journal_entry_with_dev_bypass_succeeds():
 
 
 @pytest.mark.asyncio
-async def test_update_existing_journal_entry():
+async def test_update_existing_journal_entry(setup_test_db):
     """
     Test: Mettre à jour une entrée existante (même date).
     Doit retourner 201 et mettre à jour l'entrée.
@@ -130,7 +130,7 @@ async def test_get_journal_entries_without_auth_returns_401():
 
 
 @pytest.mark.asyncio
-async def test_get_journal_entries_empty():
+async def test_get_journal_entries_empty(setup_test_db):
     """
     Test: Récupérer les entrées d'un utilisateur qui n'en a pas.
     Doit retourner une liste vide.
@@ -151,7 +151,7 @@ async def test_get_journal_entries_empty():
 
 
 @pytest.mark.asyncio
-async def test_get_journal_entries_with_filter():
+async def test_get_journal_entries_with_filter(setup_test_db):
     """
     Test: Récupérer les entrées filtrées par mois lunaire.
     """
@@ -198,7 +198,7 @@ async def test_get_today_entry_without_auth_returns_401():
 
 
 @pytest.mark.asyncio
-async def test_get_today_entry_not_found():
+async def test_get_today_entry_not_found(setup_test_db):
     """
     Test: Récupérer l'entrée du jour quand elle n'existe pas.
     Doit retourner 200 avec None.
@@ -218,7 +218,7 @@ async def test_get_today_entry_not_found():
 
 
 @pytest.mark.asyncio
-async def test_get_today_entry_found():
+async def test_get_today_entry_found(setup_test_db):
     """
     Test: Récupérer l'entrée du jour quand elle existe.
     """
@@ -255,7 +255,7 @@ async def test_get_today_entry_found():
 
 
 @pytest.mark.asyncio
-async def test_delete_journal_entry():
+async def test_delete_journal_entry(setup_test_db):
     """
     Test: Supprimer une entrée de journal.
     Doit retourner 204 No Content.
@@ -298,7 +298,7 @@ async def test_delete_journal_entry():
 
 
 @pytest.mark.asyncio
-async def test_delete_journal_entry_not_found():
+async def test_delete_journal_entry_not_found(setup_test_db):
     """
     Test: Supprimer une entrée qui n'existe pas ou appartient à un autre user.
     Doit retourner 404.

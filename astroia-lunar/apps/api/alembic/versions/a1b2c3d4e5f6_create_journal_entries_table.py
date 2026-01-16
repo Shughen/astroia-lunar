@@ -24,16 +24,10 @@ def upgrade() -> None:
     """
     conn = op.get_bind()
 
-    # Vérifier si la table existe déjà
-    check_sql = text("""
-        SELECT EXISTS (
-            SELECT 1 FROM information_schema.tables
-            WHERE table_schema = 'public'
-              AND table_name = 'journal_entries'
-        )
-    """)
-
-    table_exists = conn.execute(check_sql).scalar()
+    # Vérifier si la table existe déjà (compatible PostgreSQL et SQLite)
+    from sqlalchemy import inspect
+    inspector = inspect(conn)
+    table_exists = 'journal_entries' in inspector.get_table_names()
 
     if not table_exists:
         # Créer la table journal_entries

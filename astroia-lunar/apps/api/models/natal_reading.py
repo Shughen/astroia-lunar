@@ -15,7 +15,7 @@ class NatalReading(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Clé de cache unique basée sur les données de naissance
-    cache_key = Column(String, unique=True, nullable=False, index=True)
+    cache_key = Column(String, unique=True, nullable=False)
     
     # Données de naissance (JSON)
     birth_data = Column(JSON, nullable=False)
@@ -57,7 +57,6 @@ class NatalReading(Base):
     
     # Indexes pour performance
     __table_args__ = (
-        Index('ix_natal_readings_cache_key', 'cache_key'),
         Index('ix_natal_readings_created_at', 'created_at'),
     )
     

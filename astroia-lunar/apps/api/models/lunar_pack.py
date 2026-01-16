@@ -5,8 +5,7 @@ Modèles SQLAlchemy pour le Luna Pack (P1)
 - Lunar Mansions Daily
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Index, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -22,7 +21,7 @@ class LunarReport(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     month = Column(String, nullable=False, index=True)  # Format: YYYY-MM
-    report = Column(JSONB, nullable=False)  # Réponse brute du provider
+    report = Column(JSON, nullable=False)  # Réponse brute du provider
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relation vers User
@@ -47,7 +46,7 @@ class LunarVocWindow(Base):
     id = Column(Integer, primary_key=True, index=True)
     start_at = Column(DateTime(timezone=True), nullable=False, index=True)
     end_at = Column(DateTime(timezone=True), nullable=False, index=True)
-    source = Column(JSONB, nullable=False)  # Données brutes du provider
+    source = Column(JSON, nullable=False)  # Données brutes du provider
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Index pour rechercher les fenêtres actives
@@ -69,7 +68,7 @@ class LunarMansionDaily(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False, unique=True, index=True)  # Date du jour
     mansion_id = Column(Integer, nullable=False)  # Numéro de la mansion (1-28)
-    data = Column(JSONB, nullable=False)  # Données complètes du provider
+    data = Column(JSON, nullable=False)  # Données complètes du provider
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     def __repr__(self):
