@@ -48,6 +48,40 @@ def get_anthropic_client() -> Anthropic:
     return Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
+def generate_placeholder_interpretation(subject: str, chart_payload: ChartPayload, version: int = 2) -> str:
+    """
+    Génère une interprétation placeholder propre quand le mode LLM est désactivé
+
+    Args:
+        subject: Objet céleste concerné
+        chart_payload: Données du chart
+        version: Version du prompt (pour cohérence)
+
+    Returns:
+        Texte placeholder formaté en markdown
+    """
+    emoji = SUBJECT_EMOJI.get(subject, '⭐')
+    subject_label = chart_payload.subject_label
+    sign = chart_payload.sign or "signe inconnu"
+    house = chart_payload.house or 0
+
+    house_short_label, _ = get_house_label_v2(house) if house else ("domaine de vie", "")
+
+    placeholder = f"""# {emoji} {subject_label} en {sign}
+
+**Interprétation non disponible (mode sans LLM)**
+
+Cette interprétation nécessite l'activation du mode LLM avec l'API Anthropic Claude.
+
+**Données de votre thème :**
+- {subject_label} en {sign}
+- Maison {house} ({house_short_label})
+
+Pour obtenir une interprétation complète, contactez votre administrateur pour activer le service d'interprétation automatique."""
+
+    return placeholder
+
+
 def get_house_label_v2(house_num: int) -> Tuple[str, str]:
     """
     Retourne le label court et la description d'une maison
@@ -719,12 +753,15 @@ async def generate_with_sonnet_fallback_haiku(
     """
     Génère une interprétation avec Claude Sonnet, fallback sur Haiku si erreur
 
-    Stratégie:
-    1. Essayer Sonnet 3.5
-    2. Si erreur (429, timeout, 5xx) -> fallback Haiku
-    3. Valider longueur selon version (v2: 900-1400, v3: 700-1200, v4: 800-1300)
-    4. Si hors limites -> retry 1x avec prompt d'ajustement
-    5. Si toujours hors limites -> tronquer proprement
+    Stratégie (NATAL_LLM_MODE):
+    - Si "off" (default): retourne placeholder sans appel API
+    - Si "anthropic":
+      1. Essayer Sonnet 3.5
+      2. Si erreur (429, timeout, 5xx) -> fallback Haiku
+      3. Si erreur auth/credit (401, 400) -> fallback placeholder
+      4. Valider longueur selon version (v2: 900-1400, v3: 700-1200, v4: 800-1300)
+      5. Si hors limites -> retry 1x avec prompt d'ajustement
+      6. Si toujours hors limites -> tronquer proprement
 
     Args:
         subject: Objet céleste à interpréter
@@ -737,6 +774,21 @@ async def generate_with_sonnet_fallback_haiku(
     # Utiliser PROMPT_VERSION global si non spécifié
     if version is None:
         version = PROMPT_VERSION
+
+    # Convertir en ChartPayload si nécessaire
+    if isinstance(chart_payload, dict):
+        payload = ChartPayload(**chart_payload)
+    else:
+        payload = chart_payload
+
+    # Vérifier le mode LLM
+    llm_mode = settings.NATAL_LLM_MODE.lower()
+
+    if llm_mode != "anthropic":
+        # Mode off ou autre: retourner placeholder sans appel API
+        logger.info(f"🚫 NATAL_LLM_MODE={llm_mode} - Retour placeholder pour {subject} en {payload.sign}")
+        placeholder_text = generate_placeholder_interpretation(subject, payload, version)
+        return placeholder_text, "placeholder"
     # #region agent log
     import json
     import time
@@ -746,8 +798,8 @@ async def generate_with_sonnet_fallback_haiku(
             "message": "generate_with_sonnet_fallback_haiku entry",
             "data": {
                 "subject": subject,
-                "chart_payload_type": type(chart_payload).__name__,
-                "chart_payload_keys": list(chart_payload.keys()) if isinstance(chart_payload, dict) else list(chart_payload.model_dump().keys()) if hasattr(chart_payload, 'model_dump') else []
+                "payload_type": type(payload).__name__,
+                "payload_sign": payload.sign if hasattr(payload, 'sign') else None
             },
             "timestamp": int(time.time() * 1000),
             "sessionId": "debug-session",
@@ -759,12 +811,6 @@ async def generate_with_sonnet_fallback_haiku(
     except Exception as log_err:
         logger.warning(f"Erreur écriture log debug: {log_err}")
     # #endregion
-    
-    # Convertir en ChartPayload si nécessaire
-    if isinstance(chart_payload, dict):
-        payload = ChartPayload(**chart_payload)
-    else:
-        payload = chart_payload
 
     # #region agent log
     try:
@@ -1077,25 +1123,31 @@ async def generate_with_sonnet_fallback_haiku(
             error_code = getattr(e, 'status_code', 0)
             error_type = getattr(e, 'type', '')
 
-            # 401 authentication_error = clé API invalide -> fallback
+            # 401 authentication_error = clé API invalide -> fallback placeholder
             if error_code == 401 or 'authentication_error' in str(e):
-                logger.warning(f"⚠️ {model_name} auth invalide (401), fallback")
-                last_error = e
-                continue
+                logger.warning(f"⚠️ {model_name} auth invalide (401), fallback vers placeholder")
+                placeholder_text = generate_placeholder_interpretation(subject, payload, version)
+                return placeholder_text, "placeholder-auth-error"
 
-            # 404 not_found_error = modèle non accessible -> fallback
+            # 400 insufficient_quota ou credit = crédits épuisés -> fallback placeholder
+            if error_code == 400 and ('insufficient_quota' in str(e) or 'credit' in str(e).lower()):
+                logger.warning(f"⚠️ {model_name} crédits insuffisants (400), fallback vers placeholder")
+                placeholder_text = generate_placeholder_interpretation(subject, payload, version)
+                return placeholder_text, "placeholder-credit-error"
+
+            # 404 not_found_error = modèle non accessible -> fallback vers autre modèle
             if error_code == 404 or 'not_found_error' in str(e):
                 logger.warning(f"⚠️ {model_name} non accessible (404), fallback")
                 last_error = e
                 continue
 
-            # 429, 5xx = erreurs temporaires -> fallback
+            # 429, 5xx = erreurs temporaires -> fallback vers autre modèle
             if error_code in [429, 500, 502, 503, 504]:
                 logger.warning(f"⚠️ {model_name} échec (HTTP {error_code}), fallback")
                 last_error = e
                 continue
 
-            # Autres erreurs (400, etc.) = non-récupérables
+            # Autres erreurs (400 non-credit, etc.) = non-récupérables
             logger.error(f"❌ {model_name} erreur non-récupérable: {e}")
             raise Exception(f"Erreur API Claude ({model_name}): {str(e)}")
 

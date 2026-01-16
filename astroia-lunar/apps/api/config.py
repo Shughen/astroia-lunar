@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     # Anthropic (Claude AI)
     ANTHROPIC_API_KEY: str = Field(default="", description="Clé API Anthropic pour génération interprétations")
     NATAL_INTERPRETATION_VERSION: int = Field(default=2, description="Version du prompt d'interprétation (2=moderne avec micro-rituel, 3=senior expérimental déprécié, 4=senior professionnel structuré)")
+    NATAL_LLM_MODE: str = Field(default="off", description="Mode LLM pour interprétations natales: 'off' (placeholder si pas en cache) ou 'anthropic' (appel API Claude)")
 
     # Aspect Explanations (v4)
     ASPECT_COPY_ENGINE: str = Field(default="template", description="Moteur de génération copy aspects: 'template' (déterministe) ou 'ai' (Haiku)")
