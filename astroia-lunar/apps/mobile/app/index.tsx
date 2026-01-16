@@ -31,6 +31,7 @@ import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader, lun
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { JOURNAL_STORAGE_KEY } from '../constants/storageKeys';
 import { DailyRitualCard } from '../components/DailyRitualCard';
+import { VocWidget } from '../components/VocWidget';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
 import { cleanupGhostFlags } from '../services/onboardingMigration';
 import { trackEvent } from '../utils/analytics';
@@ -505,6 +506,9 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Widget Void of Course */}
+        <VocWidget />
 
         {/* Bouton "Écrire une note" - toujours disponible */}
         <View style={styles.writeNoteCard}>
