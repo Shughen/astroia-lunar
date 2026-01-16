@@ -2,6 +2,25 @@
  * Traductions astrologie EN → FR
  */
 
+// Planètes
+const PLANETS: Record<string, string> = {
+  'Sun': 'Soleil',
+  'Moon': 'Lune',
+  'Mercury': 'Mercure',
+  'Venus': 'Vénus',
+  'Mars': 'Mars',
+  'Jupiter': 'Jupiter',
+  'Saturn': 'Saturne',
+  'Uranus': 'Uranus',
+  'Neptune': 'Neptune',
+  'Pluto': 'Pluton',
+  'North Node': 'Nœud Nord',
+  'South Node': 'Nœud Sud',
+  'Chiron': 'Chiron',
+  'Ascendant': 'Ascendant',
+  'Midheaven': 'Milieu du Ciel',
+};
+
 // Signes astrologiques
 const ZODIAC_SIGNS: Record<string, string> = {
   'Aries': 'Bélier',
@@ -49,6 +68,21 @@ export function translateMonth(month: string): string {
 }
 
 /**
+ * Traduit toutes les planètes dans un texte
+ * Ex: "Sun trine Moon" → "Soleil trine Lune"
+ */
+export function translatePlanetsInText(text: string): string {
+  let result = text;
+
+  Object.entries(PLANETS).forEach(([en, fr]) => {
+    const regex = new RegExp(`\\b${en}\\b`, 'g');
+    result = result.replace(regex, fr);
+  });
+
+  return result;
+}
+
+/**
  * Traduit tous les signes astrologiques dans un texte
  * Ex: "Aries in Sagittarius" → "Bélier in Sagittaire"
  */
@@ -80,11 +114,12 @@ export function translateMonthsInText(text: string): string {
 }
 
 /**
- * Traduit toutes les références astrologiques dans un texte (mois + signes)
+ * Traduit toutes les références astrologiques dans un texte (mois + signes + planètes)
  */
 export function translateAstrologyText(text: string): string {
   let result = text;
   result = translateMonthsInText(result);
+  result = translatePlanetsInText(result);
   result = translateZodiacInText(result);
   return result;
 }

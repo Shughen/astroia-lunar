@@ -17,6 +17,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 import { lunarReturns, LunarReturn } from '../../services/api';
 import { tPlanet, tSign } from '../../i18n/astro.format';
+import { MarkdownText } from '../../components/MarkdownText';
+import { translateAstrologyText } from '../../utils/astrologyTranslations';
 
 export default function LunarMonthScreen() {
   const router = useRouter();
@@ -213,7 +215,9 @@ export default function LunarMonthScreen() {
         {lunarReturn.interpretation && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>💡 Interprétation</Text>
-            <Text style={styles.interpretationText}>{lunarReturn.interpretation}</Text>
+            <MarkdownText style={styles.interpretationText}>
+              {translateAstrologyText(lunarReturn.interpretation)}
+            </MarkdownText>
           </View>
         )}
 
