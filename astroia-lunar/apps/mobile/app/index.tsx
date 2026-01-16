@@ -32,6 +32,7 @@ import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { JOURNAL_STORAGE_KEY } from '../constants/storageKeys';
 import { DailyRitualCard } from '../components/DailyRitualCard';
 import { VocWidget } from '../components/VocWidget';
+import { TransitsWidget } from '../components/TransitsWidget';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
 import { cleanupGhostFlags } from '../services/onboardingMigration';
 import { trackEvent } from '../utils/analytics';
@@ -509,6 +510,9 @@ export default function HomeScreen() {
 
         {/* Widget Void of Course */}
         <VocWidget />
+
+        {/* Widget Transits Majeurs */}
+        <TransitsWidget />
 
         {/* Bouton "Écrire une note" - toujours disponible */}
         <View style={styles.writeNoteCard}>
