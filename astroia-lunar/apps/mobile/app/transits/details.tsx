@@ -15,27 +15,32 @@ export default function TransitsDetails() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // TODO: Récupérer les vraies données depuis le store ou l'API
-  // Les interprétations ci-dessous reflètent le nouveau format factuel + manifestations concrètes
+  // Récupérer les vraies données depuis les params de navigation
+  // Les interprétations reflètent le format factuel + manifestations concrètes
   // Format API backend: "Quoi + Comment ça se manifeste concrètement"
   const aspectDetails = {
-    transit_planet: 'Jupiter',
-    natal_planet: 'Sun',
-    aspect: 'trine',
-    orb: 1.2,
+    transit_planet: (params.transit_planet as string) || 'Jupiter',
+    natal_planet: (params.natal_planet as string) || 'Sun',
+    aspect: (params.aspect as string) || 'trine',
+    orb: params.orb ? parseFloat(params.orb as string) : 1.2,
     interpretation:
+      (params.interpretation as string) ||
       "Jupiter soutient votre identité. Facilité naturelle, opportunités fluides dans les domaines liés à Jupiter. Sentiment d'expansion sans forcer, confiance en soi amplifiée, visibilité accrue.",
     timing: {
-      exact_date: '2025-11-15T14:30:00',
-      orb_range: '2025-11-12 → 2025-11-18',
+      exact_date: (params.exact_date as string) || '2025-11-15T14:30:00',
+      orb_range: (params.orb_range as string) || '2025-11-12 → 2025-11-18',
     },
-    themes: ['expansion', 'opportunités', 'confiance', 'fluidité'],
-    recommendations: [
-      'Période propice aux projets à long terme : les démarches se font naturellement',
-      'Votre rayonnement personnel attire des opportunités sans effort',
-      'Bon moment pour élargir votre champ d\'action (formations, voyages, nouveaux contacts)',
-      'Attention à ne pas disperser l\'énergie : choisir 1-2 priorités',
-    ],
+    themes: params.themes
+      ? (typeof params.themes === 'string' ? JSON.parse(params.themes) : params.themes)
+      : ['expansion', 'opportunités', 'confiance', 'fluidité'],
+    recommendations: params.recommendations
+      ? (typeof params.recommendations === 'string' ? JSON.parse(params.recommendations) : params.recommendations)
+      : [
+          'Période propice aux projets à long terme : les démarches se font naturellement',
+          'Votre rayonnement personnel attire des opportunités sans effort',
+          'Bon moment pour élargir votre champ d\'action (formations, voyages, nouveaux contacts)',
+          'Attention à ne pas disperser l\'énergie : choisir 1-2 priorités',
+        ],
   };
 
   return (

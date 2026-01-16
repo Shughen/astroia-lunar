@@ -76,16 +76,22 @@ export function TransitsWidget() {
       const now = new Date();
       const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-      // Appeler l'API avec major_only=true pour filtrer les aspects majeurs
-      const response = await transits.getOverview(userId, month, true);
+      // Appeler l'API pour récupérer les transits
+      const response = await transits.getOverview(userId, month);
 
       if (response) {
         const overviewData = response?.overview || response?.summary;
         const insights = overviewData?.insights || {};
-        const aspects = insights?.major_aspects || [];
+        const allAspects = insights?.major_aspects || [];
+
+        // Filtrer pour ne garder que les 4 aspects majeurs MVP
+        const MAJOR_ASPECTS_MVP = ['conjunction', 'opposition', 'square', 'trine'];
+        const majorOnlyAspects = allAspects.filter((aspect: any) =>
+          MAJOR_ASPECTS_MVP.includes(aspect.aspect)
+        );
 
         // Garder uniquement les 3 aspects les plus serrés (orbe le plus petit)
-        const sortedAspects = [...aspects]
+        const sortedAspects = [...majorOnlyAspects]
           .sort((a, b) => Math.abs(a.orb) - Math.abs(b.orb))
           .slice(0, 3);
 

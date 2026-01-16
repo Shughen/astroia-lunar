@@ -11,14 +11,14 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { transits } from '../../services/api';
+import { transits, lunarReturns } from '../../services/api';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { isDevAuthBypassActive, getDevAuthHeader } from '../../services/api';
 import { tPlanet, tAspect, formatOrb } from '../../i18n/astro.format';
 
+// Aspects majeurs MVP : conjonction, opposition, carré, trigone uniquement
 const ASPECT_BADGES: Record<string, { emoji: string; color: string }> = {
   trine: { emoji: '▲', color: '#4ade80' },
-  sextile: { emoji: '⬡', color: '#60a5fa' },
   conjunction: { emoji: '◎', color: '#fbbf24' },
   square: { emoji: '■', color: '#f87171' },
   opposition: { emoji: '◉', color: '#a78bfa' },
@@ -29,6 +29,7 @@ export default function TransitsOverview() {
   const { user, isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [transitsData, setTransitsData] = useState<any>(null);
+  const [currentLunarReturn, setCurrentLunarReturn] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,20 +73,29 @@ export default function TransitsOverview() {
 
       // Le token est géré automatiquement par l'intercepteur axios
       const response = await transits.getOverview(userId, month);
-      
+
       // Si response est null, c'est un 404 (pas de données) - cas normal, pas une erreur
       if (response === null) {
         setTransitsData(null);
         setError(null); // Pas d'erreur, juste pas de données
-        return;
+      } else {
+        // Guard: vérifier que la réponse contient des données valides
+        if (!response) {
+          throw new Error('Réponse invalide du serveur');
+        }
+        setTransitsData(response);
       }
-      
-      // Guard: vérifier que la réponse contient des données valides
-      if (!response) {
-        throw new Error('Réponse invalide du serveur');
+
+      // Charger la révolution lunaire en cours pour afficher le lien
+      try {
+        const lunarReturnResponse = await lunarReturns.getCurrent();
+        if (lunarReturnResponse) {
+          setCurrentLunarReturn(lunarReturnResponse);
+        }
+      } catch (lunarErr) {
+        // Ignorer l'erreur si la révolution lunaire n'est pas disponible
+        console.warn('[TransitsOverview] Révolution lunaire non disponible:', lunarErr);
       }
-      
-      setTransitsData(response);
     } catch (err: any) {
       console.error('[TransitsOverview] Erreur chargement:', err);
       // Ne pas afficher d'erreur si c'est un 404 (déjà géré ci-dessus)
@@ -161,7 +171,13 @@ export default function TransitsOverview() {
   // Utiliser 'overview' (nouveau nom) avec fallback sur 'summary' pour compatibilité
   const overviewData = transitsData?.overview || transitsData?.summary;
   const insights = overviewData?.insights || {};
-  const majorAspects = insights?.major_aspects || [];
+  const allAspects = insights?.major_aspects || [];
+
+  // Filtrer pour ne garder que les 4 aspects majeurs MVP
+  const MAJOR_ASPECTS_MVP = ['conjunction', 'opposition', 'square', 'trine'];
+  const majorAspects = allAspects.filter((aspect: any) =>
+    MAJOR_ASPECTS_MVP.includes(aspect.aspect)
+  );
 
   return (
     <LinearGradient colors={['#1a0b2e', '#2d1b4e']} style={styles.container}>
@@ -174,6 +190,41 @@ export default function TransitsOverview() {
               Influences planétaires actuelles
             </Text>
           </View>
+
+          {/* Lien vers Révolution Lunaire */}
+          {currentLunarReturn && (
+            <TouchableOpacity
+              style={styles.lunarReturnCard}
+              onPress={() => {
+                const monthStr = currentLunarReturn.month || currentLunarReturn.start_date?.substring(0, 7);
+                if (monthStr) {
+                  router.push(`/lunar-month/${monthStr}`);
+                }
+              }}
+            >
+              <View style={styles.lunarReturnHeader}>
+                <Text style={styles.lunarReturnIcon}>🌙</Text>
+                <View style={styles.lunarReturnInfo}>
+                  <Text style={styles.lunarReturnTitle}>
+                    Cycle lunaire en cours
+                  </Text>
+                  <Text style={styles.lunarReturnSubtitle}>
+                    {new Date(currentLunarReturn.start_date).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                    })} - {new Date(currentLunarReturn.end_date).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                  </Text>
+                </View>
+                <Text style={styles.lunarReturnArrow}>→</Text>
+              </View>
+              <Text style={styles.lunarReturnDescription}>
+                Les transits ci-dessous s'inscrivent dans ce cycle lunaire
+              </Text>
+            </TouchableOpacity>
+          )}
 
         {/* Energy Level Badge */}
         <View style={styles.energyContainer}>
@@ -247,7 +298,14 @@ export default function TransitsOverview() {
                   onPress={() =>
                     router.push({
                       pathname: '/transits/details',
-                      params: { aspectIndex: index },
+                      params: {
+                        transit_planet: aspect.transit_planet,
+                        natal_planet: aspect.natal_planet,
+                        aspect: aspect.aspect,
+                        orb: aspect.orb.toString(),
+                        interpretation: aspect.interpretation || '',
+                        // TODO: Ajouter timing, themes, recommendations depuis l'API
+                      },
                     })
                   }
                 >
@@ -464,6 +522,47 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  lunarReturnCard: {
+    backgroundColor: 'rgba(183, 148, 246, 0.15)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(183, 148, 246, 0.3)',
+  },
+  lunarReturnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  lunarReturnIcon: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  lunarReturnInfo: {
+    flex: 1,
+  },
+  lunarReturnTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  lunarReturnSubtitle: {
+    fontSize: 13,
+    color: '#b794f6',
+  },
+  lunarReturnArrow: {
+    fontSize: 20,
+    color: '#b794f6',
+    fontWeight: 'bold',
+  },
+  lunarReturnDescription: {
+    fontSize: 13,
+    color: '#a0a0b0',
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
 });
 
