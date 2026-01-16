@@ -466,35 +466,6 @@ export const menstrualCycle = {
   },
 };
 
-// === CALENDAR ===
-export const calendar = {
-  /**
-   * Récupère le calendrier mensuel avec phases lunaires et événements
-   * @param year Année (ex: 2025)
-   * @param month Mois (1-12)
-   * @param latitude Latitude optionnelle (défaut: 48.8566)
-   * @param longitude Longitude optionnelle (défaut: 2.3522)
-   * @param timezone Timezone optionnelle (défaut: "Europe/Paris")
-   */
-  getMonth: async (
-    year: number,
-    month: number,
-    latitude?: number,
-    longitude?: number,
-    timezone?: string
-  ) => {
-    const params = new URLSearchParams();
-    params.append('year', year.toString());
-    params.append('month', month.toString());
-    if (latitude !== undefined) params.append('latitude', latitude.toString());
-    if (longitude !== undefined) params.append('longitude', longitude.toString());
-    if (timezone) params.append('timezone', timezone);
-
-    const response = await apiClient.get(`/api/calendar/month?${params.toString()}`);
-    return response.data;
-  },
-};
-
 // === TRANSITS ===
 export const transits = {
   /**

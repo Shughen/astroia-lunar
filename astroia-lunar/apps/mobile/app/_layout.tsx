@@ -49,15 +49,11 @@ export default function RootLayout() {
         <Stack.Screen name="natal-chart/index" />
         <Stack.Screen name="natal-chart/result" />
         <Stack.Screen name="lunar-month/[month]" />
-        <Stack.Screen name="lunar/index" />
         <Stack.Screen name="lunar/report" />
         <Stack.Screen name="lunar/voc" />
         <Stack.Screen name="lunar-returns/timeline" />
         <Stack.Screen name="transits/overview" />
         <Stack.Screen name="transits/details" />
-        <Stack.Screen name="calendar/month" />
-        <Stack.Screen name="cycle/index" />
-        <Stack.Screen name="cycle/history" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="debug/selftest" />
       </Stack>
