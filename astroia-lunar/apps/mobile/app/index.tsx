@@ -22,20 +22,19 @@ const LinearGradientComponent = LinearGradient || (({ colors, style, children, .
 });
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
 import { useNotificationsStore } from '../stores/useNotificationsStore';
 import { useResetStore } from '../stores/useResetStore';
-import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader, lunaPack } from '../services/api';
+import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader } from '../services/api';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
-import { JOURNAL_STORAGE_KEY } from '../constants/storageKeys';
 import { DailyRitualCard } from '../components/DailyRitualCard';
 import { VocWidget } from '../components/VocWidget';
 import { TransitsWidget } from '../components/TransitsWidget';
+import { CurrentLunarCard } from '../components/CurrentLunarCard';
+import { JournalPrompt } from '../components/JournalPrompt';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
 import { cleanupGhostFlags } from '../services/onboardingMigration';
-import { trackEvent } from '../utils/analytics';
 import { isProfileComplete } from '../utils/onboardingHelpers';
 
 export default function HomeScreen() {
@@ -60,14 +59,6 @@ export default function HomeScreen() {
   const [isOnline, setIsOnline] = useState(true);
   const routingInFlightRef = useRef(false);
   const selfHealExecutedRef = useRef(false); // Guard anti-boucle pour self-heal
-  const [dailyClimate, setDailyClimate] = useState<{
-    date: string;
-    moon: { sign: string; degree: number; phase: string };
-    insight: { title: string; text: string; keywords: string[]; version: string };
-  } | null>(null);
-  const [dailyClimateLoading, setDailyClimateLoading] = useState(false);
-  const [alreadyViewedToday, setAlreadyViewedToday] = useState(false);
-  const [journalDoneToday, setJournalDoneToday] = useState(false);
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
@@ -273,109 +264,9 @@ export default function HomeScreen() {
   useEffect(() => {
     if ((isAuthenticated || isDevAuthBypassActive()) && !isCheckingRouting) {
       loadCurrentLunarReturn();
-      loadDailyClimate();
     }
   }, [isAuthenticated, isCheckingRouting]);
 
-  // Précharger Daily Climate (sans lastViewedDate)
-  const loadDailyClimate = async () => {
-    if (dailyClimateLoading || dailyClimate) return;
-    setDailyClimateLoading(true);
-    try {
-      const data = await lunaPack.getDailyClimate();
-      setDailyClimate(data);
-    } catch (error) {
-      console.error('[INDEX] Erreur chargement Daily Climate:', error);
-    } finally {
-      setDailyClimateLoading(false);
-    }
-  };
-
-  // Gérer le clic sur la carte Daily Climate
-  const handleDailyClimatePress = async () => {
-    try {
-      // Lire lastViewedDate depuis AsyncStorage
-      const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      
-      // Déterminer firstOfDay
-      const firstOfDay = lastViewedDate !== today;
-      
-      // Écrire lastViewedDate = aujourd'hui
-      await AsyncStorage.setItem('dailyClimate:lastViewedDate', today);
-      setAlreadyViewedToday(true);
-      
-      // Track event
-      trackEvent({
-        name: 'daily_climate_view',
-        properties: { firstOfDay, source: 'home' },
-      });
-      
-      // Naviguer vers /lunar?focus=daily_climate
-      router.push('/lunar?focus=daily_climate');
-    } catch (error) {
-      console.error('[INDEX] Erreur lors du clic Daily Climate:', error);
-    }
-  };
-
-  // Construire le texte prefill pour le journal
-  const buildJournalPrefill = (): string => {
-    if (!dailyClimate) return '';
-    
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const title = dailyClimate.insight.title || 'Daily Climate';
-    
-    return `${today}\n\n${title}\n\nCe que je ressens aujourd'hui: …\n\nMon intention du jour: …`;
-  };
-
-  // Helper pour vérifier si une entrée de journal existe aujourd'hui
-  const hasJournalEntryToday = (entries: Array<{ createdAtISO: string }>): boolean => {
-    if (!entries || entries.length === 0) return false;
-    
-    const today = new Date().toDateString();
-    return entries.some((entry) => {
-      try {
-        const entryDate = new Date(entry.createdAtISO);
-        return entryDate.toDateString() === today;
-      } catch {
-        return false;
-      }
-    });
-  };
-
-  // Charger le statut du journal (entrée aujourd'hui ou non)
-  const loadJournalStatus = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
-      if (stored) {
-        const entries = JSON.parse(stored);
-        setJournalDoneToday(hasJournalEntryToday(entries));
-      } else {
-        setJournalDoneToday(false);
-      }
-    } catch (error) {
-      console.error('[INDEX] Erreur chargement statut journal:', error);
-      setJournalDoneToday(false);
-    }
-  };
-
-  // Gérer le clic sur "Écrire une note"
-  const handleWriteNote = () => {
-    const hasPrefill = !!dailyClimate;
-    
-    // Track event (optionnel, console-based)
-    console.log('[INDEX] daily_climate_journal_cta', { source: 'home', prefill: hasPrefill });
-    
-    if (hasPrefill) {
-      // Comportement actuel : prefill avec insight du jour
-      const prefill = buildJournalPrefill();
-      const encodedPrefill = encodeURIComponent(prefill);
-      router.push(`/journal?prefill=${encodedPrefill}`);
-    } else {
-      // Ouvrir Journal vide (sans prefill)
-      router.push('/journal');
-    }
-  };
 
   // Re-scheduler notifications au focus si nécessaire
   useFocusEffect(
@@ -391,20 +282,6 @@ export default function HomeScreen() {
             }
           })();
         }
-        
-        // Vérifier si Daily Climate consulté aujourd'hui
-        (async () => {
-          try {
-            const lastViewedDate = await AsyncStorage.getItem('dailyClimate:lastViewedDate');
-            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-            setAlreadyViewedToday(lastViewedDate === today);
-          } catch (error) {
-            console.error('[INDEX] Erreur vérification lastViewedDate:', error);
-          }
-        })();
-
-        // Charger le statut du journal
-        loadJournalStatus();
       }
     }, [isAuthenticated, isCheckingRouting, notificationsEnabled, hydrated, scheduleAllNotifications])
   );
@@ -465,48 +342,15 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Carte Rituel Quotidien (HERO) */}
-        <DailyRitualCard />
+        {/* Carte Révolution Lunaire (HERO) */}
+        <CurrentLunarCard
+          lunarReturn={currentLunarReturn}
+          loading={false}
+          onRefresh={loadCurrentLunarReturn}
+        />
 
-        {/* Carte Daily Climate Preview */}
-        {dailyClimate && (
-          <View style={styles.dailyClimateCard}>
-            <TouchableOpacity
-              onPress={handleDailyClimatePress}
-              activeOpacity={0.8}
-            >
-              <View style={styles.dailyClimateHeader}>
-                <Text style={styles.dailyClimateTitle}>🌙 Daily Climate</Text>
-                {alreadyViewedToday && (
-                  <View style={styles.viewedBadge}>
-                    <Text style={styles.viewedBadgeText}>✓ Consulté aujourd'hui</Text>
-                  </View>
-                )}
-              </View>
-              
-              {/* Meta lune */}
-              <Text style={styles.dailyClimateMoon}>
-                {dailyClimate.moon.phase} en {dailyClimate.moon.sign}
-              </Text>
-              
-              {/* 3 lignes max de texte */}
-              <Text style={styles.dailyClimateText} numberOfLines={3}>
-                {dailyClimate.insight.text}
-              </Text>
-              
-              {/* Max 4 keywords */}
-              {dailyClimate.insight.keywords && dailyClimate.insight.keywords.length > 0 && (
-                <View style={styles.dailyClimateKeywords}>
-                  {dailyClimate.insight.keywords.slice(0, 4).map((keyword, idx) => (
-                    <View key={idx} style={styles.keywordBadge}>
-                      <Text style={styles.keywordText}>{keyword}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Carte Rituel Quotidien */}
+        <DailyRitualCard />
 
         {/* Widget Void of Course */}
         <VocWidget />
@@ -514,35 +358,11 @@ export default function HomeScreen() {
         {/* Widget Transits Majeurs */}
         <TransitsWidget />
 
-        {/* Bouton "Écrire une note" - toujours disponible */}
-        <View style={styles.writeNoteCard}>
-          <TouchableOpacity
-            style={styles.writeNoteButton}
-            onPress={handleWriteNote}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.writeNoteButtonText}>✍️ Écrire une note</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Widget Journal Prompt */}
+        <JournalPrompt />
 
-        {/* Menu principal MVP : Journal + Thème natal + Rapport + Réglages */}
+        {/* Menu principal MVP : Thème natal + Rapport + Réglages */}
         <View style={styles.grid}>
-          <TouchableOpacity
-            style={styles.menuCard}
-            onPress={() => router.push('/journal')}
-          >
-            <View style={styles.menuCardHeader}>
-              <Text style={styles.menuEmoji}>📖</Text>
-              {journalDoneToday && (
-                <View style={styles.journalBadge}>
-                  <Text style={styles.journalBadgeText}>✅ Aujourd'hui</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.menuTitle}>Journal</Text>
-            <Text style={styles.menuDesc}>Mes entrées récentes</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.menuCard}
             onPress={() => {
@@ -657,32 +477,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     alignItems: 'center',
   },
-  menuCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginBottom: spacing.sm,
-    position: 'relative',
-  },
   menuEmoji: {
     fontSize: 48,
-  },
-  journalBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -8,
-    backgroundColor: 'rgba(74, 222, 128, 0.2)',
-    borderWidth: 1,
-    borderColor: '#4ade80',
-    borderRadius: 12,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-  },
-  journalBadgeText: {
-    fontSize: 10,
-    color: '#4ade80',
-    fontWeight: '600',
+    marginBottom: spacing.sm,
   },
   menuTitle: {
     ...fonts.h3,
@@ -752,91 +549,6 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginTop: spacing.xs,
     fontSize: 10,
-  },
-  dailyClimateCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(183, 148, 246, 0.1)',
-  },
-  dailyClimateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  dailyClimateTitle: {
-    ...fonts.h3,
-    color: colors.text,
-    flex: 1,
-  },
-  viewedBadge: {
-    backgroundColor: 'rgba(74, 222, 128, 0.15)',
-    borderWidth: 1,
-    borderColor: '#4ade80',
-    borderRadius: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    marginLeft: spacing.sm,
-  },
-  viewedBadgeText: {
-    fontSize: 10,
-    color: '#4ade80',
-    fontWeight: '600',
-  },
-  dailyClimateMoon: {
-    ...fonts.bodySmall,
-    color: colors.accent,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dailyClimateText: {
-    ...fonts.body,
-    color: colors.text,
-    lineHeight: 22,
-    marginBottom: spacing.sm,
-  },
-  dailyClimateKeywords: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  keywordBadge: {
-    backgroundColor: 'rgba(183, 148, 246, 0.15)',
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  keywordText: {
-    ...fonts.caption,
-    color: colors.accent,
-    fontSize: 11,
-  },
-  writeNoteCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(183, 148, 246, 0.1)',
-  },
-  writeNoteButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: 'rgba(183, 148, 246, 0.15)',
-    borderRadius: borderRadius.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(183, 148, 246, 0.3)',
-    alignItems: 'center',
-  },
-  writeNoteButtonText: {
-    ...fonts.body,
-    color: colors.accent,
-    fontSize: 14,
   },
 });
 

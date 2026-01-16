@@ -564,7 +564,7 @@ export default function ProfileSetupScreen() {
                 style={styles.natalErrorRetryButton}
                 onPress={() => {
                   setNatalCalculationError(null);
-                  handleSubmit(); // Retry submit
+                  handleNext(); // Retry submit
                 }}
               >
                 <Text style={styles.natalErrorRetryText}>Réessayer</Text>
