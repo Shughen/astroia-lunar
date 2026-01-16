@@ -517,7 +517,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Menu principal MVP : Journal + Thème natal + Réglages */}
+        {/* Menu principal MVP : Journal + Thème natal + Rapport + Réglages */}
         <View style={styles.grid}>
           <TouchableOpacity
             style={styles.menuCard}
@@ -549,6 +549,23 @@ export default function HomeScreen() {
             <Text style={styles.menuEmoji}>⭐</Text>
             <Text style={styles.menuTitle}>Thème natal</Text>
             <Text style={styles.menuDesc}>Mon ciel de naissance</Text>
+            {!isOnline && <Text style={styles.offlineBadge}>Hors ligne</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => {
+              if (!isOnline) {
+                Alert.alert('Hors ligne', 'Cette fonctionnalité nécessite une connexion Internet.');
+                return;
+              }
+              router.push('/lunar/report');
+            }}
+            disabled={!isOnline}
+          >
+            <Text style={styles.menuEmoji}>🌙</Text>
+            <Text style={styles.menuTitle}>Rapport Mensuel</Text>
+            <Text style={styles.menuDesc}>Révolution lunaire</Text>
             {!isOnline && <Text style={styles.offlineBadge}>Hors ligne</Text>}
           </TouchableOpacity>
 
