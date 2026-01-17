@@ -15,6 +15,7 @@ import { transits, lunarReturns } from '../../services/api';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { isDevAuthBypassActive, getDevAuthHeader } from '../../services/api';
 import { tPlanet, tAspect, formatOrb } from '../../i18n/astro.format';
+import { translateZodiacSign } from '../../utils/astrologyTranslations';
 
 // Aspects majeurs MVP : conjonction, opposition, carré, trigone uniquement
 const ASPECT_BADGES: Record<string, { emoji: string; color: string }> = {
@@ -22,6 +23,28 @@ const ASPECT_BADGES: Record<string, { emoji: string; color: string }> = {
   conjunction: { emoji: '◎', color: '#fbbf24' },
   square: { emoji: '■', color: '#f87171' },
   opposition: { emoji: '◉', color: '#a78bfa' },
+};
+
+/**
+ * Formate le nom du mois avec l'année
+ * Ex: "Janvier 2026"
+ */
+const formatMonthName = (returnDate: string): string => {
+  const date = new Date(returnDate);
+  const formatted = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  // Capitaliser la première lettre
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+};
+
+/**
+ * Formate la plage de dates du cycle lunaire
+ * Ex: "20 janv. - 18 fév." (cycle ~29.5 jours)
+ */
+const formatDateRange = (startDate: string, endDate: string): string => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  return `${start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
 };
 
 export default function TransitsOverview() {
@@ -173,6 +196,21 @@ export default function TransitsOverview() {
   const insights = overviewData?.insights || {};
   const allAspects = insights?.major_aspects || [];
 
+  // Dériver les infos du mois lunaire pour le header
+  const lunarMonthName = currentLunarReturn?.start_date
+    ? formatMonthName(currentLunarReturn.start_date)
+    : 'Mois en cours';
+
+  const lunarDateRange = currentLunarReturn?.start_date && currentLunarReturn?.end_date
+    ? formatDateRange(currentLunarReturn.start_date, currentLunarReturn.end_date)
+    : null;
+
+  const moonSign = currentLunarReturn?.moon_sign
+    ? translateZodiacSign(currentLunarReturn.moon_sign)
+    : null;
+
+  const lunarHouse = currentLunarReturn?.lunar_ascendant_house || null;
+
   // Filtrer pour ne garder que les 4 aspects majeurs MVP
   const MAJOR_ASPECTS_MVP = ['conjunction', 'opposition', 'square', 'trine'];
 
@@ -210,15 +248,35 @@ export default function TransitsOverview() {
     <LinearGradient colors={['#1a0b2e', '#2d1b4e']} style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
+          {/* Header with Lunar Context */}
           <View style={styles.header}>
-            <Text style={styles.title}>🔄 Transits du Mois</Text>
-            <Text style={styles.subtitle}>
-              Influences planétaires actuelles
+            <Text style={styles.title}>
+              🔄 Transits de {lunarMonthName}
             </Text>
+            {lunarDateRange && (
+              <Text style={styles.subtitle}>
+                {lunarDateRange}
+              </Text>
+            )}
+            {moonSign && (
+              <View style={styles.lunarBadgeContainer}>
+                <View style={styles.lunarBadge}>
+                  <Text style={styles.lunarBadgeText}>
+                    🌙 Lune en {moonSign}
+                  </Text>
+                </View>
+                {lunarHouse && (
+                  <View style={styles.lunarBadge}>
+                    <Text style={styles.lunarBadgeText}>
+                      Maison {lunarHouse}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
-          {/* Lien vers Révolution Lunaire */}
+          {/* Lien vers Révolution Lunaire (optionnel) */}
           {currentLunarReturn && (
             <TouchableOpacity
               style={styles.lunarReturnCard}
@@ -230,35 +288,17 @@ export default function TransitsOverview() {
               }}
             >
               <View style={styles.lunarReturnHeader}>
-                <Text style={styles.lunarReturnIcon}>🌙</Text>
+                <Text style={styles.lunarReturnIcon}>📖</Text>
                 <View style={styles.lunarReturnInfo}>
                   <Text style={styles.lunarReturnTitle}>
-                    Cycle lunaire en cours
+                    Voir le rapport lunaire complet
                   </Text>
                   <Text style={styles.lunarReturnSubtitle}>
-                    {currentLunarReturn.start_date && currentLunarReturn.end_date ? (
-                      `${new Date(currentLunarReturn.start_date).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                      })} - ${new Date(currentLunarReturn.end_date).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                      })}`
-                    ) : currentLunarReturn.month ? (
-                      new Date(currentLunarReturn.month + '-01').toLocaleDateString('fr-FR', {
-                        month: 'long',
-                        year: 'numeric',
-                      })
-                    ) : (
-                      'Mois en cours'
-                    )}
+                    Thèmes, défis et opportunités du mois
                   </Text>
                 </View>
                 <Text style={styles.lunarReturnArrow}>→</Text>
               </View>
-              <Text style={styles.lunarReturnDescription}>
-                Les transits ci-dessous s'inscrivent dans ce cycle lunaire
-              </Text>
             </TouchableOpacity>
           )}
 
@@ -599,6 +639,26 @@ const styles = StyleSheet.create({
     color: '#a0a0b0',
     fontStyle: 'italic',
     lineHeight: 18,
+  },
+  lunarBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  lunarBadge: {
+    backgroundColor: 'rgba(183, 148, 246, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(183, 148, 246, 0.3)',
+  },
+  lunarBadgeText: {
+    fontSize: 13,
+    color: '#b794f6',
+    fontWeight: '600',
   },
 });
 

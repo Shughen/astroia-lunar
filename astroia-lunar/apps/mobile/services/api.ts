@@ -309,9 +309,12 @@ export interface LunarReturn {
   id: number;
   return_date: string; // ISO 8601 timestamptz
   month?: string; // YYYY-MM (legacy)
+  start_date?: string; // Date de début du cycle lunaire
+  end_date?: string; // Date de fin du cycle lunaire
   moon_sign?: string;
   moon_house?: number;
   lunar_ascendant?: string;
+  lunar_ascendant_house?: number; // Maison de l'ascendant lunaire
   aspects?: Array<{
     planet1?: string;
     planet2?: string;
