@@ -1,0 +1,9 @@
+appId: com.remi.astroia
+---
+# Test E2E: Chargement écran Home
+# Vérifie que l'écran d'accueil charge correctement avec les éléments principaux
+
+- launchApp
+- assertVisible: "Révolution Lunaire"
+- assertVisible: "Void of Course"
+- takeScreenshot: home_screen

@@ -1,0 +1,60 @@
+appId: com.remi.astroia
+---
+# Test E2E: Onboarding complet → Calcul thème natal → Home
+# Vérifie le parcours complet depuis le premier lancement jusqu'à l'affichage du Home
+
+# Étape 1: Lancer l'application
+- launchApp
+
+# Étape 2: Welcome screen (premier écran one-time)
+- assertVisible: "Bienvenue sur Lunation"
+- tapOn: "Continuer"
+
+# Étape 3: Profile setup (1/4) - Remplir date/heure/lieu de naissance
+- assertVisible: "Créer votre profil"
+- tapOn:
+    id: "input-name"
+- inputText: "Alice Test"
+- tapOn:
+    id: "input-birth-date"
+# Note: Le date picker nécessite des actions spécifiques selon le composant utilisé
+# Pour l'instant, on simule la validation directe si possible
+- tapOn: "Continuer"
+
+# Étape 4: Consent RGPD (2/4)
+- assertVisible: "Respect de vos données"
+- assertVisible: "J'accepte la politique de confidentialité"
+- tapOn:
+    id: "checkbox-consent"
+- tapOn: "Accepter et continuer"
+
+# Étape 5: Disclaimer médical (3/4)
+- assertVisible: "Avertissement"
+- assertVisible: "J'ai compris"
+- tapOn:
+    id: "checkbox-disclaimer"
+- tapOn: "Commencer mon premier cycle"
+
+# Étape 6: Slides onboarding (dernière étape) - Navigation entre slides
+- assertVisible: "🌙 Votre cycle mensuel"
+- tapOn: "Suivant"
+- assertVisible: "🌑 Void of Course"
+- tapOn: "Suivant"
+- assertVisible: "📅 Timeline structurée"
+- tapOn: "Commencer"
+
+# Étape 7: Calcul thème natal en cours
+# Note: Peut nécessiter un délai d'attente
+- waitForAnimationToEnd
+
+# Étape 8: Vérifier arrivée sur Home avec révolution lunaire actuelle
+- assertVisible: "Quel est mon cycle actuel ?"
+# Alternative si le texte n'est pas visible:
+# - assertVisible: "🌙"
+
+# Étape 9: Vérifier widgets Home visibles
+- assertVisible: "Void of Course"
+- assertVisible: "Journal"
+
+# Screenshot final
+- takeScreenshot: onboarding_completed_home

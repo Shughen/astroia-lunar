@@ -1,0 +1,63 @@
+appId: com.remi.astroia
+---
+# Test E2E: Home → Journal → Créer entrée
+# Vérifie la création d'une entrée journal avec mood et note
+
+# Étape 1: Lancer l'application
+- launchApp
+
+# Étape 2: Vérifier présence du widget Journal sur Home
+- assertVisible: "📖 Journal"
+
+# Étape 3: Vérifier prompt journal (texte variable selon si entrée existe)
+# On vérifie juste la présence du widget Journal
+- assertVisible: "📖 Journal"
+
+# Étape 4: Taper sur le widget Journal pour naviguer
+- tapOn: "📖 Journal"
+
+# Étape 5: Attendre le chargement de la page Journal
+- waitForAnimationToEnd
+
+# Étape 6: Vérifier titre de la page
+- assertVisible: "Journal Lunaire"
+
+# Étape 7: Si aucune entrée aujourd'hui, créer une nouvelle entrée
+# Taper sur le prompt ou le bouton d'ajout
+- tapOn: "Écrire une note"
+
+# Étape 8: Vérifier modal/écran de saisie ouvert
+- waitForAnimationToEnd
+
+# Étape 9: Saisir texte dans le journal
+- tapOn:
+    id: "input-journal-note"
+- inputText: "Test entrée journal - ressenti du jour"
+
+# Étape 10: Sauvegarder l'entrée
+- tapOn: "Enregistrer"
+
+# Étape 11: Attendre confirmation sauvegarde
+- waitForAnimationToEnd
+
+# Étape 12: Vérifier retour à la liste du journal
+- assertVisible: "Journal Lunaire"
+
+# Étape 13: Vérifier que l'entrée est visible dans la liste
+- assertVisible: "Test entrée journal"
+
+# Étape 14: Vérifier badge "✅ Aujourd'hui" affiché
+# Note: Cette assertion vérifie que le journal marque bien l'entrée d'aujourd'hui
+- assertVisible: "✅ Aujourd'hui"
+
+# Étape 15: Screenshot du journal avec entrée créée
+- takeScreenshot: journal_entry_created
+
+# Étape 16: Retour au Home
+- tapOn:
+    point: "10%,5%"  # Bouton back en haut à gauche
+- assertVisible: "Quel est mon cycle actuel ?"
+
+# Étape 17: Vérifier que le widget Journal affiche maintenant le badge "✅ Aujourd'hui"
+- assertVisible: "📖 Journal"
+- assertVisible: "Tu as déjà écrit aujourd'hui"
