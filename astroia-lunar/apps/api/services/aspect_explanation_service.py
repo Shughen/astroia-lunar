@@ -54,10 +54,10 @@ ASPECT_NAMES_FR: Dict[str, str] = {
 
 ASPECT_TEMPLATES_V4: Dict[str, Dict[str, Any]] = {
     'conjunction': {
-        'summary': "{p1} et {p2} fusionnent leurs énergies en {sign1}. Symbiose puissante, intensité garantie.",
+        'summary': "{p1} et {p2} fusionnent leurs fonctions en {sign1}. Symbiose puissante, intensité garantie.",
         'why': [
             "Angle 0° : les deux planètes occupent le même degré zodiacal",
-            "Fusion d'énergies : impossible de dissocier {p1_function} et {p2_function}",
+            "Fusion fonctionnelle : impossible de dissocier {p1_function} et {p2_function}",
             "Effet d'amplification mutuelle : chaque planète renforce l'autre"
         ],
         'manifestation': (
@@ -71,7 +71,7 @@ ASPECT_TEMPLATES_V4: Dict[str, Dict[str, Any]] = {
         'concrete_examples': {
             ('sun', 'mercury'): "pensée et identité fusionnent → expression très personnelle, subjectivité assumée",
             ('moon', 'venus'): "besoins émotionnels et affectifs alignés → attachement rapide, émotions esthétisées",
-            ('mars', 'jupiter'): "action et expansion combinées → initiatives ambitieuses, énergie débordante",
+            ('mars', 'jupiter'): "action et expansion combinées → initiatives ambitieuses, dynamisme débordant",
             ('default', 'default'): "les fonctions planétaires se confondent → expression unitaire, difficulté à séparer les registres"
         }
     },
@@ -127,7 +127,7 @@ ASPECT_TEMPLATES_V4: Dict[str, Dict[str, Any]] = {
         'why': [
             "Angle 120° : les deux planètes occupent des signes de même élément (feu, terre, air, eau)",
             "Compatibilité élémentale : {p1_function} et {p2_function} parlent le même langage",
-            "Fluidité : pas de friction, circulation d'énergie naturelle"
+            "Fluidité : pas de friction, circulation fluide naturelle"
         ],
         'manifestation': (
             "{p1} en {sign1} (Maison {house1}) nourrit {house1_label}, "
@@ -154,7 +154,7 @@ except ImportError:
     logger.warning("⚠️ Impossible d'importer PLANET_FUNCTIONS_V4 depuis natal_interpretation_service, fallback local")
     # Fallback local (copie simplifiée)
     PLANET_FUNCTIONS_V4 = {
-        'sun': 'identité centrale, énergie vitale, volonté',
+        'sun': 'identité centrale, vitalité, volonté',
         'moon': 'besoins émotionnels, sécurité, réactions instinctives',
         'mercury': 'intellect, communication, analyse',
         'venus': 'désir, valeurs, esthétique, affectivité',
