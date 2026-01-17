@@ -4,6 +4,25 @@ appId: com.shughen85.astroialunar
 # Vérifie que l'écran d'accueil charge correctement avec les éléments principaux
 
 - launchApp
-- assertVisible: "Révolution Lunaire"
-- assertVisible: "Void of Course"
+- waitForAnimationToEnd
+
+# Vérifier éléments toujours présents
+- assertVisible:
+    id: "home-title"
+- assertVisible:
+    id: "current-lunar-card"
+- assertVisible:
+    id: "lunar-question"
+
+# Vérifier widgets (peuvent être en chargement)
+- assertVisible:
+    id: "voc-widget"
+    optional: true
+- assertVisible:
+    id: "transits-widget"
+    optional: true
+- assertVisible:
+    id: "journal-prompt"
+    optional: true
+
 - takeScreenshot: home_screen

@@ -76,10 +76,11 @@ export function TransitsWidget() {
       style={styles.card}
       onPress={() => router.push('/transits/overview')}
       activeOpacity={0.8}
+      testID="transits-widget"
     >
       <View style={styles.header}>
-        <Text style={styles.title}>⭐ Transits Majeurs</Text>
-        <Text style={styles.badge}>{majorAspects.length}</Text>
+        <Text style={styles.title} testID="transits-title">⭐ Transits Majeurs</Text>
+        <Text style={styles.badge} testID="transits-count">{majorAspects.length}</Text>
       </View>
 
       <View style={styles.content}>
@@ -106,7 +107,7 @@ export function TransitsWidget() {
         })}
       </View>
 
-      <Text style={styles.ctaText}>Voir tous les transits →</Text>
+      <Text style={styles.ctaText} testID="transits-cta">Voir tous les transits →</Text>
     </TouchableOpacity>
   );
 }

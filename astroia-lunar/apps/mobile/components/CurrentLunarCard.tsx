@@ -110,30 +110,31 @@ export function CurrentLunarCard({ lunarReturn, loading, onRefresh }: CurrentLun
       <Pressable
         onPress={handlePress}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        testID="current-lunar-card"
       >
         {/* Question title */}
-        <Text style={styles.questionTitle}>Quel est mon cycle actuel ?</Text>
+        <Text style={styles.questionTitle} testID="lunar-question">Quel est mon cycle actuel ?</Text>
 
         {/* Month title */}
-        <Text style={styles.monthTitle}>🌙 {monthName}</Text>
+        <Text style={styles.monthTitle} testID="lunar-month">{monthName}</Text>
 
         {/* Date range */}
-        <Text style={styles.dateRange}>{dateRange}</Text>
+        <Text style={styles.dateRange} testID="lunar-date-range">{dateRange}</Text>
 
         {/* Meta grid (Lune + Ascendant) */}
         <View style={styles.metaGrid}>
           <View style={styles.metaItem}>
             <Text style={styles.metaLabel}>Lune en</Text>
-            <Text style={styles.metaValue}>{moonSign}</Text>
+            <Text style={styles.metaValue} testID="lunar-moon-sign">{moonSign}</Text>
           </View>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Ascendant</Text>
-            <Text style={styles.metaValue}>{lunarAscendant}</Text>
+            <Text style={styles.metaLabel} testID="lunar-ascendant-label">Ascendant</Text>
+            <Text style={styles.metaValue} testID="lunar-ascendant">{lunarAscendant}</Text>
           </View>
         </View>
 
         {/* CTA */}
-        <Text style={styles.ctaText}>→ Voir le rapport mensuel</Text>
+        <Text style={styles.ctaText} testID="lunar-cta">→ Voir le rapport mensuel</Text>
       </Pressable>
     </Animated.View>
   );

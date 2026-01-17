@@ -26,7 +26,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
 import { useNotificationsStore } from '../stores/useNotificationsStore';
 import { useResetStore } from '../stores/useResetStore';
-import { lunarReturns, LunarReturn, isDevAuthBypassActive, getDevAuthHeader } from '../services/api';
+import { isDevAuthBypassActive, getDevAuthHeader } from '../services/api';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { DailyRitualCard } from '../components/DailyRitualCard';
 import { VocWidget } from '../components/VocWidget';
@@ -36,6 +36,7 @@ import { JournalPrompt } from '../components/JournalPrompt';
 import { setupNotificationTapListener, shouldReschedule } from '../services/notificationScheduler';
 import { cleanupGhostFlags } from '../services/onboardingMigration';
 import { isProfileComplete } from '../utils/onboardingHelpers';
+import { useCurrentLunarReturn } from '../hooks/useLunarData';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -54,24 +55,13 @@ export default function HomeScreen() {
 
   const { notificationsEnabled, hydrated, loadPreferences, scheduleAllNotifications } = useNotificationsStore();
   const { isResetting } = useResetStore();
-  const [currentLunarReturn, setCurrentLunarReturn] = useState<LunarReturn | null>(null);
   const [isCheckingRouting, setIsCheckingRouting] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
   const routingInFlightRef = useRef(false);
   const selfHealExecutedRef = useRef(false); // Guard anti-boucle pour self-heal
 
-  // Fonction pour charger la révolution lunaire en cours
-  const loadCurrentLunarReturn = useCallback(async () => {
-    try {
-      const current = await lunarReturns.getCurrent();
-      setCurrentLunarReturn(current);
-    } catch (error: any) {
-      // Silencieux si 404 (pas de retour pour le mois en cours)
-      if (error.response?.status !== 404) {
-        console.error('[INDEX] Erreur chargement cycle lunaire:', error);
-      }
-    }
-  }, []);
+  // Hook SWR pour charger la révolution lunaire en cours
+  const { data: currentLunarReturn, mutate: refreshLunarReturn } = useCurrentLunarReturn();
 
   // Guards de routing : vérifier auth, onboarding et profil complet
   useEffect(() => {
@@ -273,20 +263,12 @@ export default function HomeScreen() {
     return () => subscription.remove();
   }, [router]);
 
-  // Charger le cycle lunaire actuel au mount
-  useEffect(() => {
-    if ((isAuthenticated || isDevAuthBypassActive()) && !isCheckingRouting) {
-      loadCurrentLunarReturn();
-    }
-  }, [isAuthenticated, isCheckingRouting, loadCurrentLunarReturn]);
-
-
   // Re-scheduler notifications au focus si nécessaire
   useFocusEffect(
     useCallback(() => {
       if ((isAuthenticated || isDevAuthBypassActive()) && !isCheckingRouting) {
-        // Charger révolution lunaire
-        loadCurrentLunarReturn();
+        // Refresh révolution lunaire (SWR le gère avec cache)
+        refreshLunarReturn();
 
         // Re-scheduler notifications si nécessaire (max 1x/24h)
         if (notificationsEnabled && hydrated) {
@@ -299,7 +281,7 @@ export default function HomeScreen() {
           })();
         }
       }
-    }, [isAuthenticated, isCheckingRouting, notificationsEnabled, hydrated, scheduleAllNotifications, loadCurrentLunarReturn])
+    }, [isAuthenticated, isCheckingRouting, notificationsEnabled, hydrated, scheduleAllNotifications, refreshLunarReturn])
   );
 
   // Afficher un loader pendant la vérification du routing
@@ -331,8 +313,8 @@ export default function HomeScreen() {
     <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>🌙 Rituel Lunaire</Text>
+        <View style={styles.header} testID="home-header">
+          <Text style={styles.title} testID="home-title">🌙 Rituel Lunaire</Text>
         </View>
 
         {/* Carte Mode Hors Connexion (calme, non anxiogène) */}
@@ -350,7 +332,7 @@ export default function HomeScreen() {
         <CurrentLunarCard
           lunarReturn={currentLunarReturn}
           loading={false}
-          onRefresh={loadCurrentLunarReturn}
+          onRefresh={refreshLunarReturn}
         />
 
         {/* Carte Rituel Quotidien */}

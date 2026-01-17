@@ -69,26 +69,27 @@ export function JournalPrompt() {
     <Pressable
       onPress={handlePress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      testID="journal-prompt"
     >
       {/* Header avec badge conditionnel */}
       <View style={styles.header}>
-        <Text style={styles.title}>📖 Journal</Text>
+        <Text style={styles.title} testID="journal-title">📖 Journal</Text>
         {journalDoneToday && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>✅ Aujourd'hui</Text>
+            <Text style={styles.badgeText} testID="journal-badge-today">✅ Aujourd'hui</Text>
           </View>
         )}
       </View>
 
       {/* Prompt */}
-      <Text style={styles.prompt}>
+      <Text style={styles.prompt} testID="journal-prompt-text">
         {journalDoneToday
           ? "Tu as déjà écrit aujourd'hui 🌙"
           : "As-tu écrit aujourd'hui ?"}
       </Text>
 
       {/* CTA */}
-      <Text style={styles.ctaText}>
+      <Text style={styles.ctaText} testID="journal-cta">
         {journalDoneToday ? 'Relire →' : 'Écrire une note →'}
       </Text>
     </Pressable>

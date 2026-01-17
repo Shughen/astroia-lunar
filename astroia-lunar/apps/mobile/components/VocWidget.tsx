@@ -67,19 +67,20 @@ export function VocWidget() {
       style={styles.card}
       onPress={() => router.push('/lunar/voc')}
       activeOpacity={0.8}
+      testID="voc-widget"
     >
       <View style={styles.header}>
-        <Text style={styles.title}>🌑 Void of Course</Text>
+        <Text style={styles.title} testID="voc-title">🌑 Void of Course</Text>
         {isActive && <View style={styles.activeBadge}>
-          <Text style={styles.activeBadgeText}>ACTIF</Text>
+          <Text style={styles.activeBadgeText} testID="voc-active-badge">ACTIF</Text>
         </View>}
       </View>
 
       {isActive ? (
         <View style={styles.content}>
-          <Text style={styles.statusText}>La Lune est Void of Course</Text>
+          <Text style={styles.statusText} testID="voc-status-active">La Lune est Void of Course</Text>
           {status?.now && (
-            <Text style={styles.timeText}>
+            <Text style={styles.timeText} testID="voc-time">
               Jusqu'à {formatDateTime(status.now.end_at)}
             </Text>
           )}
@@ -89,9 +90,9 @@ export function VocWidget() {
         </View>
       ) : (
         <View style={styles.content}>
-          <Text style={styles.statusText}>Pas de VoC actuellement</Text>
+          <Text style={styles.statusText} testID="voc-status-inactive">Pas de VoC actuellement</Text>
           {hasNext ? (
-            <Text style={styles.timeText}>
+            <Text style={styles.timeText} testID="voc-next">
               Prochaine fenêtre: {formatDateTime(status.next!.start_at)}
             </Text>
           ) : (
@@ -100,7 +101,7 @@ export function VocWidget() {
         </View>
       )}
 
-      <Text style={styles.ctaText}>Voir détails →</Text>
+      <Text style={styles.ctaText} testID="voc-cta">Voir détails →</Text>
     </TouchableOpacity>
   );
 }
