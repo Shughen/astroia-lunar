@@ -43,3 +43,24 @@ export function formatDaysUntil(days: number): string {
   if (days > 0) return `dans ${days} jour${days > 1 ? 's' : ''}`;
   return `il y a ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
 }
+
+/**
+ * Formate une date en YYYY-MM-DD en heure locale (pas UTC!)
+ *
+ * IMPORTANT: N'utilise PAS toISOString() car cela convertit en UTC
+ * et peut soustraire un jour selon la timezone.
+ *
+ * @param date - Objet Date
+ * @returns Date formatée YYYY-MM-DD en heure locale
+ *
+ * @example
+ * // Si l'utilisateur sélectionne 09/02/2001 à Paris (UTC+1):
+ * // toISOString() donnerait "2001-02-08T23:00:00.000Z" ❌
+ * // formatDateLocal() donne "2001-02-09" ✅
+ */
+export function formatDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}

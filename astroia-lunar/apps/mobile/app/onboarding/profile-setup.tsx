@@ -24,6 +24,7 @@ import { natalChart } from '../../services/api';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 import { goToNextOnboardingStep } from '../../services/onboardingFlow';
 import { getOnboardingFlowState } from '../../utils/onboardingHelpers';
+import { formatDateLocal } from '../../utils/date';
 
 // Type pour une suggestion Nominatim
 interface NominatimPlace {
@@ -227,7 +228,7 @@ export default function ProfileSetupScreen() {
           setIsCalculating(true);
 
           const response = await natalChart.calculate({
-            date: birthDate.toISOString().split('T')[0], // YYYY-MM-DD
+            date: formatDateLocal(birthDate), // YYYY-MM-DD en heure locale (pas UTC!)
             time: birthTime.trim(),
             latitude: selectedPlace.latitude,
             longitude: selectedPlace.longitude,
