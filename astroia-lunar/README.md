@@ -492,6 +492,133 @@ Ce projet est actuellement en développement privé. Pour toute question :
 
 ---
 
+## 🔧 Troubleshooting
+
+### Problèmes Courants Backend (API)
+
+#### 1. Erreur "ModuleNotFoundError" lors du démarrage
+
+**Symptôme:** `ModuleNotFoundError: No module named 'fastapi'`
+
+**Solution:**
+```bash
+cd apps/api
+pip install -r requirements.txt
+```
+
+#### 2. Erreur de connexion à la base de données
+
+**Symptôme:** `sqlalchemy.exc.OperationalError: could not connect to server`
+
+**Solutions:**
+- Vérifier que PostgreSQL est démarré : `brew services list`
+- Vérifier les variables d'environnement dans `.env` :
+  - `DATABASE_URL` doit pointer vers votre base de données locale
+  - Format : `postgresql://username:password@localhost:5432/astroia_lunar`
+- Créer la base de données si elle n'existe pas :
+  ```bash
+  psql -U postgres -c "CREATE DATABASE astroia_lunar;"
+  ```
+
+#### 3. Erreur 401 avec l'API Anthropic
+
+**Symptôme:** `anthropic.AuthenticationError: Error code: 401`
+
+**Solution:**
+- Vérifier que `ANTHROPIC_API_KEY` est défini dans `.env`
+- Vérifier que la clé est valide et active sur https://console.anthropic.com
+- Ne jamais commiter `.env` ou afficher la clé API
+
+#### 4. Tests échouent avec "connection refused"
+
+**Symptôme:** Tests pytest échouent avec erreur de connexion
+
+**Solution:**
+```bash
+cd apps/api
+# Utiliser SQLite pour les tests
+pytest -q
+# SQLite est configuré automatiquement pour les tests
+```
+
+### Problèmes Courants Mobile (Expo)
+
+#### 1. Erreur "Cannot find module '@react-native-async-storage/async-storage'"
+
+**Solution:**
+```bash
+cd apps/mobile
+npm install
+npx expo install @react-native-async-storage/async-storage
+```
+
+#### 2. App ne se connecte pas à l'API backend
+
+**Symptômes:**
+- Erreurs réseau dans l'app
+- `AxiosError: Network Error`
+
+**Solutions:**
+- Vérifier que l'API backend est démarrée : `http://localhost:8000/health`
+- Sur simulateur iOS : utiliser `http://localhost:8000`
+- Sur appareil physique : utiliser l'IP locale (ex: `http://192.168.1.100:8000`)
+- Modifier `API_BASE_URL` dans `apps/mobile/services/api.ts` si nécessaire
+
+#### 3. Build échoue avec erreur TypeScript
+
+**Symptôme:** `TS2304: Cannot find name 'X'`
+
+**Solutions:**
+```bash
+cd apps/mobile
+npm run typecheck  # Vérifier les erreurs TypeScript
+npm run lint       # Vérifier les erreurs de syntaxe
+```
+
+#### 4. Expo Go ne trouve pas l'app
+
+**Solutions:**
+- Vérifier que vous êtes sur le même réseau WiFi
+- Redémarrer le serveur Expo : `npm start -- --clear`
+- Scanner à nouveau le QR code
+
+### Problèmes Courants Tests E2E (Maestro)
+
+#### 1. "Unable to launch app"
+
+**Symptôme:** Tests Maestro échouent avec "Unable to launch app com.remi.astroia"
+
+**Solutions:**
+- Démarrer un simulateur iOS ou émulateur Android
+- Builder et installer l'app : `npm run ios` ou `npm run android`
+- Vérifier que l'app est installée sur le simulateur
+
+#### 2. "Unable to locate a Java Runtime"
+
+**Symptôme:** Maestro ne trouve pas Java
+
+**Solutions:**
+```bash
+# Installer Java 17
+brew install openjdk@17
+
+# Configurer JAVA_HOME
+echo 'export JAVA_HOME=/opt/homebrew/opt/openjdk@17' >> ~/.zshrc
+echo 'export PATH="$JAVA_HOME/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Vérifier
+java -version
+```
+
+### Obtenir de l'Aide
+
+- 📚 Consulter la documentation dans `docs/`
+- 🔍 Chercher dans les issues GitHub
+- 💬 Contacter l'équipe de développement
+
+---
+
 ## 🙏 Remerciements
 
 - **RapidAPI - Best Astrology API** pour les calculs éphémérides
