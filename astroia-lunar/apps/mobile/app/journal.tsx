@@ -242,6 +242,9 @@ export default function JournalScreen() {
         >
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>← Retour</Text>
+          </TouchableOpacity>
           <Text style={styles.title}>📖 Journal Quotidien</Text>
           <Text style={styles.subtitle}>
             Un espace pour votre rituel quotidien
@@ -358,6 +361,18 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.xl,
     alignItems: 'center',
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 10,
+  },
+  backButtonText: {
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     ...fonts.h1,
