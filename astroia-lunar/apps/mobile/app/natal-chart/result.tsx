@@ -155,7 +155,7 @@ export default function NatalChartResultScreen() {
                   <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                     {tSign(chart.sun_sign) || 'N/A'}
                   </Text>
-                  <Text style={styles.tapHint}>Tap pour interpréter</Text>
+                  <Text style={styles.tapHint}>Touchez pour interpréter</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -170,7 +170,7 @@ export default function NatalChartResultScreen() {
                   <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                     {tSign(chart.moon_sign) || 'N/A'}
                   </Text>
-                  <Text style={styles.tapHint}>Tap pour interpréter</Text>
+                  <Text style={styles.tapHint}>Touchez pour interpréter</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -183,7 +183,7 @@ export default function NatalChartResultScreen() {
                   <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                     {tSign(chart.ascendant) || 'N/A'}
                   </Text>
-                  <Text style={styles.tapHint}>Tap pour interpréter</Text>
+                  <Text style={styles.tapHint}>Touchez pour interpréter</Text>
                 </TouchableOpacity>
               </View>
             )}
