@@ -9,6 +9,8 @@ from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError
 from schemas.natal_interpretation import ChartPayload
 from config import settings
 from pathlib import Path
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,70 @@ SIGN_FR_TO_EN = {
     'verseau': 'aquarius',
     'poissons': 'pisces'
 }
+
+
+async def load_pregenerated_interpretation_from_db(
+    db: AsyncSession,
+    subject: str,
+    sign: str,
+    house: int,
+    version: int = 2,
+    lang: str = 'fr'
+) -> Optional[str]:
+    """
+    Charge une interprétation pré-générée depuis la base de données
+
+    Args:
+        db: Session async SQLAlchemy
+        subject: Nom du sujet (sun, moon, etc.)
+        sign: Nom du signe en français (Verseau, Taureau, etc.)
+        house: Numéro de maison (1-12)
+        version: Version du prompt (2 ou 4)
+        lang: Langue (fr, en, etc.)
+
+    Returns:
+        Texte markdown complet OU None si introuvable
+    """
+    from models.pregenerated_natal_interpretation import PregeneratedNatalInterpretation
+
+    # Normaliser le signe (minuscule, sans espaces)
+    sign_normalized = sign.lower().strip()
+
+    # Mapping FR → EN pour les signes
+    sign_en = SIGN_FR_TO_EN.get(sign_normalized)
+
+    # Si pas trouvé, essayer sans accents
+    if not sign_en:
+        sign_no_accents = sign_normalized.replace('é', 'e').replace('è', 'e').replace('ê', 'e')
+        sign_en = SIGN_FR_TO_EN.get(sign_no_accents)
+
+    # Si toujours pas trouvé, utiliser la valeur normalisée comme fallback
+    if not sign_en:
+        sign_en = sign_no_accents if 'sign_no_accents' in locals() else sign_normalized
+
+    try:
+        # Query DB
+        result = await db.execute(
+            select(PregeneratedNatalInterpretation).where(
+                PregeneratedNatalInterpretation.subject == subject,
+                PregeneratedNatalInterpretation.sign == sign_en,
+                PregeneratedNatalInterpretation.house == house,
+                PregeneratedNatalInterpretation.version == version,
+                PregeneratedNatalInterpretation.lang == lang
+            )
+        )
+        interpretation = result.scalar_one_or_none()
+
+        if interpretation:
+            logger.info(f"✅ Interprétation pré-générée chargée depuis DB: {subject} en {sign} M{house} ({interpretation.length} chars)")
+            return interpretation.content
+
+        logger.warning(f"⚠️ Interprétation introuvable en DB: {subject} en {sign_en} M{house} v{version} lang={lang}")
+        return None
+
+    except Exception as e:
+        logger.error(f"❌ Erreur chargement DB: {e}")
+        return None
 
 
 def load_pregenerated_interpretation(
@@ -829,13 +895,14 @@ def validate_interpretation_length(text: str, version: int = 2) -> Tuple[bool, i
 async def generate_with_sonnet_fallback_haiku(
     subject: str,
     chart_payload: Dict[str, Any] | ChartPayload,
-    version: int = None
+    version: int = None,
+    db: Optional[AsyncSession] = None
 ) -> Tuple[str, str]:
     """
     Génère une interprétation avec Claude Sonnet, fallback sur Haiku si erreur
 
     Stratégie (NATAL_LLM_MODE):
-    - Si "off" (default): retourne placeholder sans appel API
+    - Si "off" (default): charge depuis DB pré-générée, sinon placeholder
     - Si "anthropic":
       1. Essayer Sonnet 3.5
       2. Si erreur (429, timeout, 5xx) -> fallback Haiku
@@ -848,6 +915,7 @@ async def generate_with_sonnet_fallback_haiku(
         subject: Objet céleste à interpréter
         chart_payload: Données du chart
         version: Version du prompt (2, 3, ou 4). Si None, utilise PROMPT_VERSION global.
+        db: Session async SQLAlchemy (pour charger interprétations pré-générées)
 
     Returns:
         tuple: (interpretation_text, model_used)
@@ -869,19 +937,32 @@ async def generate_with_sonnet_fallback_haiku(
         # Mode off : essayer de charger interprétation pré-générée
         logger.info(f"🚫 NATAL_LLM_MODE={llm_mode} - Recherche interprétation pré-générée pour {subject} en {payload.sign}")
 
-        # Essayer de charger l'interprétation pré-générée
-        pregenerated_text = load_pregenerated_interpretation(
-            subject=subject,
-            sign=payload.sign or "",
-            house=payload.house or 1,
-            version=version
-        )
+        pregenerated_text = None
+
+        # Essayer de charger depuis DB si session fournie
+        if db is not None:
+            pregenerated_text = await load_pregenerated_interpretation_from_db(
+                db=db,
+                subject=subject,
+                sign=payload.sign or "",
+                house=payload.house or 1,
+                version=version,
+                lang='fr'
+            )
+        else:
+            # Fallback sur chargement depuis fichiers (pour compatibilité backward)
+            pregenerated_text = load_pregenerated_interpretation(
+                subject=subject,
+                sign=payload.sign or "",
+                house=payload.house or 1,
+                version=version
+            )
 
         if pregenerated_text:
             logger.info(f"✅ Interprétation pré-générée trouvée pour {subject} en {payload.sign}")
             return pregenerated_text, "pregenerated"
 
-        # Si pas de fichier, fallback sur placeholder
+        # Si pas trouvé, fallback sur placeholder
         logger.warning(f"⚠️ Pas d'interprétation pré-générée pour {subject} en {payload.sign} M{payload.house}, fallback placeholder")
         placeholder_text = generate_placeholder_interpretation(subject, payload, version)
         return placeholder_text, "placeholder"

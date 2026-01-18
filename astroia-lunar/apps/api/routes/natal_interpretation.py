@@ -130,9 +130,11 @@ async def generate_natal_interpretation(
 
     try:
         # Appeler Claude pour générer l'interprétation (Sonnet + fallback Haiku)
+        # Passer la session DB pour charger interprétations pré-générées
         interpretation_text, model_used = await generate_with_sonnet_fallback_haiku(
             subject=request.subject,
-            chart_payload=request.chart_payload.model_dump()
+            chart_payload=request.chart_payload.model_dump(),
+            db=db
         )
         
         # #region agent log
