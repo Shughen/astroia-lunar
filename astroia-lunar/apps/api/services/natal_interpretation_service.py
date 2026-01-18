@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional, List, Tuple
 from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError
 from schemas.natal_interpretation import ChartPayload
 from config import settings
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,86 @@ SUBJECT_EMOJI = {
     'south_node': '☋',
     'lilith': '⚸'
 }
+
+# Mapping signe français → anglais (pour fichiers markdown)
+SIGN_FR_TO_EN = {
+    'bélier': 'aries',
+    'belier': 'aries',  # Variante sans accent
+    'taureau': 'taurus',
+    'gémeaux': 'gemini',
+    'gemeaux': 'gemini',  # Variante sans accent
+    'cancer': 'cancer',
+    'lion': 'leo',
+    'vierge': 'virgo',
+    'balance': 'libra',
+    'scorpion': 'scorpio',
+    'sagittaire': 'sagittarius',
+    'capricorne': 'capricorn',
+    'verseau': 'aquarius',
+    'poissons': 'pisces'
+}
+
+
+def load_pregenerated_interpretation(
+    subject: str,
+    sign: str,
+    house: int,
+    version: int = 2
+) -> Optional[str]:
+    """
+    Charge une interprétation pré-générée depuis les fichiers markdown
+
+    Args:
+        subject: Nom du sujet (sun, moon, etc.)
+        sign: Nom du signe en français (Verseau, Taureau, etc.)
+        house: Numéro de maison (1-12)
+        version: Version du prompt (2 ou 4)
+
+    Returns:
+        Texte markdown complet OU None si fichier introuvable
+    """
+    # Normaliser le signe (minuscule, sans espaces)
+    sign_normalized = sign.lower().strip()
+
+    # Mapping FR → EN pour les signes (essayer avec et sans accents)
+    sign_en = SIGN_FR_TO_EN.get(sign_normalized)
+
+    # Si pas trouvé, essayer sans accents
+    if not sign_en:
+        sign_no_accents = sign_normalized.replace('é', 'e').replace('è', 'e').replace('ê', 'e')
+        sign_en = SIGN_FR_TO_EN.get(sign_no_accents)
+
+    # Si toujours pas trouvé, utiliser la valeur normalisée comme fallback
+    if not sign_en:
+        sign_en = sign_no_accents if sign_no_accents else sign_normalized
+
+    # Chemin fichier
+    base_path = Path(__file__).parent.parent
+    file_path = base_path / f"data/natal_interpretations/v{version}/{subject}/{sign_en}_{house}.md"
+
+    if not file_path.exists():
+        logger.warning(f"⚠️ Fichier introuvable: {file_path}")
+        return None
+
+    try:
+        # Lire le fichier
+        content = file_path.read_text(encoding='utf-8')
+
+        # Extraire le markdown (après frontmatter YAML)
+        if content.startswith('---'):
+            parts = content.split('---', 2)
+            if len(parts) >= 3:
+                markdown_text = parts[2].strip()
+                logger.info(f"✅ Interprétation pré-générée chargée: {subject} en {sign} M{house} ({len(markdown_text)} chars)")
+                return markdown_text
+
+        # Si pas de frontmatter, retourner le contenu brut
+        logger.info(f"✅ Interprétation pré-générée chargée (sans frontmatter): {subject} en {sign} M{house}")
+        return content.strip()
+
+    except Exception as e:
+        logger.error(f"❌ Erreur lecture fichier {file_path}: {e}")
+        return None
 
 
 def get_anthropic_client() -> Anthropic:
@@ -785,8 +866,23 @@ async def generate_with_sonnet_fallback_haiku(
     llm_mode = settings.NATAL_LLM_MODE.lower()
 
     if llm_mode != "anthropic":
-        # Mode off ou autre: retourner placeholder sans appel API
-        logger.info(f"🚫 NATAL_LLM_MODE={llm_mode} - Retour placeholder pour {subject} en {payload.sign}")
+        # Mode off : essayer de charger interprétation pré-générée
+        logger.info(f"🚫 NATAL_LLM_MODE={llm_mode} - Recherche interprétation pré-générée pour {subject} en {payload.sign}")
+
+        # Essayer de charger l'interprétation pré-générée
+        pregenerated_text = load_pregenerated_interpretation(
+            subject=subject,
+            sign=payload.sign or "",
+            house=payload.house or 1,
+            version=version
+        )
+
+        if pregenerated_text:
+            logger.info(f"✅ Interprétation pré-générée trouvée pour {subject} en {payload.sign}")
+            return pregenerated_text, "pregenerated"
+
+        # Si pas de fichier, fallback sur placeholder
+        logger.warning(f"⚠️ Pas d'interprétation pré-générée pour {subject} en {payload.sign} M{payload.house}, fallback placeholder")
         placeholder_text = generate_placeholder_interpretation(subject, payload, version)
         return placeholder_text, "placeholder"
     # #region agent log
