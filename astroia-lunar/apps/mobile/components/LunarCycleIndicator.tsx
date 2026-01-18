@@ -12,12 +12,15 @@ interface LunarCycleIndicatorProps {
 }
 
 export function LunarCycleIndicator({ currentLunarDay }: LunarCycleIndicatorProps) {
+  // Ne rien afficher si pas de données
+  if (currentLunarDay === null) {
+    return null;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>
-        {currentLunarDay !== null
-          ? `Jour lunaire : ${currentLunarDay}`
-          : 'Cycle lunaire : —'}
+        Jour {currentLunarDay} du cycle lunaire
       </Text>
     </View>
   );
