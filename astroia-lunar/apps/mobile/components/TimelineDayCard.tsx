@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { TimelineDay } from '../types/timeline';
 import { getPhaseEmoji, getPhaseKey } from '../utils/ritualHelpers';
+import { translateZodiacSign } from '../utils/astrologyTranslations';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 
 interface TimelineDayCardProps {
@@ -93,7 +94,7 @@ export function TimelineDayCard({ day, onPress }: TimelineDayCardProps) {
               {phaseLabel}
             </Text>
             <Text style={styles.signLabel} numberOfLines={1}>
-              {day.moon.sign}
+              {translateZodiacSign(day.moon.sign)}
             </Text>
           </View>
         </View>

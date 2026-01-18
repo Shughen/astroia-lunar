@@ -26,6 +26,7 @@ import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { useLunar } from '../contexts/LunarProvider';
 import { isFirstViewToday, markAsViewedToday } from '../services/ritualService';
 import { getTodayDateString, translatePhaseToFrench } from '../utils/ritualHelpers';
+import { translateZodiacSign } from '../utils/astrologyTranslations';
 import { Skeleton } from './Skeleton';
 import { JournalEntryModal } from './JournalEntryModal';
 import { LunarCycleIndicator } from './LunarCycleIndicator';
@@ -164,9 +165,10 @@ export function DailyRitualCard() {
 
   // Texte phase + signe (traduit en français)
   const phaseFr = translatePhaseToFrench(data.moon.phase);
+  const signFr = translateZodiacSign(data.moon.sign);
   const phaseText =
     data.moon.sign !== 'Unknown'
-      ? `${phaseFr.toUpperCase()} EN ${data.moon.sign.toUpperCase()}`
+      ? `${phaseFr.toUpperCase()} EN ${signFr.toUpperCase()}`
       : phaseFr.toUpperCase();
 
   // Récupérer le jour du cycle lunaire depuis les données (fallback à null si absent)
