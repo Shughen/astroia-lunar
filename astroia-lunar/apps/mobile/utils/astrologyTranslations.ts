@@ -55,9 +55,12 @@ const MONTHS: Record<string, string> = {
 
 /**
  * Traduit un signe astrologique de l'anglais vers le français
+ * Gère les différentes casses (CAPRICORN, capricorn, Capricorn → Capricorne)
  */
 export function translateZodiacSign(sign: string): string {
-  return ZODIAC_SIGNS[sign] || sign;
+  // Normaliser : première lettre majuscule, reste minuscule
+  const normalized = sign.charAt(0).toUpperCase() + sign.slice(1).toLowerCase();
+  return ZODIAC_SIGNS[normalized] || sign;
 }
 
 /**
