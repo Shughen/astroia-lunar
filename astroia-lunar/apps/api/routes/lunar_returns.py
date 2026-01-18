@@ -1263,7 +1263,13 @@ async def get_current_lunar_report(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Récupère le rapport mensuel de la révolution lunaire en cours"""
+    """
+    Récupère le rapport mensuel de la révolution lunaire en cours.
+
+    Utilise la même logique que /current pour trouver le cycle:
+    - Le plus récent avec return_date <= now (cycle en cours)
+    - Sinon fallback: le prochain (return_date >= now)
+    """
     correlation_id = str(uuid4())
 
     # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
@@ -1272,24 +1278,39 @@ async def get_current_lunar_report(
     try:
         logger.info(f"[corr={correlation_id}] 📊 Génération rapport mensuel pour user_id={user_id}")
 
-        # 1. Récupérer révolution lunaire courante
+        # 1. Récupérer révolution lunaire courante (même logique que /current)
         now = datetime.now(timezone.utc)
-        current_month = now.strftime('%Y-%m')
 
-        result = await db.execute(
+        # Chercher le retour en cours: le plus récent avec return_date <= now
+        result_past = await db.execute(
             select(LunarReturn)
             .where(
                 LunarReturn.user_id == user_id,
-                LunarReturn.month == current_month
+                LunarReturn.return_date <= now
             )
+            .order_by(LunarReturn.return_date.desc())
+            .limit(1)
         )
-        lunar_return = result.scalar_one_or_none()
+        lunar_return = result_past.scalar_one_or_none()
+
+        # Si aucun retour passé, chercher le prochain (fallback)
+        if not lunar_return:
+            result_future = await db.execute(
+                select(LunarReturn)
+                .where(
+                    LunarReturn.user_id == user_id,
+                    LunarReturn.return_date >= now
+                )
+                .order_by(LunarReturn.return_date.asc())
+                .limit(1)
+            )
+            lunar_return = result_future.scalar_one_or_none()
 
         if not lunar_return:
-            logger.info(f"[corr={correlation_id}] ❌ Aucune révolution lunaire pour le mois {current_month}")
+            logger.info(f"[corr={correlation_id}] ❌ Aucune révolution lunaire trouvée pour user_id={user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Aucune révolution lunaire pour le mois en cours ({current_month})"
+                detail="Aucune révolution lunaire en cours. Utilisez POST /api/lunar-returns/generate pour générer les cycles."
             )
 
         # 2. Construire le rapport via le builder
@@ -1297,7 +1318,7 @@ async def get_current_lunar_report(
 
         report = build_lunar_report_v4(lunar_return)
 
-        logger.info(f"[corr={correlation_id}] ✅ Rapport généré - climate_len={len(report['general_climate'])}, axes={len(report['dominant_axes'])}, aspects={len(report['major_aspects'])}")
+        logger.info(f"[corr={correlation_id}] ✅ Rapport généré pour {lunar_return.month} - climate_len={len(report['general_climate'])}, axes={len(report['dominant_axes'])}, aspects={len(report['major_aspects'])}")
 
         return report
 

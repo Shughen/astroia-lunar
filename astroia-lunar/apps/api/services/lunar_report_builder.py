@@ -81,9 +81,25 @@ CLIMATE_TEMPLATES: Dict[tuple, str] = {
 }
 
 
-# === TEMPLATES ENRICHIS POUR CLIMAT GÉNÉRAL (V4.1) ===
+# === TEMPLATES ENRICHIS POUR CLIMAT GÉNÉRAL (V5 - ton accessible) ===
 
-# A. Base tones par signe lunaire (30 mots chacun)
+# A. Phrases d'accroche par signe lunaire (ton chaleureux, 1-2 phrases)
+MOON_SIGN_INTRO: Dict[str, str] = {
+    'Aries': "Ce mois-ci, tu ressens une envie d'agir, de bouger, de lancer de nouvelles choses. L'énergie est vive, parfois impatiente — c'est normal, c'est le moment d'initier.",
+    'Taurus': "Ce mois-ci, tu cherches la stabilité et le confort. Besoin de te poser, de construire quelque chose de concret, de prendre soin de toi à ton rythme.",
+    'Gemini': "Ce mois-ci, ton esprit est en ébullition : envie de parler, d'apprendre, de papillonner. La curiosité est ton moteur, même si tu peux te sentir un peu dispersé(e).",
+    'Cancer': "Ce mois-ci, tes émotions sont au premier plan. Besoin de cocooning, de liens familiaux, de te sentir en sécurité affective. Écoute ce que ton cœur te dit.",
+    'Leo': "Ce mois-ci, tu as besoin de briller et d'exprimer qui tu es vraiment. Créativité, générosité, envie de reconnaissance — assume ta lumière.",
+    'Virgo': "Ce mois-ci, tu ressens le besoin de mettre de l'ordre dans ta vie. Organisation, santé, amélioration du quotidien : les détails comptent.",
+    'Libra': "Ce mois-ci, l'harmonie relationnelle est ta priorité. Envie d'équilibre, de beauté, de partage. Les autres jouent un rôle important dans ton bien-être.",
+    'Scorpio': "Ce mois-ci, tu vas en profondeur. Émotions intenses, besoin de vérité, envie de transformer ce qui ne fonctionne plus. Période puissante.",
+    'Sagittarius': "Ce mois-ci, tu as soif d'aventure et de sens. Envie de voyager (physiquement ou mentalement), d'apprendre, de voir plus grand.",
+    'Capricorn': "Ce mois-ci, tu es focalisé(e) sur tes objectifs. Ambition, discipline, envie de construire quelque chose de durable. Le travail paie.",
+    'Aquarius': "Ce mois-ci, tu aspires à plus de liberté et d'originalité. Besoin de faire les choses à ta façon, de t'investir dans des causes qui te parlent.",
+    'Pisces': "Ce mois-ci, ta sensibilité est décuplée. Intuition forte, besoin de calme et de rêverie. Accorde-toi des moments de pause et d'évasion.",
+}
+
+# A-bis. Anciens templates techniques (conservés pour compatibilité)
 MOON_SIGN_BASE_TONES: Dict[str, str] = {
     'Aries': "Cycle lunaire sous signe de Feu cardinal : impulsion directe, action immédiate, besoin d'initier nouvelles dynamiques. Réactions émotionnelles rapides et spontanées, impatience structurelle marquée. Initiative personnelle comme mode d'expression privilégié ce mois-ci.",
     'Taurus': "Cycle lunaire sous signe de Terre fixe : ancrage matériel, stabilité recherchée, besoin de sécurité tangible et durable. Réactions émotionnelles lentes et posées, résistance au changement prononcée. Construction patiente comme mode d'expression ce mois-ci.",
@@ -188,7 +204,23 @@ LUNAR_ASCENDANT_FILTERS: Dict[str, str] = {
 # Fallback si pas d'ascendant lunaire
 LUNAR_ASCENDANT_NO_DATA_FALLBACK = "Filtre perceptif neutre ce mois-ci : approche directe des situations, sans coloration particulière de l'interface au monde. Présence non modifiée par ascendant lunaire."
 
-# D. Preview axes par maison lunaire (20 mots chacun)
+# D-bis. Focus par maison lunaire (V5 - conseils concrets)
+MOON_HOUSE_FOCUS: Dict[int, str] = {
+    1: "Le focus du mois porte sur toi : ton image, ta façon de te présenter au monde. C'est le moment de prendre des initiatives personnelles.",
+    2: "Le focus du mois porte sur tes ressources : finances, valeurs, ce qui compte vraiment pour toi. Bon moment pour stabiliser ta situation matérielle.",
+    3: "Le focus du mois porte sur la communication : échanges, apprentissages, contacts avec ton entourage proche. Parle, écris, écoute.",
+    4: "Le focus du mois porte sur ton foyer et ta famille. Besoin de te ressourcer chez toi, de renforcer tes racines. Prends soin de ton espace.",
+    5: "Le focus du mois porte sur la créativité et le plaisir. Loisirs, romances, projets personnels : exprime-toi et amuse-toi.",
+    6: "Le focus du mois porte sur ton quotidien : travail, santé, routines. C'est le moment d'optimiser, d'organiser, de prendre soin de toi au jour le jour.",
+    7: "Le focus du mois porte sur tes relations : couple, partenariats, collaborations. L'autre est au centre de tes préoccupations.",
+    8: "Le focus du mois porte sur les transformations profondes : finances partagées, intimité, ce qui doit changer. Période intense mais libératrice.",
+    9: "Le focus du mois porte sur l'expansion : voyages, études, quête de sens. Élargis tes horizons et explore de nouvelles perspectives.",
+    10: "Le focus du mois porte sur ta carrière et tes ambitions. Visibilité professionnelle, objectifs à long terme : c'est le moment de concrétiser.",
+    11: "Le focus du mois porte sur tes projets collectifs : amis, réseaux, causes qui te tiennent à cœur. Implique-toi dans ce qui dépasse l'individuel.",
+    12: "Le focus du mois porte sur l'intériorité : repos, introspection, spiritualité. Accorde-toi du temps pour toi, loin du bruit du monde.",
+}
+
+# D. Preview axes par maison lunaire (20 mots chacun) - version technique
 AXES_PREVIEW_TEMPLATES: Dict[Any, str] = {
     1: "Ces dynamiques émotionnelles mensuelles se déploient prioritairement sur l'axe identitaire et affirmation personnelle, avec extensions possibles vers les domaines de vie activés ci-dessous.",
     2: "Ces dynamiques émotionnelles mensuelles se déploient prioritairement sur l'axe matériel et système de valeurs, avec extensions possibles vers les domaines de vie activés ci-dessous.",
@@ -537,20 +569,31 @@ def _build_header(lunar_return: Any) -> Dict[str, Any]:
     return_date = lunar_return.return_date
 
     # Calculer date de fin (return_date + 1 mois)
-    from datetime import timedelta
     from dateutil.relativedelta import relativedelta
 
     end_date = return_date + relativedelta(months=1)
 
-    # Format mois (ex: "Janvier 2025")
-    month_name = return_date.strftime('%B %Y')
+    # Mapping mois français
+    MOIS_FR = {
+        1: 'janvier', 2: 'février', 3: 'mars', 4: 'avril',
+        5: 'mai', 6: 'juin', 7: 'juillet', 8: 'août',
+        9: 'septembre', 10: 'octobre', 11: 'novembre', 12: 'décembre'
+    }
+    MOIS_FR_ABBR = {
+        1: 'jan.', 2: 'fév.', 3: 'mars', 4: 'avr.',
+        5: 'mai', 6: 'juin', 7: 'juil.', 8: 'août',
+        9: 'sept.', 10: 'oct.', 11: 'nov.', 12: 'déc.'
+    }
 
-    # Format dates (ex: "Du 15 jan au 12 fév")
-    start_str = return_date.strftime('%-d %b')
-    end_str = end_date.strftime('%-d %b')
+    # Format mois (ex: "Janvier 2025")
+    month_name = f"{MOIS_FR[return_date.month].capitalize()} {return_date.year}"
+
+    # Format dates (ex: "Du 15 jan. au 12 fév.")
+    start_str = f"{return_date.day} {MOIS_FR_ABBR[return_date.month]}"
+    end_str = f"{end_date.day} {MOIS_FR_ABBR[end_date.month]}"
 
     return {
-        'month': month_name.capitalize(),
+        'month': month_name,
         'dates': f"Du {start_str} au {end_str}",
         'moon_sign': lunar_return.moon_sign or 'N/A',
         'moon_house': lunar_return.moon_house,
@@ -560,50 +603,34 @@ def _build_header(lunar_return: Any) -> Dict[str, Any]:
 
 def _build_general_climate_enriched(lunar_return: Any) -> str:
     """
-    Construit climat général enrichi (120 mots)
+    Construit climat général V5 (ton accessible, ~50 mots)
 
-    Structure 4 parties:
-    1. Base tone (30w): MOON_SIGN_BASE_TONES[moon_sign]
-    2. Main aspect (40w): _get_top_aspect_for_climate(lunar_return)
-    3. Lunar ASC (30w): LUNAR_ASCENDANT_FILTERS[lunar_ascendant]
-    4. Preview (20w): AXES_PREVIEW_TEMPLATES[moon_house]
+    Structure simplifiée en 2 parties :
+    1. Intro signe (MOON_SIGN_INTRO) : énergie émotionnelle du mois
+    2. Focus maison (MOON_HOUSE_FOCUS) : domaine de vie prioritaire
 
-    Returns: Texte composé 120 mots
+    Returns: Texte accessible et concret
     """
     parts = []
 
-    # 1. Base tone (30w)
+    # 1. Intro par signe lunaire (énergie du mois)
     moon_sign = lunar_return.moon_sign
-    base_tone = MOON_SIGN_BASE_TONES.get(
+    intro = MOON_SIGN_INTRO.get(
         moon_sign,
-        "Cycle lunaire en cours. Ajustements émotionnels mensuels selon retour Lune à position natale. Période recalibration instinctive."
+        "Ce mois-ci, prends le temps d'observer tes besoins émotionnels et d'y répondre avec bienveillance."
     )
-    parts.append(base_tone)
+    parts.append(intro)
 
-    # 2. Main aspect (40w)
-    aspect_snippet = _get_top_aspect_for_climate(lunar_return)
-    if aspect_snippet:
-        parts.append(aspect_snippet)
-    else:
-        parts.append(ASPECT_CLIMATE_NO_MOON_FALLBACK)
-
-    # 3. Lunar ascendant (30w)
-    lunar_ascendant = lunar_return.lunar_ascendant
-    asc_filter = LUNAR_ASCENDANT_FILTERS.get(
-        lunar_ascendant,
-        LUNAR_ASCENDANT_NO_DATA_FALLBACK
-    )
-    parts.append(asc_filter)
-
-    # 4. Preview (20w)
+    # 2. Focus par maison lunaire (domaine prioritaire)
     moon_house = lunar_return.moon_house
-    preview = AXES_PREVIEW_TEMPLATES.get(
-        moon_house,
-        AXES_PREVIEW_TEMPLATES.get('default', "Ces dynamiques lunaires se déploient sur les domaines de vie activés ci-dessous.")
-    )
-    parts.append(preview)
+    if moon_house:
+        focus = MOON_HOUSE_FOCUS.get(
+            moon_house,
+            "Observe les domaines de ta vie qui demandent ton attention ce mois-ci."
+        )
+        parts.append(focus)
 
-    return ' '.join(parts)
+    return '\n\n'.join(parts)
 
 
 def _build_dominant_axes_enriched(lunar_return: Any) -> List[str]:
