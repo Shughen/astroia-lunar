@@ -20,6 +20,7 @@ from routes.auth import get_current_user
 from services.ephemeris import ephemeris_client, EphemerisAPIKeyError
 from services.interpretations import generate_lunar_return_interpretation
 from utils.natal_chart_helpers import extract_moon_data_from_positions
+from services.swiss_ephemeris import find_lunar_return, get_moon_position, SWISS_EPHEMERIS_AVAILABLE
 from config import settings
 import os
 
@@ -210,32 +211,58 @@ def _parse_return_date(raw_data: Dict[str, Any], month: str, correlation_id: str
     return return_date
 
 
+# Mapping signe zodiacal -> offset en degrés (0-360)
+SIGN_TO_LONGITUDE_OFFSET = {
+    'Aries': 0, 'Taurus': 30, 'Gemini': 60, 'Cancer': 90,
+    'Leo': 120, 'Virgo': 150, 'Libra': 180, 'Scorpio': 210,
+    'Sagittarius': 240, 'Capricorn': 270, 'Aquarius': 300, 'Pisces': 330,
+    # Variantes françaises
+    'Bélier': 0, 'Taureau': 30, 'Gémeaux': 60, 'Lion': 120,
+    'Vierge': 150, 'Balance': 180, 'Verseau': 300, 'Poissons': 330,
+}
+
+
+def _sign_degree_to_longitude(sign: str, degree: float) -> float:
+    """
+    Convertit un signe zodiacal + degré dans le signe en longitude écliptique absolue (0-360).
+
+    Args:
+        sign: Signe zodiacal (ex: 'Aries', 'Taurus', 'Bélier', etc.)
+        degree: Degré dans le signe (0-30)
+
+    Returns:
+        Longitude écliptique absolue (0-360)
+
+    Raises:
+        ValueError: Si le signe n'est pas reconnu
+    """
+    # Normaliser le signe (première lettre majuscule)
+    sign_normalized = sign.strip().title()
+
+    if sign_normalized not in SIGN_TO_LONGITUDE_OFFSET:
+        raise ValueError(f"Signe zodiacal non reconnu: {sign}")
+
+    offset = SIGN_TO_LONGITUDE_OFFSET[sign_normalized]
+    return (offset + degree) % 360
+
+
 def _compute_rolling_months(now_utc: datetime) -> List[str]:
     """
     Calcule la liste des 12 prochains mois rolling à partir de now_utc.
-    
-    Règle: si jour > 15, commencer au mois suivant, sinon mois courant.
-    Cela évite de générer un retour déjà passé.
-    
+
+    Toujours commencer au mois courant car on calcule maintenant la vraie date
+    de révolution lunaire (qui peut être n'importe quand dans le mois).
+
     Args:
         now_utc: Datetime UTC actuel
-    
+
     Returns:
         Liste de 12 mois au format YYYY-MM
     """
-    if now_utc.day > 15:
-        # On est après le 15, commencer au mois suivant
-        if now_utc.month == 12:
-            start_year = now_utc.year + 1
-            start_month = 1
-        else:
-            start_year = now_utc.year
-            start_month = now_utc.month + 1
-    else:
-        # On est avant le 15, commencer au mois courant
-        start_year = now_utc.year
-        start_month = now_utc.month
-    
+    # Toujours commencer au mois courant
+    start_year = now_utc.year
+    start_month = now_utc.month
+
     months = []
     current_year = start_year
     current_month = start_month
@@ -246,7 +273,7 @@ def _compute_rolling_months(now_utc: datetime) -> List[str]:
         if current_month > 12:
             current_month = 1
             current_year += 1
-    
+
     return months
 
 
@@ -299,49 +326,108 @@ async def _generate_rolling_returns(
             await db.rollback()
     
     generated_count = 0
-    
+
+    # Calculer la longitude écliptique absolue de la Lune natale (0-360°)
+    try:
+        natal_moon_longitude = _sign_degree_to_longitude(natal_moon_sign, natal_moon_degree)
+        logger.info(
+            f"[corr={correlation_id}] 🌙 Lune natale: {natal_moon_sign} {natal_moon_degree:.2f}° "
+            f"→ longitude absolue {natal_moon_longitude:.2f}°"
+        )
+    except ValueError as e:
+        logger.error(f"[corr={correlation_id}] ❌ Erreur conversion signe→longitude: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "detail": f"Signe lunaire invalide: {natal_moon_sign}",
+                "correlation_id": correlation_id,
+                "step": "sign_to_longitude",
+            }
+        )
+
     for month in months:
         try:
             logger.debug(
                 f"[corr={correlation_id}] 🔄 Calcul révolution lunaire {month}..."
             )
-            raw_data = await ephemeris_client.calculate_lunar_return(
-                natal_moon_degree=natal_moon_degree,
-                natal_moon_sign=natal_moon_sign,
-                target_month=month,
-                birth_latitude=birth_latitude,
-                birth_longitude=birth_longitude,
-                timezone=birth_timezone,
-            )
-        except EphemerisAPIKeyError as e:
-            logger.error(
-                f"[corr={correlation_id}] ❌ Clé API Ephemeris manquante: {e}"
-            )
-            # Si c'est le premier mois, on laisse l'exception remonter
-            if generated_count == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail={
-                        "detail": "EPHEMERIS_API_KEY missing or placeholder. Configure it to compute lunar returns, or set DEV_MOCK_EPHEMERIS=1 for development.",
-                        "correlation_id": correlation_id,
-                        "step": "ephemeris_api_key",
-                    }
+
+            # === ÉTAPE 1: Calculer la vraie date de révolution lunaire avec Swiss Ephemeris ===
+            year, month_num = map(int, month.split('-'))
+            # Point de départ: milieu du mois (approximation initiale)
+            search_start = datetime(year, month_num, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+            return_date = None
+            if SWISS_EPHEMERIS_AVAILABLE:
+                # Rechercher la révolution lunaire dans une fenêtre de ±15 jours (couvre tout le mois)
+                return_date = find_lunar_return(
+                    natal_moon_longitude=natal_moon_longitude,
+                    start_dt=search_start - timedelta(days=15),  # Début du mois
+                    search_window_hours=31 * 24,  # Fenêtre de 31 jours pour couvrir le mois entier
+                    tolerance_seconds=60
                 )
-            continue
+
+                if return_date:
+                    # Vérifier que la date trouvée est bien dans le mois cible
+                    if return_date.month == month_num and return_date.year == year:
+                        logger.info(
+                            f"[corr={correlation_id}] ✅ Révolution lunaire {month} trouvée: "
+                            f"{return_date.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                        )
+                    else:
+                        # La révolution n'est pas dans ce mois, chercher le mois suivant
+                        logger.debug(
+                            f"[corr={correlation_id}] ℹ️ Révolution lunaire trouvée {return_date.strftime('%Y-%m-%d')} "
+                            f"n'est pas dans {month}, on la garde quand même"
+                        )
+                else:
+                    logger.warning(
+                        f"[corr={correlation_id}] ⚠️ Swiss Ephemeris: aucune révolution trouvée pour {month}, "
+                        f"fallback sur API Ephemeris"
+                    )
+            else:
+                logger.debug(
+                    f"[corr={correlation_id}] ℹ️ Swiss Ephemeris non disponible, utilisation API Ephemeris"
+                )
+
+            # === ÉTAPE 2: Appeler l'API Ephemeris pour les données du thème (ascendant, maisons, aspects) ===
+            raw_data = {}
+            try:
+                raw_data = await ephemeris_client.calculate_lunar_return(
+                    natal_moon_degree=natal_moon_degree,
+                    natal_moon_sign=natal_moon_sign,
+                    target_month=month,
+                    birth_latitude=birth_latitude,
+                    birth_longitude=birth_longitude,
+                    timezone=birth_timezone,
+                )
+            except EphemerisAPIKeyError as e:
+                logger.warning(
+                    f"[corr={correlation_id}] ⚠️ Clé API Ephemeris manquante: {e}, "
+                    f"utilisation des données par défaut"
+                )
+                # Continuer avec raw_data vide, on a quand même la return_date de Swiss Ephemeris
+            except Exception as e:
+                logger.warning(
+                    f"[corr={correlation_id}] ⚠️ Erreur API Ephemeris pour {month}: {e}, "
+                    f"utilisation des données par défaut"
+                )
+                # Continuer avec raw_data vide
+
+            # === ÉTAPE 3: Si pas de return_date Swiss Ephemeris, utiliser celle de l'API ou fallback ===
+            if return_date is None:
+                return_date = _parse_return_date(raw_data, month, correlation_id)
+
         except Exception as e:
             logger.warning(
                 f"[corr={correlation_id}] ⚠️ Erreur calcul révolution lunaire {month}: {e}, continue"
             )
             continue
-        
-        # Parser les données
+
+        # Parser les données du thème
         lunar_ascendant = raw_data.get("ascendant", {}).get("sign", "Unknown")
         moon_house = raw_data.get("moon", {}).get("house", 1)
         moon_sign = raw_data.get("moon", {}).get("sign", natal_moon_sign)
         aspects = raw_data.get("aspects", [])
-        
-        # Parser return_date avec fallback garanti non-null
-        return_date = _parse_return_date(raw_data, month, correlation_id)
         
         # Générer l'interprétation
         interpretation = generate_lunar_return_interpretation(
