@@ -36,7 +36,7 @@ interface NatalChartData {
   sun_sign?: string;
   moon_sign?: string;
   ascendant?: string;
-  planets?: Planet[];
+  planets?: Planet[] | Record<string, any>; // Supporte tableau ou objet
   houses?: House[];
 }
 
@@ -213,7 +213,18 @@ export function NatalWheelChart({ chart, size = 320, animated = true }: NatalWhe
   // Calcul de l'ascendant pour la rotation du chart
   let ascendantDegree = 0;
   if (chart.planets) {
-    const ascPlanet = chart.planets.find(p => p.name.toLowerCase() === 'ascendant');
+    // Gérer les deux formats: tableau ou objet
+    let ascPlanet: Planet | undefined;
+    if (Array.isArray(chart.planets)) {
+      ascPlanet = chart.planets.find(p => p.name.toLowerCase() === 'ascendant');
+    } else {
+      // Format objet: chercher la clé 'ascendant'
+      const ascData = (chart.planets as Record<string, any>)['ascendant']
+        || (chart.planets as Record<string, any>)['Ascendant'];
+      if (ascData) {
+        ascPlanet = { name: 'ascendant', sign: ascData.sign, degree: ascData.degree };
+      }
+    }
     if (ascPlanet) {
       const asc = getPlanetAbsoluteDegree(ascPlanet);
       if (asc !== null) ascendantDegree = asc;
@@ -229,7 +240,18 @@ export function NatalWheelChart({ chart, size = 320, animated = true }: NatalWhe
   }> = [];
 
   if (chart.planets) {
-    for (const planet of chart.planets) {
+    // Gérer les deux formats: tableau ou objet
+    const planetsArray: Planet[] = Array.isArray(chart.planets)
+      ? chart.planets
+      : Object.entries(chart.planets).map(([name, data]: [string, any]) => ({
+          name,
+          sign: data.sign,
+          degree: data.degree,
+          house: data.house,
+          retrograde: data.retrograde,
+        }));
+
+    for (const planet of planetsArray) {
       const degree = getPlanetAbsoluteDegree(planet);
       if (degree !== null) {
         // Exclure l'ascendant et MC du cercle des planètes (ils sont sur les axes)

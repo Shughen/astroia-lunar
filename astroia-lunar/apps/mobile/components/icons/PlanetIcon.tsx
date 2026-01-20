@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, G, Line } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 export type PlanetName =
   | 'sun' | 'moon' | 'mercury' | 'venus' | 'mars'

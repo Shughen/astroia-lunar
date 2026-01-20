@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { Circle, Path, Defs, ClipPath, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 export type MoonPhase =
   | 'new_moon'
