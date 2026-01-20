@@ -901,15 +901,11 @@ async def generate_with_sonnet_fallback_haiku(
     """
     Génère une interprétation avec Claude Sonnet, fallback sur Haiku si erreur
 
-    Stratégie (NATAL_LLM_MODE):
-    - Si "off" (default): charge depuis DB pré-générée, sinon placeholder
-    - Si "anthropic":
-      1. Essayer Sonnet 3.5
-      2. Si erreur (429, timeout, 5xx) -> fallback Haiku
-      3. Si erreur auth/credit (401, 400) -> fallback placeholder
-      4. Valider longueur selon version (v2: 900-1400, v3: 700-1200, v4: 800-1300)
-      5. Si hors limites -> retry 1x avec prompt d'ajustement
-      6. Si toujours hors limites -> tronquer proprement
+    Stratégie (priorité):
+    1. TOUJOURS chercher d'abord dans le cache pré-généré (DB)
+    2. Si trouvé → retourner immédiatement
+    3. Si pas trouvé ET NATAL_LLM_MODE="anthropic" → appeler Claude
+    4. Si pas trouvé ET NATAL_LLM_MODE="off" → retourner placeholder
 
     Args:
         subject: Objet céleste à interpréter
@@ -933,39 +929,49 @@ async def generate_with_sonnet_fallback_haiku(
     # Vérifier le mode LLM
     llm_mode = settings.NATAL_LLM_MODE.lower()
 
+    # ========================================
+    # ÉTAPE 1: TOUJOURS chercher dans le cache pré-généré d'abord
+    # ========================================
+    logger.info(f"🔍 Recherche interprétation pré-générée pour {subject} en {payload.sign} M{payload.house}")
+
+    pregenerated_text = None
+
+    # Essayer de charger depuis DB si session fournie
+    if db is not None:
+        pregenerated_text = await load_pregenerated_interpretation_from_db(
+            db=db,
+            subject=subject,
+            sign=payload.sign or "",
+            house=payload.house or 1,
+            version=version,
+            lang='fr'
+        )
+    else:
+        # Fallback sur chargement depuis fichiers (pour compatibilité backward)
+        pregenerated_text = load_pregenerated_interpretation(
+            subject=subject,
+            sign=payload.sign or "",
+            house=payload.house or 1,
+            version=version
+        )
+
+    if pregenerated_text:
+        logger.info(f"✅ Interprétation pré-générée trouvée pour {subject} en {payload.sign} M{payload.house}")
+        return pregenerated_text, "pregenerated"
+
+    # ========================================
+    # ÉTAPE 2: Pas de pré-généré → selon le mode LLM
+    # ========================================
+    logger.warning(f"⚠️ Pas d'interprétation pré-générée pour {subject} en {payload.sign} M{payload.house}")
+
     if llm_mode != "anthropic":
-        # Mode off : essayer de charger interprétation pré-générée
-        logger.info(f"🚫 NATAL_LLM_MODE={llm_mode} - Recherche interprétation pré-générée pour {subject} en {payload.sign}")
-
-        pregenerated_text = None
-
-        # Essayer de charger depuis DB si session fournie
-        if db is not None:
-            pregenerated_text = await load_pregenerated_interpretation_from_db(
-                db=db,
-                subject=subject,
-                sign=payload.sign or "",
-                house=payload.house or 1,
-                version=version,
-                lang='fr'
-            )
-        else:
-            # Fallback sur chargement depuis fichiers (pour compatibilité backward)
-            pregenerated_text = load_pregenerated_interpretation(
-                subject=subject,
-                sign=payload.sign or "",
-                house=payload.house or 1,
-                version=version
-            )
-
-        if pregenerated_text:
-            logger.info(f"✅ Interprétation pré-générée trouvée pour {subject} en {payload.sign}")
-            return pregenerated_text, "pregenerated"
-
-        # Si pas trouvé, fallback sur placeholder
-        logger.warning(f"⚠️ Pas d'interprétation pré-générée pour {subject} en {payload.sign} M{payload.house}, fallback placeholder")
+        # Mode off : retourner placeholder
+        logger.info(f"🚫 NATAL_LLM_MODE={llm_mode} - Fallback placeholder")
         placeholder_text = generate_placeholder_interpretation(subject, payload, version)
         return placeholder_text, "placeholder"
+
+    # Mode anthropic : continuer vers appel Claude
+    logger.info(f"🤖 NATAL_LLM_MODE=anthropic - Appel Claude pour génération")
     # #region agent log
     import json
     import time
