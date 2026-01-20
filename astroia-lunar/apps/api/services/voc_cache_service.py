@@ -217,10 +217,11 @@ async def get_voc_status_cached(db: AsyncSession) -> Dict[str, Any]:
 
     try:
         # Fetch en parallèle pour optimiser performance
+        # Note: limit=10 pour compenser les doublons potentiels en DB, déduplication faite après
         current_voc, next_voc, upcoming_vocs = await asyncio.gather(
             _fetch_current_voc_from_db(db),
             _fetch_next_voc_from_db(db),
-            _fetch_upcoming_voc_from_db(db, hours=48, limit=3)
+            _fetch_upcoming_voc_from_db(db, hours=48, limit=10)
         )
 
         # Construire current_window
@@ -240,14 +241,25 @@ async def get_voc_status_cached(db: AsyncSession) -> Dict[str, Any]:
                 "end_at": next_voc.end_at.isoformat()
             }
 
-        # Construire upcoming_windows
-        upcoming_windows = [
-            {
-                "start_at": voc.start_at.isoformat(),
-                "end_at": voc.end_at.isoformat()
-            }
-            for voc in upcoming_vocs
-        ]
+        # Construire upcoming_windows avec déduplication
+        # (protection contre doublons en base de données)
+        # Note: on compare à la minute près pour ignorer les différences de microsecondes
+        seen_windows = set()
+        upcoming_windows = []
+        for voc in upcoming_vocs:
+            # Clé unique basée sur start_at et end_at (tronqué à la minute)
+            start_key = voc.start_at.strftime("%Y-%m-%d %H:%M")
+            end_key = voc.end_at.strftime("%Y-%m-%d %H:%M")
+            window_key = (start_key, end_key)
+            if window_key not in seen_windows:
+                seen_windows.add(window_key)
+                upcoming_windows.append({
+                    "start_at": voc.start_at.isoformat(),
+                    "end_at": voc.end_at.isoformat()
+                })
+                # Limiter à 3 fenêtres uniques maximum
+                if len(upcoming_windows) >= 3:
+                    break
 
         # Construire réponse
         result = {

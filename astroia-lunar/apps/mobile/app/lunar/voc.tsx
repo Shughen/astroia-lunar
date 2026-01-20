@@ -55,6 +55,18 @@ export default function VoidOfCourseScreen() {
       setError(null);
 
       const response = await apiClient.get('/api/lunar/voc/status');
+
+      // Déduplication des fenêtres upcoming (protection contre doublons en base)
+      if (response.data.upcoming && Array.isArray(response.data.upcoming)) {
+        const seen = new Set<string>();
+        response.data.upcoming = response.data.upcoming.filter((window: VocWindow) => {
+          const key = `${window.start_at}-${window.end_at}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
       setStatus(response.data);
     } catch (err: any) {
       console.error('[VoC] Erreur chargement status:', err);
