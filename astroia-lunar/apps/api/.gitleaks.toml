@@ -1,0 +1,3 @@
+# Configuration Gitleaks pour Astroia Lunar
+[extend]
+useDefault = true

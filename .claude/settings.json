@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash ~/.claude/hooks/ntfy-stop.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

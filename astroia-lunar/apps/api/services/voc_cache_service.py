@@ -118,9 +118,9 @@ async def _fetch_current_voc_from_db(db: AsyncSession) -> Optional[LunarVocWindo
             LunarVocWindow.start_at <= now,
             LunarVocWindow.end_at >= now
         )
-    )
+    ).order_by(LunarVocWindow.start_at.asc()).limit(1)
     result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    return result.scalars().first()
 
 
 @_with_db_retry()
