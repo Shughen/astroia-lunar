@@ -20,6 +20,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { hasJournalEntry } from '../services/journalService';
 import { getTodayDateString } from '../utils/ritualHelpers';
+import { haptics } from '../services/haptics';
 
 export function JournalPrompt() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export function JournalPrompt() {
   };
 
   const handlePress = () => {
+    haptics.light();
     router.push('/journal');
   };
 

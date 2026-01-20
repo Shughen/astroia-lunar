@@ -137,7 +137,9 @@ const apiClient = axios.create({
 });
 
 // Mode DEV_AUTH_BYPASS: détection et configuration
-const DEV_AUTH_BYPASS = process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS === 'true';
+// IMPORTANT: Le bypass est FORCÉMENT désactivé en mode release (__DEV__ = false)
+// pour éviter toute fuite de cette fonctionnalité en production
+const DEV_AUTH_BYPASS = __DEV__ && process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS === 'true';
 // EXPO_PUBLIC_DEV_USER_ID peut être: integer ID, UUID, ou email
 // Validation via getDevAuthHeaderType qui détermine le header approprié
 const DEV_AUTH_HEADER = getDevAuthHeaderType(process.env.EXPO_PUBLIC_DEV_USER_ID);

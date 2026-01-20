@@ -28,6 +28,7 @@ import { useResetStore } from '../stores/useResetStore';
 
 // DEV ONLY: QA Helper for notifications (null in production)
 import DevQASection from '../components/DevQASection';
+import { haptics } from '../services/haptics';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -50,6 +51,7 @@ export default function SettingsScreen() {
   }, [hydrated, loadPreferences]);
 
   const handleNotificationToggle = async (value: boolean) => {
+    haptics.selection(); // Feedback tactile pour toggle
     setIsTogglingNotifications(true);
 
     try {
@@ -90,6 +92,7 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
+    haptics.medium(); // Feedback tactile pour action importante
     Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -104,6 +107,7 @@ export default function SettingsScreen() {
   };
 
   const handleResetUserData = () => {
+    haptics.warning(); // Feedback tactile d'avertissement pour action destructive
     Alert.alert(
       'Supprimer mes données locales',
       'Cette action va supprimer toutes vos données locales stockées sur cet appareil :\n\n' +
@@ -153,7 +157,11 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
 
@@ -283,6 +291,9 @@ const styles = StyleSheet.create({
     top: 60,
     left: 20,
     zIndex: 10,
+    padding: 8,
+    marginLeft: -8,
+    marginTop: -8,
   },
   backButtonText: {
     color: '#FFFFFF',

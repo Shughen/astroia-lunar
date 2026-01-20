@@ -23,6 +23,8 @@ import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { LunarReturn } from '../services/api';
 import { Skeleton } from './Skeleton';
 import { translateZodiacSign } from '../utils/astrologyTranslations';
+import { haptics } from '../services/haptics';
+import { ZodiacBadge } from './icons';
 
 interface CurrentLunarCardProps {
   lunarReturn: LunarReturn | null;
@@ -75,6 +77,7 @@ export function CurrentLunarCard({ lunarReturn, loading, onRefresh }: CurrentLun
   }, [lunarReturn, loading]);
 
   const handlePress = () => {
+    haptics.light();
     router.push('/lunar/report');
   };
 
@@ -121,15 +124,29 @@ export function CurrentLunarCard({ lunarReturn, loading, onRefresh }: CurrentLun
         {/* Date range */}
         <Text style={styles.dateRange} testID="lunar-date-range">{dateRange}</Text>
 
-        {/* Meta grid (Lune + Ascendant) */}
+        {/* Meta grid (Lune + Ascendant) avec icônes */}
         <View style={styles.metaGrid}>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Lune en</Text>
-            <Text style={styles.metaValue} testID="lunar-moon-sign">{moonSign}</Text>
+            <View style={styles.metaRow}>
+              {lunarReturn.moon_sign && (
+                <ZodiacBadge sign={lunarReturn.moon_sign} size={28} />
+              )}
+              <View style={styles.metaTextContainer}>
+                <Text style={styles.metaLabel}>Lune en</Text>
+                <Text style={styles.metaValue} testID="lunar-moon-sign">{moonSign}</Text>
+              </View>
+            </View>
           </View>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel} testID="lunar-ascendant-label">Ascendant</Text>
-            <Text style={styles.metaValue} testID="lunar-ascendant">{lunarAscendant}</Text>
+            <View style={styles.metaRow}>
+              {lunarReturn.lunar_ascendant && (
+                <ZodiacBadge sign={lunarReturn.lunar_ascendant} size={28} />
+              )}
+              <View style={styles.metaTextContainer}>
+                <Text style={styles.metaLabel} testID="lunar-ascendant-label">Ascendant</Text>
+                <Text style={styles.metaValue} testID="lunar-ascendant">{lunarAscendant}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -186,6 +203,15 @@ const styles = StyleSheet.create({
   },
   metaItem: {
     alignItems: 'center',
+    flex: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  metaTextContainer: {
+    alignItems: 'flex-start',
   },
   metaLabel: {
     ...fonts.bodySmall,

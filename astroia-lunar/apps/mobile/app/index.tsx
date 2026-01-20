@@ -9,7 +9,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,6 +36,8 @@ import { setupNotificationTapListener, shouldReschedule } from '../services/noti
 import { cleanupGhostFlags } from '../services/onboardingMigration';
 import { isProfileComplete } from '../utils/onboardingHelpers';
 import { useCurrentLunarReturn } from '../hooks/useLunarData';
+import { MoonLoader } from '../components/MoonLoader';
+import { haptics } from '../services/haptics';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -289,8 +290,7 @@ export default function HomeScreen() {
     return (
       <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.subtitle}>Chargement...</Text>
+          <MoonLoader size="large" text="Chargement..." />
         </View>
       </LinearGradientComponent>
     );
@@ -302,8 +302,7 @@ export default function HomeScreen() {
     return (
       <LinearGradientComponent colors={colors.darkBg} style={styles.container}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.subtitle}>Redirection...</Text>
+          <MoonLoader size="large" text="Redirection..." />
         </View>
       </LinearGradientComponent>
     );
@@ -353,6 +352,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={styles.menuCard}
             onPress={() => {
+              haptics.light();
               if (!isOnline) {
                 Alert.alert('Hors ligne', 'Cette fonctionnalité nécessite une connexion Internet.');
                 return;
@@ -369,7 +369,10 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.menuCard}
-            onPress={() => router.push('/settings')}
+            onPress={() => {
+              haptics.light();
+              router.push('/settings');
+            }}
           >
             <Text style={styles.menuEmoji}>⚙️</Text>
             <Text style={styles.menuTitle}>Réglages</Text>

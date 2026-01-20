@@ -87,6 +87,7 @@ export default function LunarTimelineScreen() {
           <TouchableOpacity
             style={styles.backButtonSmall}
             onPress={() => router.back()}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
             <Text style={styles.backButtonText}>← Retour</Text>
           </TouchableOpacity>
@@ -111,6 +112,7 @@ export default function LunarTimelineScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
         >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
@@ -124,6 +126,7 @@ export default function LunarTimelineScreen() {
         <TouchableOpacity
           style={styles.backButtonSmall}
           onPress={() => router.back()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
         >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>

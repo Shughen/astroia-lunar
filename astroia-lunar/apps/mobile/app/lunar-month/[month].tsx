@@ -100,6 +100,7 @@ export default function LunarMonthScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
             <Text style={styles.backText}>← Retour</Text>
           </TouchableOpacity>
@@ -123,6 +124,7 @@ export default function LunarMonthScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
             <Text style={styles.backText}>← Retour</Text>
           </TouchableOpacity>
@@ -149,6 +151,7 @@ export default function LunarMonthScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
             <Text style={styles.backText}>← Retour</Text>
           </TouchableOpacity>

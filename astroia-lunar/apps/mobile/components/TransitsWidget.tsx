@@ -23,6 +23,7 @@ import { router } from 'expo-router';
 import { useMajorTransits } from '../hooks/useLunarData';
 import { tPlanet, tAspect } from '../i18n/astro.format';
 import { Skeleton } from './Skeleton';
+import { haptics } from '../services/haptics';
 
 const ASPECT_COLORS: Record<string, string> = {
   conjunction: '#fbbf24',
@@ -74,7 +75,10 @@ export function TransitsWidget() {
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push('/transits/overview')}
+      onPress={() => {
+        haptics.light();
+        router.push('/transits/overview');
+      }}
       activeOpacity={0.8}
       testID="transits-widget"
     >

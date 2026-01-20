@@ -109,7 +109,11 @@ export default function VoidOfCourseScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error || 'Données non disponibles'}</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
       </View>
@@ -128,7 +132,11 @@ export default function VoidOfCourseScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButtonSmall} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButtonSmall}
+          onPress={() => router.back()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
 

@@ -22,6 +22,7 @@ import {
 import { router } from 'expo-router';
 import { useVocStatus } from '../hooks/useLunarData';
 import { Skeleton } from './Skeleton';
+import { haptics } from '../services/haptics';
 
 export function VocWidget() {
   const { data: status, error, isLoading } = useVocStatus();
@@ -65,7 +66,10 @@ export function VocWidget() {
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push('/lunar/voc')}
+      onPress={() => {
+        haptics.light();
+        router.push('/lunar/voc');
+      }}
       activeOpacity={0.8}
       testID="voc-widget"
     >

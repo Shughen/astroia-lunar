@@ -1,18 +1,17 @@
 /**
- * Service de scheduling des notifications locales (Phase 1.4 MVP)
+ * Service de scheduling des notifications locales intelligentes
  *
- * Scope :
- * - Notifications VoC (début + 30 min avant fin)
- * - Notification début cycle lunaire
+ * Notifications supportées :
+ * - VoC (Void of Course) : 30 min avant début + au début
+ * - Cycle lunaire : début de révolution lunaire personnelle
+ * - Phases lunaires : Nouvelle Lune, Pleine Lune (2h avant)
+ * - Changement de signe lunaire (2h avant)
+ * - Rappel journal hebdomadaire (dimanche 20h)
+ *
+ * Architecture :
  * - Scheduling local uniquement (pas de push serveur)
- * - Re-scheduling au focus app (max 1x/24h)
- *
- * ⚠️ FEATURE FLAG: Notifications désactivées par défaut (Tâche 3.1)
- * Pour activer les notifications VoC :
- * 1. Passer ENABLE_VOC_NOTIFICATIONS = true
- * 2. Décommenter l'intégration dans VocWidget.tsx
- * 3. S'assurer que l'API /voc/status retourne les fenêtres VoC
- * 4. Tester le scheduling avec expo-notifications
+ * - Re-scheduling automatique au focus app (max 1x/24h)
+ * - Respect des préférences utilisateur via NotificationsStore
  */
 
 import * as Notifications from 'expo-notifications';
@@ -20,19 +19,26 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../types/storage';
 import i18n from '../i18n';
+import { haptics } from './haptics';
 
-// ⚠️ FEATURE FLAG: Notifications VoC désactivées par défaut
-export const ENABLE_VOC_NOTIFICATIONS = false;
+// ✅ Notifications activées pour production
+export const ENABLE_VOC_NOTIFICATIONS = true;
 
 // Configuration par défaut des notifications
+// Inclut un feedback haptic quand une notification arrive en foreground
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false, // Pas de badge count pour MVP
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async () => {
+    // Feedback haptic quand notification reçue en foreground
+    haptics.light();
+
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false, // Pas de badge count pour MVP
+      shouldShowBanner: true,
+      shouldShowList: true,
+    };
+  },
 });
 
 export interface VocWindow {
@@ -173,8 +179,8 @@ export async function scheduleVocNotification(vocWindow: VocWindow): Promise<voi
     if (preTrigger > 0 && preWarning > now) {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Lune Vide de Course approche",
-          body: "La Lune entre en VoC dans 30 minutes",
+          title: '🌑 Pause Lunaire dans 30 min',
+          body: 'La Lune entre bientôt en pause — évite les décisions importantes',
           data: {
             type: 'voc_pre_warning',
             windowId: `${vocWindow.start_at}`,
@@ -195,8 +201,8 @@ export async function scheduleVocNotification(vocWindow: VocWindow): Promise<voi
     if (startTrigger > 0) {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Lune Vide de Course active",
-          body: `La Lune entre en VoC jusqu'à ${formatTime(endDate)}`,
+          title: '🌑 Pause Lunaire active',
+          body: `Moment d'introspection jusqu'à ${formatTime(endDate)} — reporte les décisions importantes`,
           data: {
             type: 'voc_start',
             windowId: `${vocWindow.start_at}`,
@@ -395,4 +401,222 @@ export function setupNotificationTapListener(
       onNotificationTap(screen);
     }
   });
+}
+
+// ============================================
+// NOTIFICATIONS INTELLIGENTES (Whahou #4)
+// ============================================
+
+export interface MoonPhaseEvent {
+  phase: 'new_moon' | 'first_quarter' | 'full_moon' | 'last_quarter';
+  date: string;
+  sign?: string;
+}
+
+export interface MoonSignChange {
+  sign: string;
+  enters_at: string;
+}
+
+/**
+ * Traduit un signe anglais en français
+ */
+function translateSign(sign: string): string {
+  const translations: Record<string, string> = {
+    'Aries': 'Bélier',
+    'Taurus': 'Taureau',
+    'Gemini': 'Gémeaux',
+    'Cancer': 'Cancer',
+    'Leo': 'Lion',
+    'Virgo': 'Vierge',
+    'Libra': 'Balance',
+    'Scorpio': 'Scorpion',
+    'Sagittarius': 'Sagittaire',
+    'Capricorn': 'Capricorne',
+    'Aquarius': 'Verseau',
+    'Pisces': 'Poissons',
+  };
+  return translations[sign] || sign;
+}
+
+/**
+ * Schedule les notifications de phases lunaires (Nouvelle Lune, Pleine Lune)
+ * @param phases Liste des phases à venir
+ */
+export async function scheduleMoonPhaseNotifications(phases: MoonPhaseEvent[]): Promise<void> {
+  if (!ENABLE_VOC_NOTIFICATIONS) {
+    return;
+  }
+
+  try {
+    const now = new Date();
+    let scheduledCount = 0;
+
+    for (const phase of phases) {
+      const phaseDate = new Date(phase.date);
+
+      // Skip si phase déjà passée
+      if (phaseDate < now) {
+        continue;
+      }
+
+      // Notification 2h avant la phase
+      const preWarning = new Date(phaseDate.getTime() - 2 * 60 * 60 * 1000);
+      const preTrigger = preWarning.getTime() - now.getTime();
+
+      if (preTrigger > 0) {
+        let title = '';
+        let body = '';
+        const signFr = phase.sign ? translateSign(phase.sign) : '';
+
+        switch (phase.phase) {
+          case 'new_moon':
+            title = '🌑 Nouvelle Lune ce soir';
+            body = signFr
+              ? `Nouvelle Lune en ${signFr} dans 2h — moment idéal pour poser tes intentions`
+              : 'Nouvelle Lune dans 2h — moment idéal pour poser tes intentions';
+            break;
+          case 'full_moon':
+            title = '🌕 Pleine Lune ce soir';
+            body = signFr
+              ? `Pleine Lune en ${signFr} dans 2h — moment de culmination et récolte`
+              : 'Pleine Lune dans 2h — moment de culmination et récolte';
+            break;
+          case 'first_quarter':
+            title = '🌓 Premier Quartier';
+            body = 'La Lune entre en Premier Quartier — temps d\'action et décisions';
+            break;
+          case 'last_quarter':
+            title = '🌗 Dernier Quartier';
+            body = 'La Lune entre en Dernier Quartier — temps de bilan et lâcher-prise';
+            break;
+        }
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title,
+            body,
+            data: {
+              type: `moon_phase_${phase.phase}`,
+              screen: '/'
+            },
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: Math.floor(preTrigger / 1000),
+          },
+        });
+        scheduledCount++;
+      }
+    }
+
+    console.log(`[Notifications] ✅ ${scheduledCount} notifications phases lunaires schedulées`);
+  } catch (error) {
+    console.error('[Notifications] ❌ Erreur scheduling phases lunaires:', error);
+  }
+}
+
+/**
+ * Schedule les notifications de changement de signe lunaire
+ * @param signChanges Liste des changements de signe à venir
+ */
+export async function scheduleMoonSignChangeNotifications(signChanges: MoonSignChange[]): Promise<void> {
+  if (!ENABLE_VOC_NOTIFICATIONS) {
+    return;
+  }
+
+  try {
+    const now = new Date();
+    let scheduledCount = 0;
+
+    for (const change of signChanges) {
+      const changeDate = new Date(change.enters_at);
+
+      // Skip si déjà passé
+      if (changeDate < now) {
+        continue;
+      }
+
+      // Notification 2h avant le changement de signe
+      const preWarning = new Date(changeDate.getTime() - 2 * 60 * 60 * 1000);
+      const preTrigger = preWarning.getTime() - now.getTime();
+
+      if (preTrigger > 0) {
+        const signFr = translateSign(change.sign);
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🌙 Changement d\'énergie',
+            body: `La Lune entre en ${signFr} dans 2h — prépare-toi !`,
+            data: {
+              type: 'moon_sign_change',
+              sign: change.sign,
+              screen: '/'
+            },
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: Math.floor(preTrigger / 1000),
+          },
+        });
+        scheduledCount++;
+      }
+    }
+
+    console.log(`[Notifications] ✅ ${scheduledCount} notifications changement de signe schedulées`);
+  } catch (error) {
+    console.error('[Notifications] ❌ Erreur scheduling changement de signe:', error);
+  }
+}
+
+/**
+ * Schedule une notification de rappel journal hebdomadaire
+ * Tous les dimanches à 20h
+ */
+export async function scheduleWeeklyJournalReminder(): Promise<void> {
+  if (!ENABLE_VOC_NOTIFICATIONS) {
+    return;
+  }
+
+  try {
+    // Trouver le prochain dimanche à 20h
+    const now = new Date();
+    const nextSunday = new Date(now);
+    nextSunday.setDate(now.getDate() + ((7 - now.getDay()) % 7 || 7));
+    nextSunday.setHours(20, 0, 0, 0);
+
+    // Si c'est dimanche et avant 20h, utiliser aujourd'hui
+    if (now.getDay() === 0 && now.getHours() < 20) {
+      nextSunday.setDate(now.getDate());
+    }
+
+    const trigger = nextSunday.getTime() - now.getTime();
+
+    if (trigger > 0) {
+      // Calculer le numéro de semaine dans le cycle (approximatif)
+      const weekNumber = Math.ceil((now.getDate()) / 7);
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '📖 Moment de réflexion',
+          body: `Semaine ${weekNumber} de ton cycle — As-tu noté tes observations ?`,
+          data: {
+            type: 'journal_reminder',
+            screen: '/journal'
+          },
+          sound: true,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: Math.floor(trigger / 1000),
+        },
+      });
+
+      console.log('[Notifications] ✅ Rappel journal hebdomadaire schedulé');
+    }
+  } catch (error) {
+    console.error('[Notifications] ❌ Erreur scheduling rappel journal:', error);
+  }
 }

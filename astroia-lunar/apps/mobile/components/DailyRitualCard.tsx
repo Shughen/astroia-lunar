@@ -31,6 +31,8 @@ import { Skeleton } from './Skeleton';
 import { JournalEntryModal } from './JournalEntryModal';
 import { LunarCycleIndicator } from './LunarCycleIndicator';
 import { hasJournalEntry } from '../services/journalService';
+import { haptics } from '../services/haptics';
+import { MoonPhaseIcon, ZodiacBadge } from './icons';
 
 /**
  * Formate le timestamp de cache en date/heure lisible
@@ -129,11 +131,13 @@ export function DailyRitualCard() {
   };
 
   const handleCtaPress = () => {
+    haptics.light();
     // Navigation vers le rapport mensuel de révolution lunaire
     router.push('/lunar/report');
   };
 
   const handleJournalPress = () => {
+    haptics.light();
     setJournalModalVisible(true);
   };
 
@@ -185,11 +189,17 @@ export function DailyRitualCard() {
       ]}
     >
       <View style={styles.card}>
-        {/* Header */}
+        {/* Header avec icône phase lunaire */}
         <View style={styles.header}>
-          <Text style={styles.headerText}>
-            {phaseEmoji} {t('ritualCard.header')}
-          </Text>
+          <View style={styles.headerContent}>
+            <MoonPhaseIcon phase={data.moon.phase || 'new_moon'} size={28} />
+            <Text style={styles.headerText}>
+              {t('ritualCard.header')}
+            </Text>
+          </View>
+          {data.moon.sign && data.moon.sign !== 'Unknown' && (
+            <ZodiacBadge sign={data.moon.sign} size={32} />
+          )}
         </View>
 
         {/* Phase + Sign */}
@@ -284,7 +294,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(183, 148, 246, 0.1)',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.sm,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   headerText: {
     ...fonts.bodySmall,

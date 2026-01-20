@@ -21,6 +21,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
 import { getAllJournalEntries, saveJournalEntry, getJournalEntry } from '../services/journalService';
 import { JournalEntry as JournalEntryType } from '../types/journal';
+import { haptics } from '../services/haptics';
 
 const LinearGradientComponent = LinearGradient || (({ colors, style, children, ...props }: any) => {
   return <View style={[{ backgroundColor: colors?.[0] || '#1a0b2e' }, style]} {...props}>{children}</View>;
@@ -136,6 +137,9 @@ export default function JournalScreen() {
         },
       });
 
+      // Haptic feedback de succès
+      haptics.success();
+
       // Recharger les entrées
       await loadEntries();
       setCurrentText('');
@@ -161,6 +165,7 @@ export default function JournalScreen() {
       );
     } catch (error) {
       console.error('[JOURNAL] Erreur sauvegarde:', error);
+      haptics.error();
       Alert.alert('Erreur', 'Impossible de sauvegarder votre entrée. Vérifiez votre connexion.');
     } finally {
       savingLockRef.current = false;
@@ -169,6 +174,7 @@ export default function JournalScreen() {
   };
 
   const deleteEntry = async (dateId: string) => {
+    haptics.warning(); // Feedback tactile pour action destructive
     Alert.alert(
       'Confirmer la suppression',
       'Voulez-vous vraiment supprimer cette entrée ?',
@@ -243,7 +249,11 @@ export default function JournalScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
               <Text style={styles.backButtonText}>← Retour</Text>
             </TouchableOpacity>
           </View>

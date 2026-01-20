@@ -22,6 +22,9 @@ import { AspectDetailSheet } from '../../components/AspectDetailSheet';
 import { NatalSubject, ChartPayload } from '../../types/natal';
 import { AspectV4 } from '../../types/api';
 import { planetNameToSubject, buildSubjectPayload, filterMajorAspectsV4 } from '../../utils/natalChartUtils';
+import NatalWheelChart from '../../components/NatalWheelChart';
+import { haptics } from '../../services/haptics';
+import { ZodiacBadge, PlanetIcon } from '../../components/icons';
 
 // Mapping français des signes
 const ZODIAC_EMOJI: Record<string, string> = {
@@ -69,6 +72,7 @@ export default function NatalChartResultScreen() {
 
   // Handler pour clic sur un placement
   const handlePlacementClick = (subject: NatalSubject) => {
+    haptics.light(); // Feedback tactile léger
     if (!chart) return;
 
     const payload = buildSubjectPayload(subject, chart);
@@ -98,6 +102,7 @@ export default function NatalChartResultScreen() {
 
   // Handler pour clic sur un aspect
   const handleAspectClick = (aspect: any) => {
+    haptics.light(); // Feedback tactile léger
     // Type guard: vérifier si l'aspect est enrichi (AspectV4) ou brut
     const isEnriched = aspect && aspect.id && aspect.expected_angle !== undefined;
 
@@ -128,7 +133,11 @@ export default function NatalChartResultScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          >
             <Text style={styles.backText}>← Retour</Text>
           </TouchableOpacity>
         </View>
@@ -140,6 +149,11 @@ export default function NatalChartResultScreen() {
           <View style={styles.resultContainer}>
             <Text style={styles.resultTitle}>✨ Ton Thème Natal</Text>
 
+            {/* Wheel Chart - Visualisation graphique */}
+            <View style={styles.wheelContainer}>
+              <NatalWheelChart chart={chart} size={300} />
+            </View>
+
             {/* Big 3 - Cliquable pour afficher l'interprétation */}
             {(chart.sun_sign || chart.moon_sign || chart.ascendant) && (
               <View style={styles.statsRow}>
@@ -149,9 +163,13 @@ export default function NatalChartResultScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.statLabel}>Soleil</Text>
-                  <Text style={styles.statEmoji}>
-                    {ZODIAC_EMOJI[chart.sun_sign || ''] || '☀️'}
-                  </Text>
+                  <View style={styles.statIconContainer}>
+                    {chart.sun_sign ? (
+                      <ZodiacBadge sign={chart.sun_sign} size={44} />
+                    ) : (
+                      <PlanetIcon planet="sun" size={36} />
+                    )}
+                  </View>
                   <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                     {tSign(chart.sun_sign) || 'N/A'}
                   </Text>
@@ -164,9 +182,13 @@ export default function NatalChartResultScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.statLabel}>Lune</Text>
-                  <Text style={styles.statEmoji}>
-                    {ZODIAC_EMOJI[chart.moon_sign || ''] || '🌙'}
-                  </Text>
+                  <View style={styles.statIconContainer}>
+                    {chart.moon_sign ? (
+                      <ZodiacBadge sign={chart.moon_sign} size={44} />
+                    ) : (
+                      <PlanetIcon planet="moon" size={36} />
+                    )}
+                  </View>
                   <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                     {tSign(chart.moon_sign) || 'N/A'}
                   </Text>
@@ -179,9 +201,13 @@ export default function NatalChartResultScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.statLabel}>Ascendant</Text>
-                  <Text style={styles.statEmoji}>
-                    {ZODIAC_EMOJI[chart.ascendant || ''] || '⬆️'}
-                  </Text>
+                  <View style={styles.statIconContainer}>
+                    {chart.ascendant ? (
+                      <ZodiacBadge sign={chart.ascendant} size={44} />
+                    ) : (
+                      <PlanetIcon planet="ascendant" size={36} />
+                    )}
+                  </View>
                   <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                     {tSign(chart.ascendant) || 'N/A'}
                   </Text>
@@ -470,8 +496,15 @@ const styles = StyleSheet.create({
     ...fonts.h2,
     color: colors.gold,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     marginTop: spacing.md,
+  },
+  wheelContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
@@ -496,6 +529,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     fontWeight: '600',
     letterSpacing: -1,
+  },
+  statIconContainer: {
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
   },
   statValue: {
     ...fonts.h3,

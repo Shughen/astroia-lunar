@@ -257,7 +257,11 @@ export default function NatalChartIndexScreen() {
       <LinearGradient colors={colors.darkBg} style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
               <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
           </View>
@@ -292,7 +296,11 @@ export default function NatalChartIndexScreen() {
           style={styles.keyboardView}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
               <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
           </View>

@@ -14,17 +14,18 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import apiClient from '../../services/api';
 import { AspectDetailSheet } from '../../components/AspectDetailSheet';
 import { Skeleton, SkeletonCard } from '../../components/Skeleton';
+import { AnimatedCard } from '../../components/AnimatedCard';
 import { MarkdownText } from '../../components/MarkdownText';
 import { showNetworkErrorAlert, getHumanErrorMessage } from '../../utils/errorHandler';
 import { translateZodiacSign, translateAstrologyText } from '../../utils/astrologyTranslations';
 import type { AspectV4 } from '../../types/api';
+import { haptics } from '../../services/haptics';
 
 interface LunarReportHeader {
   month: string;
@@ -95,7 +96,7 @@ export default function LunarReportScreen() {
     const translatedAscendant = translateZodiacSign(lunar_ascendant);
 
     return (
-      <View style={styles.headerCard}>
+      <AnimatedCard style={styles.headerCard} delay={0} duration={500}>
         <Text style={styles.monthTitle}>{translatedMonth}</Text>
         <Text style={styles.dates}>{dates}</Text>
 
@@ -112,7 +113,7 @@ export default function LunarReportScreen() {
             <Text style={styles.headerValue}>{translatedAscendant}</Text>
           </View>
         </View>
-      </View>
+      </AnimatedCard>
     );
   };
 
@@ -123,10 +124,10 @@ export default function LunarReportScreen() {
     const translatedClimate = translateAstrologyText(report.general_climate);
 
     return (
-      <View style={styles.card}>
+      <AnimatedCard style={styles.card} delay={100} duration={500}>
         <Text style={styles.cardTitle}>🌙 Climat général du mois</Text>
         <MarkdownText style={styles.climateText}>{translatedClimate}</MarkdownText>
-      </View>
+      </AnimatedCard>
     );
   };
 
@@ -136,7 +137,7 @@ export default function LunarReportScreen() {
     }
 
     return (
-      <View style={styles.card}>
+      <AnimatedCard style={styles.card} delay={200} duration={500}>
         <Text style={styles.cardTitle}>🎯 Axes dominants du cycle</Text>
         {report.dominant_axes.map((axis, index) => {
           // Traduire les signes dans chaque axe
@@ -148,7 +149,7 @@ export default function LunarReportScreen() {
             </View>
           );
         })}
-      </View>
+      </AnimatedCard>
     );
   };
 
@@ -158,7 +159,7 @@ export default function LunarReportScreen() {
     }
 
     return (
-      <View style={styles.card}>
+      <AnimatedCard style={styles.card} delay={300} duration={500}>
         <Text style={styles.cardTitle}>⭐ Aspects majeurs du cycle</Text>
         <Text style={styles.aspectsSubtitle}>
           {report.major_aspects.length} aspect{report.major_aspects.length > 1 ? 's' : ''} identifié{report.major_aspects.length > 1 ? 's' : ''}
@@ -168,7 +169,10 @@ export default function LunarReportScreen() {
           <TouchableOpacity
             key={aspect.id || index}
             style={styles.aspectRow}
-            onPress={() => setSelectedAspect(aspect)}
+            onPress={() => {
+              haptics.light();
+              setSelectedAspect(aspect);
+            }}
           >
             <View style={styles.aspectHeader}>
               <Text style={styles.aspectPlanets}>
@@ -188,7 +192,7 @@ export default function LunarReportScreen() {
             <Text style={styles.aspectCTA}>Voir détails →</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </AnimatedCard>
     );
   };
 
@@ -223,6 +227,7 @@ export default function LunarReportScreen() {
           <TouchableOpacity
             style={styles.backButtonSmall}
             onPress={() => router.back()}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
             <Text style={styles.backButtonText}>← Retour</Text>
           </TouchableOpacity>
@@ -271,6 +276,7 @@ export default function LunarReportScreen() {
           <TouchableOpacity
             style={styles.backButtonSmall}
             onPress={() => router.back()}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
             <Text style={styles.backButtonText}>← Retour</Text>
           </TouchableOpacity>
@@ -287,7 +293,9 @@ export default function LunarReportScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Rapport généré par templates v4 (architecture déterministe)
+            {__DEV__
+              ? 'Rapport généré par templates v4 (architecture déterministe)'
+              : '✨ Généré spécialement pour toi'}
           </Text>
         </View>
       </ScrollView>
@@ -358,6 +366,9 @@ const styles = StyleSheet.create({
     top: 60,
     left: 20,
     zIndex: 10,
+    padding: 8,
+    marginLeft: -8,
+    marginTop: -8,
   },
   backButton: {
     backgroundColor: '#2D3561',

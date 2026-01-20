@@ -10,9 +10,14 @@ import {
   cancelAllNotifications,
   scheduleVocNotifications,
   scheduleLunarCycleNotification,
+  scheduleMoonPhaseNotifications,
+  scheduleMoonSignChangeNotifications,
+  scheduleWeeklyJournalReminder,
   markScheduled,
   type VocWindow,
   type LunarReturn,
+  type MoonPhaseEvent,
+  type MoonSignChange,
 } from '../services/notificationScheduler';
 import apiClient from '../services/api';
 
@@ -87,7 +92,7 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     }
   },
 
-  // Scheduler toutes les notifications (VoC + cycle lunaire)
+  // Scheduler toutes les notifications intelligentes
   scheduleAllNotifications: async () => {
     try {
       const { notificationsEnabled } = get();
@@ -97,12 +102,12 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
         return;
       }
 
-      console.log('[NotificationsStore] Début scheduling...');
+      console.log('[NotificationsStore] 🔔 Début scheduling notifications intelligentes...');
 
       // Annuler anciennes notifications
       await cancelAllNotifications();
 
-      // 1. Scheduler notifications VoC
+      // 1. Scheduler notifications VoC (Pause Lunaire)
       try {
         const vocResponse = await apiClient.get('/api/lunar/voc/status');
         const vocStatus = vocResponse.data;
@@ -116,7 +121,7 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
         console.error('[NotificationsStore] ❌ Erreur scheduling VoC:', vocError);
       }
 
-      // 2. Scheduler notification cycle lunaire
+      // 2. Scheduler notification cycle lunaire personnel
       try {
         const lunarResponse = await apiClient.get('/api/lunar-returns/current');
         const lunarReturn = lunarResponse.data;
@@ -132,10 +137,51 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
         }
       }
 
+      // 3. Scheduler notifications phases lunaires (Nouvelle Lune, Pleine Lune)
+      try {
+        const phasesResponse = await apiClient.get('/api/lunar/phases');
+        const phases = phasesResponse.data;
+
+        if (phases && phases.length > 0) {
+          await scheduleMoonPhaseNotifications(phases as MoonPhaseEvent[]);
+        } else {
+          console.log('[NotificationsStore] Aucune phase lunaire à venir');
+        }
+      } catch (phasesError: any) {
+        // API peut ne pas exister encore - silencieux
+        if (phasesError.response?.status !== 404) {
+          console.log('[NotificationsStore] Phases lunaires non disponibles');
+        }
+      }
+
+      // 4. Scheduler notifications changement de signe lunaire
+      try {
+        const signChangesResponse = await apiClient.get('/api/lunar/sign-changes');
+        const signChanges = signChangesResponse.data;
+
+        if (signChanges && signChanges.length > 0) {
+          await scheduleMoonSignChangeNotifications(signChanges as MoonSignChange[]);
+        } else {
+          console.log('[NotificationsStore] Aucun changement de signe à venir');
+        }
+      } catch (signError: any) {
+        // API peut ne pas exister encore - silencieux
+        if (signError.response?.status !== 404) {
+          console.log('[NotificationsStore] Changements de signe non disponibles');
+        }
+      }
+
+      // 5. Scheduler rappel journal hebdomadaire
+      try {
+        await scheduleWeeklyJournalReminder();
+      } catch (journalError) {
+        console.error('[NotificationsStore] ❌ Erreur scheduling rappel journal:', journalError);
+      }
+
       // Marquer scheduling terminé
       await markScheduled();
 
-      console.log('[NotificationsStore] ✅ Scheduling terminé');
+      console.log('[NotificationsStore] ✅ Scheduling notifications terminé');
     } catch (error) {
       console.error('[NotificationsStore] ❌ Erreur scheduleAllNotifications:', error);
     }
