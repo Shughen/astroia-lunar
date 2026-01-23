@@ -119,22 +119,29 @@ class TestVoCCacheLogic:
         mock_db = AsyncMock()
 
         # Mock current VoC
-        mock_current_result = AsyncMock()
+        now = datetime.now(timezone.utc)
         mock_current_voc = MagicMock(spec=LunarVocWindow)
-        mock_current_voc.start_at = datetime.now(timezone.utc) - timedelta(hours=1)
-        mock_current_voc.end_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        mock_current_result.scalar_one_or_none = MagicMock(return_value=mock_current_voc)
+        mock_current_voc.start_at = now - timedelta(hours=1)
+        mock_current_voc.end_at = now + timedelta(hours=1)
 
         # Mock next VoC
-        mock_next_result = AsyncMock()
         mock_next_voc = MagicMock(spec=LunarVocWindow)
-        mock_next_voc.start_at = datetime.now(timezone.utc) + timedelta(hours=2)
-        mock_next_voc.end_at = datetime.now(timezone.utc) + timedelta(hours=3)
+        mock_next_voc.start_at = now + timedelta(hours=2)
+        mock_next_voc.end_at = now + timedelta(hours=3)
+
+        # Mock results - scalars() et first() sont synchrones
+        mock_current_scalars = MagicMock()
+        mock_current_scalars.first = MagicMock(return_value=mock_current_voc)
+        mock_current_result = MagicMock()
+        mock_current_result.scalars = MagicMock(return_value=mock_current_scalars)
+
+        mock_next_result = MagicMock()
         mock_next_result.scalar_one_or_none = MagicMock(return_value=mock_next_voc)
 
-        # Mock upcoming VoCs
-        mock_upcoming_result = AsyncMock()
-        mock_upcoming_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
+        mock_upcoming_scalars = MagicMock()
+        mock_upcoming_scalars.all = MagicMock(return_value=[])
+        mock_upcoming_result = MagicMock()
+        mock_upcoming_result.scalars = MagicMock(return_value=mock_upcoming_scalars)
 
         mock_db.execute = AsyncMock(side_effect=[mock_current_result, mock_next_result, mock_upcoming_result])
 
@@ -158,10 +165,12 @@ class TestVoCCacheLogic:
         voc_cache_service._VOC_CURRENT_CACHE["data"] = {"old": "data"}
         voc_cache_service._VOC_CURRENT_CACHE["timestamp"] = time.time() - 200  # Expiré (TTL=60s)
 
-        # Mock DB pour retourner nouvelle donnée
+        # Mock DB pour retourner nouvelle donnée - scalars() et first() sont synchrones
         mock_db = AsyncMock()
-        mock_result = AsyncMock()
-        mock_result.scalar_one_or_none = MagicMock(return_value=None)
+        mock_scalars = MagicMock()
+        mock_scalars.first = MagicMock(return_value=None)
+        mock_result = MagicMock()
+        mock_result.scalars = MagicMock(return_value=mock_scalars)
         mock_db.execute = AsyncMock(return_value=mock_result)
 
         # Act
