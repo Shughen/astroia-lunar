@@ -440,5 +440,73 @@ docs(api): documenter decision Z
 
 ---
 
+## 🔄 Maintenance de ce fichier (pour Claude)
+
+⚠️ **Instructions pour Claude Code** : Ce fichier doit rester à jour et refléter l'état actuel du projet.
+
+### Triggers de mise à jour automatique
+
+Claude doit **proactivement** mettre à jour CLAUDE.md quand :
+
+1. **Fin de sprint ou milestone majeur**
+   - Exemple : "Sprint 2 terminé" → Mettre à jour état, ajouter Sprint 3
+
+2. **Changement architectural majeur**
+   - Nouvelle route API, nouveau service critique
+   - Nouvelle intégration externe (nouvelle API, nouveau service)
+   - Changement modèle de données important
+
+3. **État "tests failing" change significativement**
+   - Exemple : "14 tests failing" → "0 tests failing"
+   - Nouveau type d'erreur récurrent à ajouter au Troubleshooting
+
+4. **Changement stack technique**
+   - Upgrade majeur de dépendances (Expo, FastAPI, etc.)
+   - Ajout/retrait de librairie importante
+
+5. **Nouvelle zone interdite ou règle stricte**
+   - Nouvelle contrainte de sécurité
+   - Nouveau workflow obligatoire
+
+### Sections à maintenir régulièrement
+
+#### Toujours vérifier après un commit important :
+- **"État du Sprint 2"** : Terminé/En cours/Priorités
+- **"Contexte Historique"** : Derniers commits (garder 5 plus récents)
+- **"Troubleshooting"** : Ajouter nouveaux problèmes résolus
+
+#### Tous les 5-10 commits :
+- Vérifier que l'architecture décrite correspond toujours à la réalité
+- Mettre à jour les counts (routes, services, modèles si changés)
+- Rafraîchir la timeline du sprint
+
+### Workflow de mise à jour
+
+Quand un trigger est détecté :
+
+1. **Lire** CLAUDE.md actuel
+2. **Identifier** les sections impactées
+3. **Mettre à jour** uniquement ce qui a changé (pas de réécriture complète)
+4. **Proposer** un commit séparé :
+   ```
+   docs(claude): mettre à jour CLAUDE.md [section concernée]
+   ```
+
+### Détection proactive
+
+Claude doit être attentif aux signaux comme :
+- "✅ Tous les tests passent maintenant" → Mettre à jour "14 tests failing"
+- "J'ai ajouté une nouvelle route..." → Vérifier si liste routes à jour
+- "Le sprint 2 est terminé" → Mettre à jour état + ajouter Sprint 3
+- "On n'utilise plus RapidAPI" → Mettre à jour intégrations externes
+
+### Format des mises à jour
+
+- **Atomique** : Un type de changement = un commit CLAUDE.md
+- **Concis** : Mettre à jour seulement ce qui change
+- **Daté** : Mettre à jour "Dernière mise à jour" en bas du fichier
+
+---
+
 **Dernière mise à jour** : 2026-01-23
 **Version** : 2.0 (contexte complet Sprint 2)
