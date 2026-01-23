@@ -93,13 +93,57 @@ class FakeAsyncSession:
         self._added_objects = []  # Objets non-committés (propres à cette session)
         self._committed = False
         
+    async def get(self, model_class, object_id):
+        """
+        Récupère un objet par ID depuis le storage.
+
+        Args:
+            model_class: Classe du modèle (ex: LunarReturn)
+            object_id: ID de l'objet à récupérer
+
+        Returns:
+            Instance de l'objet ou None si non trouvé
+        """
+        # Chercher dans le storage global
+        for obj in _FAKE_DB_STORAGE["objects"]:
+            if isinstance(obj, model_class) and hasattr(obj, 'id') and obj.id == object_id:
+                return obj
+
+        # Chercher dans les objets non-committés de cette session
+        for obj in self._added_objects:
+            if isinstance(obj, model_class) and hasattr(obj, 'id') and obj.id == object_id:
+                return obj
+
+        return None
+
     async def execute(self, query):
         """Retourne un FakeResult selon le scenario"""
         query_str = str(query)
-        
+
         # Créer un FakeResult
         fake_result = FakeResult()
-        
+
+        # Gestion des requêtes d'agrégation pour metadata endpoint
+        if "GROUP BY" in query_str and "model_used" in query_str:
+            # Query GROUP BY model_used pour distribution
+            # Retourner des résultats de test
+            fake_result._all_rows = [
+                ('claude-opus-4-5-20251101', 5),
+                ('template', 3)
+            ]
+            return fake_result
+        elif "COUNT(*)" in query_str or "count(" in query_str.lower():
+            # Query COUNT pour total
+            from models.lunar_interpretation import LunarInterpretation
+            # Compter dans storage
+            count = len([o for o in _FAKE_DB_STORAGE["objects"] if isinstance(o, LunarInterpretation)])
+            fake_result._scalar = count
+            return fake_result
+        elif "MAX(created_at)" in query_str or "max(created_at)" in query_str.lower():
+            # Query MAX pour dernière génération
+            fake_result._scalar = datetime.now(timezone.utc)
+            return fake_result
+
         # Si query pour NatalChart
         if "NatalChart" in query_str or "natal_charts" in query_str:
             if self.scenario == "natal_exists":
@@ -270,6 +314,7 @@ class FakeResult:
     def __init__(self):
         self._scalar = None
         self._scalars_list = []
+        self._all_rows = []  # For GROUP BY results
         self._rowcount = None
 
     def scalar_one_or_none(self):
@@ -287,6 +332,9 @@ class FakeResult:
 
     def all(self):
         """Retourne toutes les lignes (pour GROUP BY, etc.)"""
+        # Check for _all_rows first (for GROUP BY aggregations)
+        if hasattr(self, '_all_rows') and self._all_rows:
+            return self._all_rows
         return self._scalars_list if hasattr(self, '_scalars_list') else []
 
     @property
