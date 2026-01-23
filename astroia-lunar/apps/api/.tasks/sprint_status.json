@@ -175,15 +175,17 @@
         {
           "id": "task_2_3",
           "name": "Créer facade rétrocompatibilité (lunar_interpretation_service.py legacy wrapper)",
-          "status": "pending",
-          "assigned_to": null,
+          "status": "completed",
+          "assigned_to": "agent_C",
           "estimated_duration": "1h30",
           "parallelizable": true,
           "priority": "medium",
           "files": [
-            "services/lunar_interpretation_legacy_wrapper.py"
+            "services/lunar_interpretation_legacy_wrapper.py",
+            "tests/test_lunar_interpretation_legacy_wrapper.py"
           ],
-          "description": "Wrapper pour code existant qui appelle ancien service"
+          "description": "Wrapper pour code existant qui appelle ancien service",
+          "completed_at": "2026-01-23T16:21:00Z"
         },
         {
           "id": "task_2_4",
@@ -418,8 +420,9 @@
           "tasks": [
             "task_2_3"
           ],
-          "status": "pending",
-          "prompt_reference": ".tasks/vague_1_prompts.md"
+          "status": "completed",
+          "prompt_reference": ".tasks/vague_1_prompts.md",
+          "completed_at": "2026-01-23T16:21:00Z"
         }
       ]
     },
@@ -544,8 +547,8 @@
   "summary": {
     "total_sprints": 6,
     "total_tasks": 23,
-    "completed_tasks": 5,
-    "in_progress_tasks": 3,
+    "completed_tasks": 6,
+    "in_progress_tasks": 2,
     "pending_tasks": 15,
     "estimated_total_duration": "23h (sequential) | 10h (5 vagues)",
     "parallelization_potential": "high (3 agents simultaneously per vague)",
