@@ -11,6 +11,8 @@ from typing import Optional
 
 from database import get_db
 from models.natal_reading import NatalReading
+from models.user import User
+from routes.auth import get_current_user
 from schemas.natal_reading import (
     NatalReadingRequest,
     NatalReadingResponse,
@@ -30,6 +32,7 @@ router = APIRouter()
 @router.post("/reading", response_model=NatalReadingResponse, status_code=status.HTTP_200_OK)
 async def create_natal_reading(
     request: NatalReadingRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -158,6 +161,7 @@ async def create_natal_reading(
 @router.get("/reading/{cache_key}", response_model=NatalReadingResponse)
 async def get_natal_reading_by_key(
     cache_key: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -198,6 +202,7 @@ async def get_natal_reading_by_key(
 @router.delete("/reading/{cache_key}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_natal_reading(
     cache_key: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """

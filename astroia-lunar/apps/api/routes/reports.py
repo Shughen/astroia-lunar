@@ -10,6 +10,8 @@ from typing import Dict, Any
 import logging
 
 from database import get_db
+from models.user import User
+from routes.auth import get_current_user
 from services import reporting
 from models.lunar_pack import LunarReport
 from models.transits import TransitsOverview
@@ -20,10 +22,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/reports", tags=["Reports"])
 
 
-@router.post("/lunar/{user_id}/{month}")
+@router.post("/lunar/{month}")
 async def generate_lunar_monthly_report(
-    user_id: int,
     month: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -31,12 +33,13 @@ async def generate_lunar_monthly_report(
     - Rapport de révolution lunaire
     - Transits du mois
     - Événements lunaires
-    
+
     Retourne le HTML du rapport (et optionnellement l'URL du PDF).
-    
-    - **user_id**: ID de l'utilisateur
+
     - **month**: Mois au format YYYY-MM
     """
+    user_id = current_user.id
+
     try:
         logger.info(f"📝 Génération rapport mensuel pour user {user_id}, mois {month}")
         
@@ -112,10 +115,10 @@ async def generate_lunar_monthly_report(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/lunar/{user_id}/{month}/html", response_class=Response)
+@router.get("/lunar/{month}/html", response_class=Response)
 async def get_lunar_monthly_report_html(
-    user_id: int,
     month: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -123,7 +126,7 @@ async def get_lunar_monthly_report_html(
     """
     try:
         # Utiliser la même logique que generate_lunar_monthly_report
-        report_data = await generate_lunar_monthly_report(user_id, month, db)
+        report_data = await generate_lunar_monthly_report(month, current_user, db)
         
         return Response(
             content=report_data["html"],
