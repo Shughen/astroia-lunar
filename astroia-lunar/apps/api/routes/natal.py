@@ -77,13 +77,8 @@ async def calculate_natal_chart(
     logger.info(f"   📅 REÇU DU MOBILE: date={data.date} (type={type(data.date)}), time={birth_time}, timezone={data.timezone}")
     logger.info(f"   🌍 Timezone détectée: {detected_timezone}")
 
-    # Calculer via RapidAPI (Best Astrology API)
+    # Calculer via RapidAPI (Best Astrology API) ou Mode MOCK
     try:
-        # Construire le payload pour RapidAPI au format attendu
-        # RapidAPI attend: { "subject": { "name": "...", "birth_data": {...} }, "options": {...} }
-        # Mais create_natal_chart() attend un format simple, donc on utilise call_rapidapi_natal_chart directement
-        from services.natal_reading_service import call_rapidapi_natal_chart
-        
         # Format birth_data pour RapidAPI
         birth_data = {
             "year": int(data.date.split("-")[0]),
@@ -99,11 +94,19 @@ async def calculate_natal_chart(
             "timezone": detected_timezone  # Utiliser la timezone détectée
         }
 
-        logger.info(f"   📤 ENVOYÉ À RAPIDAPI: year={birth_data['year']}, month={birth_data['month']}, day={birth_data['day']}, hour={birth_data['hour']}, minute={birth_data['minute']}, timezone={birth_data['timezone']}")
+        # MODE MOCK DEV : Générer données fake si DEV_MOCK_NATAL=true
+        if settings.DEV_MOCK_NATAL and settings.APP_ENV == "development":
+            logger.warning(f"🎭 MODE MOCK NATAL activé - Génération de données fake")
+            from services.mock_data import generate_mock_natal_chart
+            rapidapi_response = generate_mock_natal_chart(birth_data)
+            logger.info(f"✅ Données MOCK générées - clés disponibles: {list(rapidapi_response.keys())}")
+        else:
+            # Appel à RapidAPI via le service natal_reading_service
+            from services.natal_reading_service import call_rapidapi_natal_chart
 
-        # Appel à RapidAPI via le service natal_reading_service
-        rapidapi_response = await call_rapidapi_natal_chart(birth_data)
-        logger.info(f"✅ Réponse RapidAPI reçue - clés disponibles: {list(rapidapi_response.keys())}")
+            logger.info(f"   📤 ENVOYÉ À RAPIDAPI: year={birth_data['year']}, month={birth_data['month']}, day={birth_data['day']}, hour={birth_data['hour']}, minute={birth_data['minute']}, timezone={birth_data['timezone']}")
+            rapidapi_response = await call_rapidapi_natal_chart(birth_data)
+            logger.info(f"✅ Réponse RapidAPI reçue - clés disponibles: {list(rapidapi_response.keys())}")
         
         # Parser la réponse RapidAPI vers le format attendu
         # RapidAPI retourne: { "chart_data": { "planetary_positions": [...], "aspects": [...] } }
