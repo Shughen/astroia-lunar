@@ -8,6 +8,8 @@ from models.transits import TransitsOverview, TransitsEvent
 from models.journal_entry import JournalEntry
 from models.pregenerated_natal_aspect import PregeneratedNatalAspect
 from models.pregenerated_lunar_interpretation import PregeneratedLunarInterpretation
+from models.lunar_interpretation import LunarInterpretation
+from models.lunar_interpretation_template import LunarInterpretationTemplate
 
 __all__ = [
     "User",
@@ -21,6 +23,8 @@ __all__ = [
     "TransitsEvent",
     "JournalEntry",
     "PregeneratedNatalAspect",
-    "PregeneratedLunarInterpretation"
+    "PregeneratedLunarInterpretation",
+    "LunarInterpretation",
+    "LunarInterpretationTemplate"
 ]
 

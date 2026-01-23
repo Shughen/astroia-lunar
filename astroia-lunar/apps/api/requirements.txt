@@ -35,6 +35,11 @@ pyswisseph==2.10.3.2
 # === AI/LLM ===
 anthropic==0.39.0
 
+# === MONITORING & OBSERVABILITY ===
+structlog==24.1.0
+prometheus-client==0.20.0
+tenacity==8.2.3
+
 # === DEV ===
 pytest==7.4.4
 pytest-asyncio==0.23.3

@@ -1,0 +1,584 @@
+{
+  "project": "lunar-v1-to-v2-migration",
+  "version": "2.0",
+  "last_updated": "2026-01-23T14:30:00Z",
+  "migrations_applied": true,
+  "tables_created": [
+    "lunar_interpretations",
+    "lunar_interpretation_templates"
+  ],
+  "data_migrated": "1728 interpretations → lunar_interpretation_templates",
+  "sprints": [
+    {
+      "id": "sprint_0",
+      "name": "Foundation (COMPLET)",
+      "status": "completed",
+      "started_at": "2026-01-23T13:00:00Z",
+      "completed_at": "2026-01-23T14:30:00Z",
+      "tasks": [
+        {
+          "id": "task_0_1",
+          "name": "Créer modèles SQLAlchemy (LunarInterpretation + LunarInterpretationTemplate)",
+          "status": "completed",
+          "assigned_to": "agent_main",
+          "completed_at": "2026-01-23T13:30:00Z",
+          "files": [
+            "models/lunar_interpretation.py",
+            "models/lunar_interpretation_template.py"
+          ]
+        },
+        {
+          "id": "task_0_2",
+          "name": "Créer migrations Alembic (2 fichiers)",
+          "status": "completed",
+          "assigned_to": "agent_main",
+          "completed_at": "2026-01-23T14:00:00Z",
+          "files": [
+            "alembic/versions/5a1b2c3d4e5f_*.py",
+            "alembic/versions/6b2c3d4e5f6a_*.py"
+          ]
+        },
+        {
+          "id": "task_0_3",
+          "name": "Exécuter migrations (créer tables + migrer 1728 lignes)",
+          "status": "completed",
+          "assigned_to": "user",
+          "completed_at": "2026-01-23T14:15:00Z",
+          "verification": "SELECT COUNT(*) FROM lunar_interpretation_templates; -- 1728"
+        },
+        {
+          "id": "task_0_4",
+          "name": "Créer service lunar_interpretation_generator.py (base)",
+          "status": "completed",
+          "assigned_to": "agent_main",
+          "completed_at": "2026-01-23T14:25:00Z",
+          "files": [
+            "services/lunar_interpretation_generator.py"
+          ]
+        },
+        {
+          "id": "task_0_5",
+          "name": "Créer documentation LUNAR_ARCHITECTURE_V2.md",
+          "status": "completed",
+          "assigned_to": "agent_main",
+          "completed_at": "2026-01-23T14:30:00Z",
+          "files": [
+            "docs/LUNAR_ARCHITECTURE_V2.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sprint_1",
+      "name": "Infrastructure & Documentation",
+      "status": "pending",
+      "estimated_duration": "4h",
+      "parallelizable": true,
+      "tasks": [
+        {
+          "id": "task_1_1",
+          "name": "Mettre à jour CLAUDE.md avec architecture V2",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "30min",
+          "parallelizable": false,
+          "priority": "high",
+          "files": [
+            ".claude/CLAUDE.md"
+          ],
+          "description": "Ajouter section Architecture Lunar V2, update état Sprint 4, documenter nouveau workflow"
+        },
+        {
+          "id": "task_1_2",
+          "name": "Créer scripts utilitaires agents (agent_start.sh, agent_complete.sh)",
+          "status": "completed",
+          "assigned_to": "agent_main",
+          "estimated_duration": "45min",
+          "parallelizable": true,
+          "priority": "medium",
+          "files": [
+            "scripts/agent_start.sh",
+            "scripts/agent_complete.sh",
+            "scripts/agent_heartbeat.sh"
+          ],
+          "description": "Scripts bash pour faciliter coordination multi-agents",
+          "completed_at": "2026-01-23T15:17:44Z"
+        },
+        {
+          "id": "task_1_3",
+          "name": "Créer tests modèles DB (LunarInterpretation + LunarInterpretationTemplate)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "tests/test_lunar_interpretation_model.py",
+            "tests/test_lunar_interpretation_template_model.py"
+          ],
+          "description": "Tests CRUD, relations FK, UNIQUE constraints, cascades"
+        },
+        {
+          "id": "task_1_4",
+          "name": "Documenter plan sprints détaillé (MIGRATION_PLAN.md)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h",
+          "parallelizable": true,
+          "priority": "medium",
+          "files": [
+            "docs/MIGRATION_PLAN.md"
+          ],
+          "description": "Plan complet V1→V2, roadmap, décisions architecturales"
+        }
+      ]
+    },
+    {
+      "id": "sprint_2",
+      "name": "Service Layer Refactoring",
+      "status": "pending",
+      "estimated_duration": "6h",
+      "parallelizable": true,
+      "dependencies": [
+        "sprint_1"
+      ],
+      "tasks": [
+        {
+          "id": "task_2_1",
+          "name": "Enrichir lunar_interpretation_generator.py (métriques, logs, error handling)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "2h",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "services/lunar_interpretation_generator.py"
+          ],
+          "description": "Ajouter métriques Prometheus, logs structurés, retry logic, timeouts Claude"
+        },
+        {
+          "id": "task_2_2",
+          "name": "Refactorer lunar_report_builder.py (intégration generate_or_get_interpretation)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "2h30",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "services/lunar_report_builder.py"
+          ],
+          "description": "Remplacer load_lunar_interpretation_with_fallback par generate_or_get_interpretation",
+          "dependencies": [
+            "task_2_1"
+          ]
+        },
+        {
+          "id": "task_2_3",
+          "name": "Créer facade rétrocompatibilité (lunar_interpretation_service.py legacy wrapper)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "medium",
+          "files": [
+            "services/lunar_interpretation_legacy_wrapper.py"
+          ],
+          "description": "Wrapper pour code existant qui appelle ancien service"
+        },
+        {
+          "id": "task_2_4",
+          "name": "Tests unitaires lunar_interpretation_generator.py",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "2h",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "tests/test_lunar_interpretation_generator.py"
+          ],
+          "description": "Tests idempotence, fallback hierarchy, versionning, error handling",
+          "dependencies": [
+            "task_2_1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sprint_3",
+      "name": "API Layer & Routes",
+      "status": "pending",
+      "estimated_duration": "5h",
+      "parallelizable": true,
+      "dependencies": [
+        "sprint_2"
+      ],
+      "tasks": [
+        {
+          "id": "task_3_1",
+          "name": "Mettre à jour routes/lunar.py (intégration nouveau service)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "routes/lunar.py"
+          ],
+          "description": "Utiliser generate_or_get_interpretation, ajouter metadata (source, model_used) dans responses"
+        },
+        {
+          "id": "task_3_2",
+          "name": "Créer nouvelle route POST /api/lunar/interpretation/regenerate",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "medium",
+          "files": [
+            "routes/lunar.py"
+          ],
+          "description": "Endpoint pour forcer régénération (force_regenerate=True)"
+        },
+        {
+          "id": "task_3_3",
+          "name": "Créer route GET /api/lunar/interpretation/metadata",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h",
+          "parallelizable": true,
+          "priority": "low",
+          "files": [
+            "routes/lunar.py"
+          ],
+          "description": "Stats interprétations (nb cached, nb generated, models used)"
+        },
+        {
+          "id": "task_3_4",
+          "name": "Tests E2E routes API",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "2h",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "tests/test_lunar_routes_v2.py"
+          ],
+          "description": "Tests HTTP complets avec DB, validation réponses, metadata",
+          "dependencies": [
+            "task_3_1",
+            "task_3_2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sprint_4",
+      "name": "Testing & Quality Assurance",
+      "status": "pending",
+      "estimated_duration": "4h",
+      "parallelizable": true,
+      "dependencies": [
+        "sprint_3"
+      ],
+      "tasks": [
+        {
+          "id": "task_4_1",
+          "name": "Tests intégration service → DB",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "high",
+          "files": [
+            "tests/test_lunar_integration.py"
+          ],
+          "description": "Tests complets generate → save → retrieve, race conditions, concurrency"
+        },
+        {
+          "id": "task_4_2",
+          "name": "Tests performance (benchmarks génération)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "medium",
+          "files": [
+            "tests/test_lunar_performance.py"
+          ],
+          "description": "Benchmarks temps génération, cache hit rate, DB query count"
+        },
+        {
+          "id": "task_4_3",
+          "name": "Validation données migrées (audit 1728 templates)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h",
+          "parallelizable": false,
+          "priority": "high",
+          "files": [
+            "scripts/audit_lunar_migration.py"
+          ],
+          "description": "Vérifier intégrité migration, comparer V1 vs V2, détecter pertes données"
+        }
+      ]
+    },
+    {
+      "id": "sprint_5",
+      "name": "Monitoring, Docs & Cleanup",
+      "status": "pending",
+      "estimated_duration": "4h",
+      "parallelizable": true,
+      "dependencies": [
+        "sprint_4"
+      ],
+      "tasks": [
+        {
+          "id": "task_5_1",
+          "name": "Implémenter métriques Prometheus",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "2h",
+          "parallelizable": true,
+          "priority": "medium",
+          "files": [
+            "services/lunar_metrics.py",
+            "main.py"
+          ],
+          "description": "Counters (generated, cached, fallback), histograms (duration), gauges (active agents)"
+        },
+        {
+          "id": "task_5_2",
+          "name": "Documentation finale utilisateur (API.md)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "1h30",
+          "parallelizable": true,
+          "priority": "low",
+          "files": [
+            "docs/API_LUNAR_V2.md"
+          ],
+          "description": "Guide endpoints V2, exemples curl, schémas réponses"
+        },
+        {
+          "id": "task_5_3",
+          "name": "Cleanup tables backup (drop pregenerated_lunar_interpretations_backup)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "15min",
+          "parallelizable": false,
+          "priority": "low",
+          "files": [
+            "alembic/versions/xxx_cleanup_backup.py"
+          ],
+          "description": "Après validation prod, supprimer table backup définitivement"
+        },
+        {
+          "id": "task_5_4",
+          "name": "Mise à jour CLAUDE.md final (post-migration)",
+          "status": "pending",
+          "assigned_to": null,
+          "estimated_duration": "30min",
+          "parallelizable": false,
+          "priority": "high",
+          "files": [
+            ".claude/CLAUDE.md"
+          ],
+          "description": "Marquer migration complète, update état projet, archiver ancien workflow"
+        }
+      ]
+    }
+  ],
+  "vagues": [
+    {
+      "id": "vague_1",
+      "name": "Foundation",
+      "status": "in_progress",
+      "started_at": "2026-01-23T15:00:00Z",
+      "estimated_duration": "2h",
+      "agents": [
+        {
+          "agent_id": "agent_A",
+          "tasks": [
+            "task_1_2",
+            "task_1_3",
+            "task_1_4"
+          ],
+          "status": "in_progress"
+        },
+        {
+          "agent_id": "agent_B",
+          "tasks": [
+            "task_2_1"
+          ],
+          "status": "pending",
+          "prompt_reference": ".tasks/vague_1_prompts.md"
+        },
+        {
+          "agent_id": "agent_C",
+          "tasks": [
+            "task_2_3"
+          ],
+          "status": "pending",
+          "prompt_reference": ".tasks/vague_1_prompts.md"
+        }
+      ]
+    },
+    {
+      "id": "vague_2",
+      "name": "Service Layer",
+      "status": "pending",
+      "estimated_duration": "2h30",
+      "depends_on": [
+        "vague_1"
+      ],
+      "agents": [
+        {
+          "agent_id": "agent_A",
+          "tasks": [
+            "task_2_2"
+          ]
+        },
+        {
+          "agent_id": "agent_B",
+          "tasks": [
+            "task_2_4"
+          ]
+        },
+        {
+          "agent_id": "agent_C",
+          "tasks": [
+            "task_4_3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vague_3",
+      "name": "API Routes",
+      "status": "pending",
+      "estimated_duration": "1h30",
+      "depends_on": [
+        "vague_2"
+      ],
+      "agents": [
+        {
+          "agent_id": "agent_A",
+          "tasks": [
+            "task_3_1"
+          ]
+        },
+        {
+          "agent_id": "agent_B",
+          "tasks": [
+            "task_3_2"
+          ]
+        },
+        {
+          "agent_id": "agent_C",
+          "tasks": [
+            "task_3_3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vague_4",
+      "name": "Testing & QA",
+      "status": "pending",
+      "estimated_duration": "2h",
+      "depends_on": [
+        "vague_3"
+      ],
+      "agents": [
+        {
+          "agent_id": "agent_A",
+          "tasks": [
+            "task_3_4"
+          ]
+        },
+        {
+          "agent_id": "agent_B",
+          "tasks": [
+            "task_4_1"
+          ]
+        },
+        {
+          "agent_id": "agent_C",
+          "tasks": [
+            "task_4_2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vague_5",
+      "name": "Monitoring & Cleanup",
+      "status": "pending",
+      "estimated_duration": "2h",
+      "depends_on": [
+        "vague_4"
+      ],
+      "agents": [
+        {
+          "agent_id": "agent_A",
+          "tasks": [
+            "task_5_1"
+          ]
+        },
+        {
+          "agent_id": "agent_B",
+          "tasks": [
+            "task_5_2"
+          ]
+        },
+        {
+          "agent_id": "agent_C",
+          "tasks": [
+            "task_5_3",
+            "task_5_4"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_sprints": 6,
+    "total_tasks": 23,
+    "completed_tasks": 5,
+    "in_progress_tasks": 3,
+    "pending_tasks": 15,
+    "estimated_total_duration": "23h (sequential) | 10h (5 vagues)",
+    "parallelization_potential": "high (3 agents simultaneously per vague)",
+    "vagues_completed": 0,
+    "vagues_in_progress": 1,
+    "vagues_pending": 4
+  },
+  "dependencies_graph": {
+    "sprint_1": [],
+    "sprint_2": [
+      "sprint_1"
+    ],
+    "sprint_3": [
+      "sprint_2"
+    ],
+    "sprint_4": [
+      "sprint_3"
+    ],
+    "sprint_5": [
+      "sprint_4"
+    ],
+    "vague_1": [],
+    "vague_2": [
+      "vague_1"
+    ],
+    "vague_3": [
+      "vague_2"
+    ],
+    "vague_4": [
+      "vague_3"
+    ],
+    "vague_5": [
+      "vague_4"
+    ]
+  }
+}
