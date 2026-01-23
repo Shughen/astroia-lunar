@@ -1144,6 +1144,277 @@ gantt
 
 ---
 
+## 📐 Architecture Decision Records (ADR)
+
+### ADR-001 : Pourquoi une architecture à 4 couches ?
+
+**Date** : 2026-01-23
+**Status** : ✅ Acceptée
+**Contexte** : Besoin de séparer faits astronomiques immutables et narrations IA régénérables
+**Décision** : Implémenter architecture à 4 couches (faits → narration → cache → templates)
+
+**Rationale** :
+1. **Séparation des préoccupations** : Faits astronomiques (LunarReturn) séparés de leur interprétation (LunarInterpretation)
+2. **Régénérabilité** : Narrations IA peuvent être régénérées sans recalculer positions astronomiques
+3. **Versionning** : Plusieurs versions d'interprétations possibles pour un même LunarReturn
+4. **Cache intelligent** : 3 niveaux de fallback garantissent disponibilité
+
+**Alternatives considérées** :
+- ❌ Stocker interprétations dans LunarReturn directement → Couplage fort, pas de versionning
+- ❌ Fichiers JSON statiques → Pas de temporalité, impossible de régénérer
+
+**Conséquences** :
+- ✅ Flexibilité maximale pour améliorer prompts IA sans recalculer astro
+- ✅ Possibilité de comparer plusieurs modèles (Haiku vs Opus)
+- ⚠️ Complexité accrue (4 tables au lieu de 1)
+- ⚠️ Requêtes DB légèrement plus nombreuses
+
+---
+
+### ADR-002 : Pourquoi UNIQUE constraint sur (lunar_return_id, subject, lang, version) ?
+
+**Date** : 2026-01-23
+**Status** : ✅ Acceptée
+**Contexte** : Garantir idempotence des générations IA
+**Décision** : UNIQUE constraint sur 4 colonnes (lunar_return_id, subject, lang, version)
+
+**Rationale** :
+1. **Idempotence** : 2 requêtes successives → même résultat (cache DB)
+2. **Éviter duplications** : Impossible d'avoir 2 interprétations identiques
+3. **Race conditions** : Transactions DB garantissent 1 seule génération
+
+**Alternatives considérées** :
+- ❌ UNIQUE sur (user_id, lunar_return_id) → Impossible d'avoir plusieurs sujets (full, climate, etc.)
+- ❌ Pas de UNIQUE → Duplications possibles, gaspillage tokens Claude
+
+**Conséquences** :
+- ✅ Garantie idempotence stricte
+- ✅ Économie tokens API (pas de régénérations inutiles)
+- ⚠️ Doit gérer IntegrityError en cas de concurrent inserts
+
+---
+
+### ADR-003 : Pourquoi stocker input_json (traçabilité) ?
+
+**Date** : 2026-01-23
+**Status** : ✅ Acceptée
+**Contexte** : Besoin de reproduire exactement une génération IA
+**Décision** : Stocker contexte complet envoyé à Claude dans `input_json` (JSONB)
+
+**Rationale** :
+1. **Reproductibilité** : Même input + même model → même output
+2. **Debug** : Comprendre pourquoi une interprétation a été générée
+3. **Audit** : Tracer les données envoyées à l'API externe
+4. **Amélioration prompts** : Analyser quels inputs produisent les meilleurs outputs
+
+**Alternatives considérées** :
+- ❌ Ne stocker que l'output → Impossible de reproduire
+- ❌ Recalculer input à la demande → Risque d'incohérence si données astro changent
+
+**Conséquences** :
+- ✅ Traçabilité complète
+- ✅ Debug facilité
+- ⚠️ Espace DB légèrement augmenté (~1-2KB par interprétation)
+
+---
+
+### ADR-004 : Pourquoi CASCADE DELETE sur FK ?
+
+**Date** : 2026-01-23
+**Status** : ✅ Acceptée
+**Contexte** : Supprimer un User → supprimer toutes ses données
+**Décision** : ON DELETE CASCADE sur toutes les FK (user_id, lunar_return_id)
+
+**Rationale** :
+1. **RGPD** : Droit à l'oubli → suppression complète des données user
+2. **Intégrité** : Pas de données orphelines (interprétations sans LunarReturn)
+3. **Simplicité** : DB gère automatiquement les suppressions en cascade
+
+**Alternatives considérées** :
+- ❌ SET NULL → Données orphelines, violation intégrité
+- ❌ Soft delete (is_deleted flag) → Complexité accrue, RGPD non-conforme
+
+**Conséquences** :
+- ✅ Conformité RGPD automatique
+- ✅ Intégrité référentielle garantie
+- ⚠️ Suppressions irréversibles (backups critiques)
+
+---
+
+### ADR-005 : Pourquoi fallback hiérarchique (4 niveaux) ?
+
+**Date** : 2026-01-23
+**Status** : ✅ Acceptée
+**Contexte** : Garantir disponibilité même si Claude API down
+**Décision** : Hiérarchie 4 niveaux (DB temporelle → Claude → DB templates → hardcoded)
+
+**Rationale** :
+1. **Résilience** : API externe peut échouer, fallback garantit disponibilité
+2. **Performance** : Cache DB (niveau 1) évite appels API coûteux
+3. **Qualité** : Claude Opus (niveau 2) > Templates (niveau 3) > Hardcoded (niveau 4)
+4. **SLA** : Garantir réponse <10s même si Claude down
+
+**Alternatives considérées** :
+- ❌ Claude only → SLA dépendant API externe (inacceptable)
+- ❌ Templates only → Pas de personnalisation temporelle
+
+**Conséquences** :
+- ✅ Disponibilité 99.9%+
+- ✅ Qualité optimale quand Claude disponible
+- ✅ Graceful degradation
+- ⚠️ Complexité code (gestion 4 sources)
+
+---
+
+## 🔄 Rollback Plan
+
+### Situation 1 : Bug critique détecté en production
+
+**Symptômes** :
+- Erreurs 500 massives sur routes lunar
+- Génération Claude échoue systématiquement
+- Race conditions causant deadlocks DB
+
+**Actions immédiates** :
+1. **Désactiver génération Claude** (niveau 2)
+```python
+# Temporaire : forcer fallback templates
+LUNAR_LLM_MODE=off  # Dans .env
+```
+2. **Monitoring** : Vérifier métriques Prometheus
+```
+curl https://api.astroia.com/metrics | grep lunar_interpretation_fallback
+```
+3. **Rollback code** (si nécessaire)
+```bash
+git revert HEAD  # Annuler dernier commit
+git push origin main --force-with-lease
+```
+
+---
+
+### Situation 2 : Migration DB corrompue
+
+**Symptômes** :
+- COUNT(lunar_interpretation_templates) ≠ 1728
+- Données manquantes ou corrompues
+
+**Actions** :
+1. **Stop migrations** : Identifier version Alembic problématique
+```bash
+alembic current  # Vérifier version actuelle
+```
+2. **Rollback migration**
+```bash
+alembic downgrade -1  # Revenir version précédente
+```
+3. **Restaurer backup** (si nécessaire)
+```sql
+-- Recréer table depuis backup
+CREATE TABLE lunar_interpretation_templates AS
+SELECT * FROM pregenerated_lunar_interpretations_backup;
+```
+4. **Réexécuter migration corrigée**
+```bash
+alembic upgrade head
+```
+
+---
+
+### Situation 3 : Performance dégradée (latence >10s)
+
+**Symptômes** :
+- p95 latency API >10s
+- Timeouts Claude fréquents
+- DB queries lentes
+
+**Actions diagnostiques** :
+1. **Vérifier cache hit rate**
+```sql
+SELECT
+  COUNT(*) FILTER (WHERE model_used IS NULL) as cache_hits,
+  COUNT(*) as total,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE model_used IS NULL) / COUNT(*), 2) as hit_rate_pct
+FROM lunar_interpretations
+WHERE created_at > NOW() - INTERVAL '1 hour';
+```
+2. **Identifier requêtes lentes**
+```sql
+SELECT query, calls, mean_exec_time, max_exec_time
+FROM pg_stat_statements
+WHERE query LIKE '%lunar_interpretation%'
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+```
+3. **Optimisations** :
+   - Augmenter `INTERPRETATION_CACHE_TTL` (3600 → 7200s)
+   - Ajouter indexes manquants
+   - Activer fallback templates par défaut
+
+**Rollback complet** :
+```bash
+# Désactiver totalement V2, revenir V1
+LUNAR_INTERPRETATION_VERSION=1  # Dans .env
+alembic downgrade <version_v1>
+```
+
+---
+
+### Situation 4 : Perte données templates
+
+**Symptômes** :
+- Table `lunar_interpretation_templates` vide ou partiellement remplie
+
+**Actions recovery** :
+1. **Vérifier backup**
+```sql
+SELECT COUNT(*) FROM pregenerated_lunar_interpretations_backup;
+-- Expected: 1728
+```
+2. **Restaurer depuis backup**
+```sql
+TRUNCATE lunar_interpretation_templates;
+
+INSERT INTO lunar_interpretation_templates
+  (template_type, moon_sign, moon_house, lunar_ascendant, version, lang, template_text, weekly_advice_template, model_used, created_at, updated_at)
+SELECT
+  'full' as template_type,
+  moon_sign,
+  moon_house,
+  lunar_ascendant,
+  version,
+  lang,
+  interpretation_full as template_text,
+  weekly_advice as weekly_advice_template,
+  model_used,
+  created_at,
+  updated_at
+FROM pregenerated_lunar_interpretations_backup;
+```
+3. **Valider**
+```sql
+SELECT COUNT(*) FROM lunar_interpretation_templates;
+-- Expected: 1728
+```
+
+---
+
+### Checklist pré-rollback
+
+Avant tout rollback, vérifier :
+
+- [ ] Backup DB récent (<24h)
+- [ ] Équipe notifiée (Slack #tech)
+- [ ] Monitoring actif (Grafana dashboard)
+- [ ] Documentation incident (Notion)
+- [ ] User impact évalué (combien d'users affectés ?)
+- [ ] Cause root identifiée (logs, traces)
+- [ ] Fix disponible OU rollback nécessaire ?
+
+**Principe** : Rollback rapide > Fix complexe en urgence
+
+---
+
 ## 🚨 Risks & Mitigations
 
 ### Risk 1 : Claude API rate limits

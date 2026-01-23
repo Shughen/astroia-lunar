@@ -13,6 +13,11 @@ from config import settings
 from database import engine, Base
 from routes import auth, natal, lunar_returns, lunar, transits, reports, natal_reading, natal_interpretation, natal_aspect_interpretation, journal
 from services import ephemeris_rapidapi
+from prometheus_client import make_asgi_app, Info
+
+# Import du generator pour enregistrer les métriques Prometheus
+# Les métriques sont définies au niveau module et doivent être importées au démarrage
+from services import lunar_interpretation_generator  # noqa: F401
 
 # Configuration logging
 logging.basicConfig(
@@ -145,6 +150,25 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
+
+# Prometheus metrics endpoint
+# Les métriques sont définies dans services/lunar_interpretation_generator.py
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
+
+# Migration info metric pour monitoring de l'état V2
+lunar_migration_info = Info(
+    'lunar_migration',
+    'État migration V1 → V2'
+)
+lunar_migration_info.info({
+    'version': '2.0',
+    'templates_count': '1728',
+    'migration_date': '2026-01-23',
+    'architecture': '4_layers'
+})
+
+logger.info("✅ Endpoint /metrics Prometheus configuré")
 
 # CORS (à restreindre en production)
 app.add_middleware(
