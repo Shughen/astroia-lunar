@@ -1416,15 +1416,27 @@ async def get_current_lunar_report(
 
         report = await build_lunar_report_v4_async(lunar_return, db=db)
 
+        # Extraire metadata V2 (source, model_used, version, generated_at)
+        metadata = report.get('metadata', {
+            'source': 'unknown',
+            'model_used': None,
+            'version': 2,
+            'generated_at': datetime.utcnow().isoformat()
+        })
+
         logger.info(
             f"[corr={correlation_id}] ✅ Rapport généré pour {lunar_return.month} - "
             f"climate_len={len(report['general_climate'])}, "
             f"axes={len(report['dominant_axes'])}, "
             f"aspects={len(report['major_aspects'])}, "
-            f"source={report.get('interpretation_source', 'N/A')}"
+            f"source={metadata.get('source', 'N/A')}, "
+            f"model={metadata.get('model_used', 'N/A')}"
         )
 
-        return report
+        return {
+            **report,
+            'metadata': metadata
+        }
 
     except HTTPException:
         raise
@@ -1477,15 +1489,27 @@ async def get_lunar_report_by_id(
 
         report = await build_lunar_report_v4_async(lunar_return, db=db)
 
+        # Extraire metadata V2 (source, model_used, version, generated_at)
+        metadata = report.get('metadata', {
+            'source': 'unknown',
+            'model_used': None,
+            'version': 2,
+            'generated_at': datetime.utcnow().isoformat()
+        })
+
         logger.info(
             f"[corr={correlation_id}] ✅ Rapport généré pour cycle {lunar_return_id} - "
             f"climate_len={len(report['general_climate'])}, "
             f"axes={len(report['dominant_axes'])}, "
             f"aspects={len(report['major_aspects'])}, "
-            f"source={report.get('interpretation_source', 'N/A')}"
+            f"source={metadata.get('source', 'N/A')}, "
+            f"model={metadata.get('model_used', 'N/A')}"
         )
 
-        return report
+        return {
+            **report,
+            'metadata': metadata
+        }
 
     except HTTPException:
         raise
