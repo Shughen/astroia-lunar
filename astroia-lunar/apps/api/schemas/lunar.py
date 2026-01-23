@@ -178,7 +178,37 @@ class LunarMansionDB(BaseModel):
     mansion_id: int
     data: Dict[str, Any]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+
+
+class RegenerateInterpretationRequest(BaseModel):
+    """Requête pour forcer la régénération d'une interprétation lunaire"""
+    lunar_return_id: int = Field(..., description="ID de la révolution lunaire")
+    subject: str = Field(default='full', description="Type d'interprétation (full, climate, focus, approach)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "lunar_return_id": 123,
+                "subject": "full"
+            }
+        }
+
+
+class InterpretationMetadata(BaseModel):
+    """Métadonnées d'une interprétation générée"""
+    source: str = Field(..., description="Source: db_temporal, claude, db_template, hardcoded")
+    model_used: Optional[str] = Field(None, description="Modèle utilisé (ex: claude-opus-4-5)")
+    subject: str = Field(..., description="Type d'interprétation")
+    regenerated_at: str = Field(..., description="Timestamp de régénération (ISO 8601)")
+    forced: bool = Field(..., description="True si régénération forcée")
+
+
+class RegenerateInterpretationResponse(BaseModel):
+    """Réponse après régénération d'une interprétation"""
+    interpretation: str = Field(..., description="Texte de l'interprétation générée")
+    weekly_advice: Optional[Dict[str, Any]] = Field(None, description="Conseils hebdomadaires structurés")
+    metadata: InterpretationMetadata = Field(..., description="Métadonnées de génération")
 

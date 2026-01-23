@@ -6,10 +6,11 @@ Endpoints pour Lunar Return Report, Void of Course, et Lunar Mansions
 from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from typing import Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import logging
+import time
 
 from database import get_db
 from services import lunar_services
@@ -29,6 +30,10 @@ from routes.auth import get_current_user
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/lunar", tags=["Luna Pack"])
+
+# Cache global pour metadata (TTL: 10 minutes)
+_METADATA_CACHE: Dict[int, Any] = {}  # Key: user_id → (data, timestamp)
+METADATA_CACHE_TTL = 600  # 10 minutes
 
 
 def _deduplicate_mansion_response(result: Dict[str, Any]) -> Dict[str, Any]:
@@ -566,6 +571,103 @@ async def lunar_mansion(
         )
 
 
+@router.post("/interpretation/regenerate", status_code=201)
+async def regenerate_lunar_interpretation(
+    request: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Force la régénération d'une interprétation lunaire
+
+    Args:
+        request: Body JSON avec lunar_return_id et subject (optionnel)
+
+    Returns:
+        Nouvelle interprétation générée avec metadata complètes
+
+    Raises:
+        404: Si lunar_return_id inexistant ou non accessible
+        403: Si l'utilisateur n'a pas les permissions
+
+    **Cas d'usage**:
+    - Amélioration du prompt (nouvelle version model)
+    - Utilisateur insatisfait de la qualité
+    - Debug/test génération Claude
+
+    **Comportement**:
+    - Ignore cache DB temporelle
+    - Force appel Claude Opus 4.5 (ou fallback templates si échec)
+    - Sauvegarde nouvelle version en DB
+    - Ancienne version reste en historique
+
+    **Rate limiting**:
+    - Recommandé : max 10 regenerates/jour par user (à implémenter si nécessaire)
+    """
+    from services.lunar_interpretation_generator import generate_or_get_interpretation
+    from models.lunar_return import LunarReturn
+
+    lunar_return_id = request.get("lunar_return_id")
+    subject = request.get("subject", "full")
+
+    if not lunar_return_id:
+        raise HTTPException(status_code=422, detail="lunar_return_id is required")
+
+    logger.info(
+        f"Force regenerate requested by user {current_user.id} for lunar_return {lunar_return_id}",
+        extra={'user_id': current_user.id, 'lunar_return_id': lunar_return_id, 'subject': subject}
+    )
+
+    # Vérifier que lunar_return existe et appartient à l'utilisateur
+    lunar_return = await db.get(LunarReturn, lunar_return_id)
+
+    if not lunar_return:
+        raise HTTPException(status_code=404, detail="LunarReturn not found")
+
+    if lunar_return.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You don't have permission to regenerate this interpretation"
+        )
+
+    # Forcer régénération (ignore cache DB temporelle)
+    try:
+        output, weekly, source, model = await generate_or_get_interpretation(
+            db=db,
+            lunar_return_id=lunar_return_id,
+            user_id=current_user.id,
+            subject=subject,
+            force_regenerate=True  # KEY: Force regeneration
+        )
+    except Exception as e:
+        logger.error(
+            f"Failed to regenerate interpretation: {e}",
+            extra={'lunar_return_id': lunar_return_id, 'error': str(e)}
+        )
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
+    logger.info(
+        f"Interpretation regenerated successfully",
+        extra={
+            'lunar_return_id': lunar_return_id,
+            'source': source,
+            'model': model
+        }
+    )
+
+    return {
+        'interpretation': output,
+        'weekly_advice': weekly,
+        'metadata': {
+            'source': source,
+            'model_used': model,
+            'subject': subject,
+            'regenerated_at': datetime.utcnow().isoformat(),
+            'forced': True
+        }
+    }
+
+
 # Endpoints bonus: récupérer depuis la DB (cache)
 
 @router.get("/return/report/history/{user_id}", response_model=list[Dict[str, Any]])
@@ -706,4 +808,152 @@ async def get_voc_status(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"❌ Erreur récupération VoC status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/interpretation/metadata", response_model=Dict[str, Any])
+async def get_interpretation_metadata(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les statistiques d'utilisation des interprétations lunaires pour l'utilisateur.
+
+    Retourne :
+    - total_interpretations : Nombre total d'interprétations générées
+    - models_used : Répartition par modèle (count + percentage)
+    - cached_rate : Taux d'utilisation du cache (%)
+    - last_generated : Date de la dernière génération
+
+    **Authentification requise** : Bearer token ou DEV_AUTH_BYPASS
+
+    Cache : 10 minutes (600s)
+
+    Optimisations :
+    - Requêtes SQL groupées et optimisées
+    - Cache en mémoire par user_id
+    - Indexes utilisés : user_id, created_at, model_used
+
+    Raises:
+        HTTPException:
+            - 401 si non authentifié
+            - 500 si erreur serveur
+    """
+    global _METADATA_CACHE
+
+    # 🔒 CRITIQUE: Extraire user_id IMMÉDIATEMENT pour éviter MissingGreenlet
+    if not current_user or not hasattr(current_user, 'id') or current_user.id is None:
+        logger.error("❌ Authentification invalide: current_user ou current_user.id manquant")
+        raise HTTPException(
+            status_code=401,
+            detail="Authentification invalide: utilisateur non identifié"
+        )
+
+    try:
+        user_id = int(current_user.id)
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.error(f"❌ Erreur extraction user_id: {e}, current_user={current_user}")
+        raise HTTPException(
+            status_code=401,
+            detail="Authentification invalide: impossible d'identifier l'utilisateur"
+        )
+
+    # === CACHE CHECK ===
+    current_time = time.time()
+    if user_id in _METADATA_CACHE:
+        cached_data, timestamp = _METADATA_CACHE[user_id]
+        cache_age = current_time - timestamp
+
+        if cache_age < METADATA_CACHE_TTL:
+            logger.debug(f"[Metadata] ✅ Cache hit for user {user_id} (age: {int(cache_age)}s)")
+            return {**cached_data, "cached": True, "cache_age_seconds": int(cache_age)}
+
+    # === CACHE MISS - CALCULATE METADATA ===
+    logger.debug(f"[Metadata] 🔄 Cache miss for user {user_id}, calculating...")
+
+    try:
+        from models.lunar_interpretation import LunarInterpretation
+
+        # 1. Total interpretations
+        total_stmt = select(func.count(LunarInterpretation.id)).where(
+            LunarInterpretation.user_id == user_id
+        )
+        total_result = await db.execute(total_stmt)
+        total_interpretations = total_result.scalar() or 0
+
+        # 2. Models used distribution
+        models_stmt = select(
+            LunarInterpretation.model_used,
+            func.count(LunarInterpretation.id).label('count')
+        ).where(
+            LunarInterpretation.user_id == user_id
+        ).group_by(
+            LunarInterpretation.model_used
+        ).order_by(
+            func.count(LunarInterpretation.id).desc()
+        )
+        models_result = await db.execute(models_stmt)
+        models_data = models_result.all()
+
+        models_used = []
+        for model, count in models_data:
+            percentage = (count / total_interpretations * 100) if total_interpretations > 0 else 0
+            models_used.append({
+                "model": model or "unknown",
+                "count": count,
+                "percentage": round(percentage, 2)
+            })
+
+        # 3. Cached rate (heuristic: interpretations created in last hour are "new")
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        new_stmt = select(func.count(LunarInterpretation.id)).where(
+            and_(
+                LunarInterpretation.user_id == user_id,
+                LunarInterpretation.created_at >= one_hour_ago
+            )
+        )
+        new_result = await db.execute(new_stmt)
+        new_count = new_result.scalar() or 0
+
+        cached_count = total_interpretations - new_count
+        cached_rate = (cached_count / total_interpretations * 100) if total_interpretations > 0 else 0
+
+        # 4. Last generated
+        last_stmt = select(func.max(LunarInterpretation.created_at)).where(
+            LunarInterpretation.user_id == user_id
+        )
+        last_result = await db.execute(last_stmt)
+        last_generated = last_result.scalar()
+
+        # Build response
+        metadata = {
+            "total_interpretations": total_interpretations,
+            "models_used": models_used,
+            "cached_rate": round(cached_rate, 2),
+            "last_generated": last_generated.isoformat() if last_generated else None
+        }
+
+        # Update cache
+        _METADATA_CACHE[user_id] = (metadata, current_time)
+        logger.info(
+            f"[Metadata] 💾 Metadata calculated for user {user_id}: "
+            f"{total_interpretations} interpretations, "
+            f"{len(models_used)} models, "
+            f"{cached_rate:.1f}% cached"
+        )
+
+        return {**metadata, "cached": False}
+
+    except Exception as e:
+        logger.error(
+            f"[Metadata] ❌ Error calculating metadata for user {user_id}: {str(e)}",
+            exc_info=True
+        )
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "INTERNAL_ERROR",
+                "message": "Erreur lors du calcul des statistiques",
+                "details": str(e)
+            }
+        )
 
