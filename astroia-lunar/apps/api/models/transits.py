@@ -5,7 +5,7 @@ Modèles SQLAlchemy pour les Transits (P2)
 """
 
 from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Index, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -17,19 +17,17 @@ class TransitsOverview(Base):
     Stocke un résumé et les aspects majeurs du mois.
     """
     __tablename__ = "transits_overview"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    # user_id est UUID (pointe vers auth.users.id Supabase, pas vers public.users.id FastAPI)
-    # Les RLS policies utilisent auth.uid() qui est UUID
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     month = Column(String, nullable=False, index=True)  # Format: YYYY-MM
     overview = Column(JSONB, nullable=False)  # Vue d'ensemble avec insights
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Note: Pas de relation ForeignKey vers users car user_id pointe vers auth.users.id (UUID Supabase)
-    # et non vers public.users.id (Integer FastAPI). Les RLS policies gèrent l'accès.
-    
+
+    # Relation vers User
+    user = relationship("User", back_populates="transits_overview")
+
     # Index composite pour requêtes optimisées
     __table_args__ = (
         Index('ix_transits_overview_user_month', 'user_id', 'month'),
@@ -45,10 +43,9 @@ class TransitsEvent(Base):
     Stocke les aspects clés entre planètes en transit et positions natales.
     """
     __tablename__ = "transits_events"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    # user_id est UUID (pointe vers auth.users.id Supabase, pas vers public.users.id FastAPI)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)  # Date de l'aspect exact
     transit_planet = Column(String, nullable=False)   # Ex: "Jupiter"
     natal_point = Column(String, nullable=False)      # Ex: "Sun", "MC", "Ascendant"
@@ -57,10 +54,10 @@ class TransitsEvent(Base):
     interpretation = Column(Text, nullable=True)      # Interprétation textuelle
     raw_data = Column(JSONB, nullable=True)          # Données brutes du provider
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Note: Pas de relation ForeignKey vers users car user_id pointe vers auth.users.id (UUID Supabase)
-    # et non vers public.users.id (Integer FastAPI). Les RLS policies gèrent l'accès.
-    
+
+    # Relation vers User
+    user = relationship("User", back_populates="transits_events")
+
     # Index composite pour requêtes optimisées
     __table_args__ = (
         Index('ix_transits_events_user_date', 'user_id', 'date'),
