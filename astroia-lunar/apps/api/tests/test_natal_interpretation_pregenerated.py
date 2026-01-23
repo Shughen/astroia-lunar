@@ -117,6 +117,8 @@ def test_load_pregenerated_case_insensitive():
 @pytest.mark.asyncio
 async def test_generate_with_fallback_mode_off():
     """Test que generate_with_sonnet_fallback_haiku utilise les pré-générées en mode off"""
+    from unittest.mock import patch
+
     # Créer un ChartPayload de test
     chart_payload = ChartPayload(
         subject_label="Soleil",
@@ -129,24 +131,28 @@ async def test_generate_with_fallback_mode_off():
         aspects=[]
     )
 
-    # Appeler la fonction (mode off par défaut)
-    text, model_used = await generate_with_sonnet_fallback_haiku(
-        subject='sun',
-        chart_payload=chart_payload,
-        version=2
-    )
+    # Forcer NATAL_LLM_MODE à 'off' pour ce test
+    with patch('config.settings.NATAL_LLM_MODE', 'off'):
+        # Appeler la fonction (mode off forcé)
+        text, model_used = await generate_with_sonnet_fallback_haiku(
+            subject='sun',
+            chart_payload=chart_payload,
+            version=2
+        )
 
-    # Vérifier que l'interprétation pré-générée a été chargée
-    assert model_used == 'pregenerated'
-    assert text is not None
-    assert len(text) > 900
-    assert '☀️ Soleil en Verseau' in text
-    assert 'Ton moteur' in text
+        # Vérifier que l'interprétation pré-générée a été chargée
+        assert model_used == 'pregenerated'
+        assert text is not None
+        assert len(text) > 900
+        assert '☀️ Soleil en Verseau' in text
+        assert 'Ton moteur' in text
 
 
 @pytest.mark.asyncio
 async def test_generate_with_fallback_mode_off_not_found():
     """Test fallback vers placeholder si fichier inexistant"""
+    from unittest.mock import patch
+
     # Créer un ChartPayload pour un fichier qui n'existe pas
     chart_payload = ChartPayload(
         subject_label="Pluton",
@@ -159,17 +165,19 @@ async def test_generate_with_fallback_mode_off_not_found():
         aspects=[]
     )
 
-    # Appeler la fonction (mode off par défaut)
-    text, model_used = await generate_with_sonnet_fallback_haiku(
-        subject='pluto',
-        chart_payload=chart_payload,
-        version=2
-    )
+    # Forcer NATAL_LLM_MODE à 'off' pour ce test
+    with patch('config.settings.NATAL_LLM_MODE', 'off'):
+        # Appeler la fonction (mode off forcé)
+        text, model_used = await generate_with_sonnet_fallback_haiku(
+            subject='pluto',
+            chart_payload=chart_payload,
+            version=2
+        )
 
-    # Vérifier que le placeholder a été utilisé
-    assert model_used == 'placeholder'
-    assert text is not None
-    assert 'Interprétation non disponible' in text
+        # Vérifier que le placeholder a été utilisé
+        assert model_used == 'placeholder'
+        assert text is not None
+        assert 'Interprétation non disponible' in text
 
 
 def test_interpretation_quality():
