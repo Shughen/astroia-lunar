@@ -1,0 +1,5 @@
+#!/bin/bash
+# Alias court pour le script d'approval CLAUDE.md
+# Usage: ./claude-md [approve|commit|status]
+
+./.claude/hooks/auto-update-claude-md.sh "$@"
