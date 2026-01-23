@@ -3,8 +3,8 @@ Configuration centralisée (Pydantic Settings)
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
-from typing import Optional
+from pydantic import Field, model_validator
+from typing import Optional, Any
 
 
 class Settings(BaseSettings):
@@ -90,7 +90,15 @@ class Settings(BaseSettings):
 
     # Lunar Interpretation (révolution lunaire enrichie IA)
     LUNAR_LLM_MODE: str = Field(default="off", description="Mode LLM pour révolution lunaire: 'off' (templates) ou 'anthropic' (interprétation IA)")
-    LUNAR_INTERPRETATION_VERSION: int = Field(default=1, description="Version du prompt lunaire (1=v1 initial)")
+    LUNAR_INTERPRETATION_VERSION: int = Field(default=2, description="Version du prompt lunaire (1=templates 36 couches, 2=Opus 4.5 1728 combinaisons)")
+
+    @model_validator(mode='before')
+    @classmethod
+    def strip_string_values(cls, data: Any) -> Any:
+        """Trim whitespace from all string values before validation"""
+        if isinstance(data, dict):
+            return {k: v.strip() if isinstance(v, str) else v for k, v in data.items()}
+        return data
 
     model_config = SettingsConfigDict(
         env_file=".env",
