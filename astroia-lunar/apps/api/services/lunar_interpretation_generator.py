@@ -136,6 +136,19 @@ async def generate_or_get_interpretation(
         if not lunar_return:
             raise InvalidLunarReturnError(f"LunarReturn {lunar_return_id} not found")
 
+        # 🔒 CRITIQUE: Extraire primitives IMMÉDIATEMENT pour éviter MissingGreenlet
+        # SQLAlchemy peut expirer les attributs après certaines opérations DB
+        lr_id = int(lunar_return.id)
+        lr_user_id = int(lunar_return.user_id)
+        lr_month = str(lunar_return.month) if lunar_return.month else None
+        lr_return_date = lunar_return.return_date
+        moon_sign_str = str(lunar_return.moon_sign) if lunar_return.moon_sign else None
+        moon_house_int = int(lunar_return.moon_house) if lunar_return.moon_house is not None else None
+        lunar_ascendant_str = str(lunar_return.lunar_ascendant) if lunar_return.lunar_ascendant else None
+        lr_aspects = lunar_return.aspects
+        lr_planets = lunar_return.planets
+        lr_houses = lunar_return.houses
+
         # 2. Vérifier cache DB temporelle (sauf si force_regenerate)
         if not force_regenerate:
             logger.debug("checking_db_temporal_cache")
@@ -181,7 +194,16 @@ async def generate_or_get_interpretation(
         try:
             logger.info("generating_via_claude")
             output_text, weekly_advice, input_context = await _generate_via_claude(
-                lunar_return=lunar_return,
+                lunar_return_id=lr_id,
+                user_id=lr_user_id,
+                month=lr_month,
+                return_date=lr_return_date,
+                moon_sign=moon_sign_str,
+                moon_house=moon_house_int,
+                lunar_ascendant=lunar_ascendant_str,
+                aspects=lr_aspects,
+                planets=lr_planets,
+                houses=lr_houses,
                 subject=subject,
                 version=version,
                 lang=lang
@@ -248,9 +270,9 @@ async def generate_or_get_interpretation(
         logger.info("falling_back_to_db_template")
         template_result = await _get_template_fallback(
             db=db,
-            moon_sign=lunar_return.moon_sign,
-            moon_house=lunar_return.moon_house,
-            lunar_ascendant=lunar_return.lunar_ascendant,
+            moon_sign=moon_sign_str,
+            moon_house=moon_house_int,
+            lunar_ascendant=lunar_ascendant_str,
             template_type=subject,
             version=version,
             lang=lang
@@ -282,15 +304,15 @@ async def generate_or_get_interpretation(
         # 5. Fallback hardcodé (dernier recours)
         logger.warning("falling_back_to_hardcoded_template")
         output_text = _get_hardcoded_fallback(
-            moon_sign=lunar_return.moon_sign,
-            moon_house=lunar_return.moon_house,
-            lunar_ascendant=lunar_return.lunar_ascendant,
+            moon_sign=moon_sign_str,
+            moon_house=moon_house_int,
+            lunar_ascendant=lunar_ascendant_str,
             subject=subject
         )
 
         if not output_text:
             raise TemplateNotFoundError(
-                f"No template found for {lunar_return.moon_sign}/{lunar_return.moon_house}/{lunar_return.lunar_ascendant}"
+                f"No template found for {moon_sign_str}/{moon_house_int}/{lunar_ascendant_str}"
             )
 
         # Record metrics for hardcoded fallback
@@ -338,7 +360,16 @@ async def _call_claude_with_retry(client: Anthropic, prompt: str, max_tokens: in
 
 
 async def _generate_via_claude(
-    lunar_return: Any,
+    lunar_return_id: int,
+    user_id: int,
+    month: str,
+    return_date: Any,
+    moon_sign: str,
+    moon_house: int,
+    lunar_ascendant: str,
+    aspects: Any,
+    planets: Any,
+    houses: Any,
     subject: str,
     version: int,
     lang: str
@@ -346,11 +377,27 @@ async def _generate_via_claude(
     """
     Génère une interprétation via Claude Opus 4.5
 
+    Args acceptent des primitives pour éviter MissingGreenlet errors
+
     Returns:
         Tuple[output_text, weekly_advice, input_context]
     """
     # Construire le contexte d'entrée
-    input_context = _build_input_context(lunar_return, subject, version, lang)
+    input_context = _build_input_context(
+        lunar_return_id=lunar_return_id,
+        user_id=user_id,
+        month=month,
+        return_date=return_date,
+        moon_sign=moon_sign,
+        moon_house=moon_house,
+        lunar_ascendant=lunar_ascendant,
+        aspects=aspects,
+        planets=planets,
+        houses=houses,
+        subject=subject,
+        version=version,
+        lang=lang
+    )
 
     # Construire le prompt
     prompt = _build_prompt(input_context, subject, version, lang)
@@ -387,7 +434,16 @@ async def _generate_via_claude(
 
 
 def _build_input_context(
-    lunar_return: Any,
+    lunar_return_id: int,
+    user_id: int,
+    month: str,
+    return_date: Any,
+    moon_sign: str,
+    moon_house: int,
+    lunar_ascendant: str,
+    aspects: Any,
+    planets: Any,
+    houses: Any,
     subject: str,
     version: int,
     lang: str
@@ -396,18 +452,20 @@ def _build_input_context(
     Construit le contexte complet pour la génération Claude
 
     Stocké en DB pour traçabilité et régénération
+
+    Args acceptent des primitives pour éviter MissingGreenlet errors
     """
     return {
-        'lunar_return_id': lunar_return.id,
-        'user_id': lunar_return.user_id,
-        'month': lunar_return.month,
-        'return_date': lunar_return.return_date.isoformat() if lunar_return.return_date else None,
-        'moon_sign': lunar_return.moon_sign,
-        'moon_house': lunar_return.moon_house,
-        'lunar_ascendant': lunar_return.lunar_ascendant,
-        'aspects': lunar_return.aspects,
-        'planets': lunar_return.planets,
-        'houses': lunar_return.houses,
+        'lunar_return_id': lunar_return_id,
+        'user_id': user_id,
+        'month': month,
+        'return_date': return_date.isoformat() if return_date else None,
+        'moon_sign': moon_sign,
+        'moon_house': moon_house,
+        'lunar_ascendant': lunar_ascendant,
+        'aspects': aspects,
+        'planets': planets,
+        'houses': houses,
         'subject': subject,
         'version': version,
         'lang': lang,
