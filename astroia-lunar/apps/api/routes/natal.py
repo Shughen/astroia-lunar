@@ -321,7 +321,46 @@ async def calculate_natal_chart(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur calcul thème natal: {str(e)}"
         )
-    
+
+    # En mode DEV_AUTH_BYPASS, current_user peut être un SimpleNamespace sans être en DB
+    # Créer l'utilisateur en DB si nécessaire pour éviter erreur FK
+    if settings.DEV_AUTH_BYPASS and settings.APP_ENV == "development":
+        from types import SimpleNamespace
+        if isinstance(current_user, SimpleNamespace):
+            logger.warning(f"🔧 DEV: current_user est SimpleNamespace (id={current_user.id}), vérification existence en DB...")
+
+            # Vérifier si user existe en DB
+            result = await db.execute(
+                select(User).where(User.id == current_user.id)
+            )
+            real_user = result.scalar_one_or_none()
+
+            if not real_user:
+                # Créer l'utilisateur en DB pour satisfaire la FK
+                logger.info(f"🔧 DEV: Création user id={current_user.id} en DB pour FK natal_chart")
+                real_user = User(
+                    id=current_user.id,
+                    email=current_user.email,
+                    hashed_password="dev_bypass_no_password"
+                )
+                db.add(real_user)
+                try:
+                    await db.flush()  # Flush sans commit global
+                    logger.info(f"✅ DEV: User id={current_user.id} créé en DB")
+                except Exception as e:
+                    logger.warning(f"⚠️ DEV: Impossible de créer user id={current_user.id}: {e}")
+                    await db.rollback()
+                    # Réessayer de récupérer (peut-être créé entre-temps)
+                    result = await db.execute(
+                        select(User).where(User.id == current_user.id)
+                    )
+                    real_user = result.scalar_one_or_none()
+
+            # Utiliser real_user au lieu de current_user pour la suite
+            if real_user:
+                current_user = real_user
+                logger.info(f"✅ DEV: Utilisation user id={current_user.id} depuis DB")
+
     # Vérifier si un thème existe déjà (utiliser user_id INTEGER)
     try:
         result = await db.execute(
