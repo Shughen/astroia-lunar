@@ -11,7 +11,7 @@ import uuid
 
 from config import settings
 from database import engine, Base
-from routes import auth, natal, lunar_returns, lunar, transits, reports, natal_reading, natal_interpretation, natal_aspect_interpretation, journal
+from routes import auth, natal, lunar_returns, lunar, transits, reports, natal_reading, natal_interpretation, natal_aspect_interpretation, journal, debug_natal
 from services import ephemeris_rapidapi
 from prometheus_client import make_asgi_app, Info
 
@@ -190,6 +190,7 @@ app.include_router(lunar.router, tags=["Luna Pack"])
 app.include_router(transits.router, tags=["Transits"])
 app.include_router(reports.router, tags=["Reports"])
 app.include_router(journal.router, prefix="/api/journal", tags=["Journal"])
+app.include_router(debug_natal.router, tags=["Debug"])
 
 
 @app.get("/")

@@ -807,9 +807,6 @@ async def generate_lunar_returns(
     # 🔒 CRITIQUE: Extraire primitives IMMÉDIATEMENT pour éviter MissingGreenlet
     user_id = int(current_user.id)
     user_email = str(current_user.email) if hasattr(current_user, 'email') and current_user.email else 'N/A'
-    birth_latitude_raw = current_user.birth_latitude if hasattr(current_user, 'birth_latitude') else None
-    birth_longitude_raw = current_user.birth_longitude if hasattr(current_user, 'birth_longitude') else None
-    birth_timezone_raw = current_user.birth_timezone if hasattr(current_user, 'birth_timezone') else None
 
     logger.info(
         f"[corr={correlation_id}] 🌙 Génération révolutions lunaires - "
@@ -847,10 +844,14 @@ async def generate_lunar_returns(
             positions = natal_chart.raw_data
         positions = positions or {}
 
-        # Les données de naissance sont stockées dans la table users, pas dans natal_charts
-        # Note: Le schéma DB réel de natal_charts ne contient que: id, user_id, positions, computed_at, version, created_at, updated_at
+        # Les données de naissance sont stockées dans natal_charts (latitude, longitude, timezone)
+        # 🔒 CRITIQUE: Extraire primitives IMMÉDIATEMENT pour éviter MissingGreenlet
+        birth_latitude_raw = natal_chart.latitude
+        birth_longitude_raw = natal_chart.longitude
+        birth_timezone_raw = natal_chart.timezone
+
         logger.debug(
-            f"[corr={correlation_id}] 📍 Récupération coordonnées depuis users: "
+            f"[corr={correlation_id}] 📍 Récupération coordonnées depuis natal_chart: "
             f"birth_latitude={birth_latitude_raw}, "
             f"birth_longitude={birth_longitude_raw}, "
             f"birth_timezone={birth_timezone_raw}"
