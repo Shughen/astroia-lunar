@@ -42,6 +42,13 @@ interface LunarInterpretation {
   full: string | null;
 }
 
+interface LunarReportMetadata {
+  source: 'db_temporal' | 'claude' | 'db_template' | 'hardcoded' | 'unknown';
+  model_used: string | null;
+  version: number;
+  generated_at: string;
+}
+
 interface LunarReport {
   header: LunarReportHeader;
   general_climate: string;
@@ -49,7 +56,22 @@ interface LunarReport {
   major_aspects: AspectV4[];
   lunar_interpretation?: LunarInterpretation;
   interpretation_source?: string;
+  metadata?: LunarReportMetadata;
 }
+
+/**
+ * Traduit les sources V2 en labels lisibles
+ */
+const getSourceLabel = (source: string): string => {
+  const labels: Record<string, string> = {
+    'db_temporal': 'Cache DB',
+    'claude': 'IA Claude',
+    'db_template': 'Templates DB',
+    'hardcoded': 'Fallback',
+    'unknown': 'Inconnu'
+  };
+  return labels[source] || source;
+};
 
 export default function LunarReportScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -307,8 +329,8 @@ export default function LunarReportScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {__DEV__
-              ? 'Rapport généré par templates v4 (architecture déterministe)'
+            {__DEV__ && report?.metadata
+              ? `📊 V${report.metadata.version} • Source: ${getSourceLabel(report.metadata.source)}${report.metadata.model_used ? ` • ${report.metadata.model_used}` : ''}`
               : '✨ Généré spécialement pour toi'}
           </Text>
         </View>
