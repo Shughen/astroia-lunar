@@ -14,6 +14,9 @@ export default function LunarInterpretationLoader({
   // Animation pour les étoiles scintillantes
   const sparkleAnim = useRef(new Animated.Value(0)).current;
 
+  // Animation pour la barre de progression (sans native driver pour width)
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
   // Animation pour les points de chargement (...)
   const dotsAnim = useRef(new Animated.Value(0)).current;
 
@@ -52,6 +55,24 @@ export default function LunarInterpretationLoader({
           duration: 1500,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Animation barre de progression (va-et-vient)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,  // width nécessite native driver false
+        }),
+        Animated.timing(progressAnim, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
         }),
       ])
     ).start();
@@ -174,10 +195,10 @@ export default function LunarInterpretationLoader({
             style={[
               styles.progressBarFill,
               {
-                width: sparkleAnim.interpolate({
+                width: progressAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: ['30%', '70%'],
-                }),
+                })
               }
             ]}
           />
