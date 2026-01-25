@@ -161,7 +161,7 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
 ./cmd test lunar               # Tests lunar uniquement
 ```
 
-**Créer une commande** : voir `.claude/commands/_template.md`
+**Créer une commande** : voir `.claude/templates/command-template.md`
 
 ---
 
