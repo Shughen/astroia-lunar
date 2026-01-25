@@ -2,7 +2,7 @@
 # Script pour approuver automatiquement les modifications de CLAUDE.md par Claude
 # Usage: ./.claude/hooks/auto-update-claude-md.sh [approve|commit|status]
 
-set -e
+set -euo pipefail
 
 CLAUDE_MD=".claude/CLAUDE.md"
 PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -14,6 +14,39 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Fonction de sécurité: vérifier que seul CLAUDE.md est staged
+ensure_only_claude_md_staged() {
+    # Liste tous les fichiers staged
+    local staged_files
+    staged_files=$(git diff --cached --name-only)
+
+    if [ -z "$staged_files" ]; then
+        return 0  # Aucun fichier staged, OK
+    fi
+
+    # Compter le nombre de fichiers staged
+    local staged_count
+    staged_count=$(echo "$staged_files" | wc -l | tr -d ' ')
+
+    # Si plus d'un fichier, refuser
+    if [ "$staged_count" -ne 1 ]; then
+        echo -e "${YELLOW}⚠️  ERREUR DE SÉCURITÉ: D'autres fichiers sont staged!${NC}" >&2
+        echo -e "${YELLOW}Fichiers staged actuellement:${NC}" >&2
+        echo "$staged_files" | sed 's/^/  - /' >&2
+        echo "" >&2
+        echo -e "${YELLOW}Ce script ne peut commiter que CLAUDE.md seul.${NC}" >&2
+        echo -e "${YELLOW}Utilisez 'git reset HEAD <file>' pour unstage les autres fichiers.${NC}" >&2
+        exit 1
+    fi
+
+    # Vérifier que le fichier unique finit par CLAUDE.md (support monorepo)
+    if ! echo "$staged_files" | grep -q "CLAUDE\.md$"; then
+        echo -e "${YELLOW}⚠️  ERREUR DE SÉCURITÉ: Le fichier staged n'est pas CLAUDE.md!${NC}" >&2
+        echo -e "${YELLOW}Fichier staged: $staged_files${NC}" >&2
+        exit 1
+    fi
+}
 
 case "${1:-status}" in
     approve)
@@ -45,13 +78,25 @@ case "${1:-status}" in
         fi
 
         # Extraire la version actuelle
-        VERSION=$(grep "^\*\*Version\*\*" "$CLAUDE_MD" | sed 's/.*: \([0-9.]*\).*/\1/')
+        VERSION=$(grep "^\*\*Version\*\*" "$CLAUDE_MD" 2>/dev/null | sed 's/.*: \([0-9.]*\).*/\1/' || echo "")
+        if [ -z "$VERSION" ]; then
+            VERSION="unknown"
+        fi
 
-        # Commit avec message auto-généré
-        git commit -m "docs(claude): update CLAUDE.md to v${VERSION}
+        # SÉCURITÉ: Vérifier qu'aucun autre fichier n'est staged
+        ensure_only_claude_md_staged
+
+        # Créer message de commit via fichier temporaire (plus sûr que -m multi-lignes)
+        COMMIT_MSG=$(mktemp)
+        trap 'rm -f "$COMMIT_MSG"' EXIT
+
+        cat > "$COMMIT_MSG" <<EOF
+docs(claude): update CLAUDE.md to v${VERSION}
 
 Auto-committed via hook script
-$(git diff --cached --stat "$CLAUDE_MD")"
+$(git diff --cached --stat "$CLAUDE_MD")
+EOF
+        git commit -F "$COMMIT_MSG"
 
         echo -e "${GREEN}✅ CLAUDE.md commité (version $VERSION)${NC}"
         echo -e "${YELLOW}💡 Prochaine étape: git push${NC}"
