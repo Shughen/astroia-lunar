@@ -535,7 +535,12 @@ def _build_prompt(
 - Ton chaleureux et accessible (tutoiement)
 - Concret et applicable
 - 800-1000 caractères
-- Structuré en 4 paragraphes
+- Structuré en 4 paragraphes avec sous-titres en gras
+
+**Format IMPORTANT:**
+- NE PAS inclure de titre principal (pas de # header)
+- Commencer DIRECTEMENT par "**Tonalité générale**"
+- Utiliser des sous-titres en gras (**Tonalité générale**, **Tes ressources**, etc.)
 
 Génère l'interprétation complète maintenant."""
 

@@ -578,14 +578,76 @@ def build_lunar_report_v4(lunar_return: Any) -> Dict[str, Any]:
 
 
 def _build_header(lunar_return: Any) -> Dict[str, Any]:
-    """Construit le header du rapport (factuel)"""
+    """Construit le header du rapport (factuel) - version sync legacy"""
     return_date = lunar_return.return_date
 
-    # Calculer date de fin (return_date + 1 mois)
-    from dateutil.relativedelta import relativedelta
+    # Fallback : +27 jours (durée moyenne cycle lunaire)
+    from datetime import timedelta
+    end_date = return_date + timedelta(days=27)
 
-    end_date = return_date + relativedelta(months=1)
+    return _format_header(
+        return_date=return_date,
+        end_date=end_date,
+        moon_sign=lunar_return.moon_sign,
+        moon_house=lunar_return.moon_house,
+        lunar_ascendant=lunar_return.lunar_ascendant
+    )
 
+
+async def _build_header_async(
+    lunar_return: Any,
+    db: AsyncSession,
+    user_id: int
+) -> Dict[str, Any]:
+    """
+    Construit le header du rapport avec vraie date prochain cycle (TICKET 1)
+
+    Requête le prochain LunarReturn pour ce user après return_date
+    pour afficher la vraie durée du cycle (~27 jours, pas 1 mois calendaire)
+    """
+    from sqlalchemy import select
+    from models.lunar_return import LunarReturn
+    from datetime import timedelta
+
+    return_date = lunar_return.return_date
+
+    # Récupérer le prochain lunar return pour ce user
+    result = await db.execute(
+        select(LunarReturn)
+        .where(
+            LunarReturn.user_id == user_id,
+            LunarReturn.return_date > return_date
+        )
+        .order_by(LunarReturn.return_date.asc())
+        .limit(1)
+    )
+    next_return = result.scalar_one_or_none()
+
+    if next_return:
+        end_date = next_return.return_date
+        logger.debug(f"[LunarReportBuilder] Prochain cycle trouvé: {end_date}")
+    else:
+        # Fallback si pas de prochain return : +27 jours (durée moyenne)
+        end_date = return_date + timedelta(days=27)
+        logger.debug(f"[LunarReportBuilder] Pas de prochain cycle, fallback +27j: {end_date}")
+
+    return _format_header(
+        return_date=return_date,
+        end_date=end_date,
+        moon_sign=lunar_return.moon_sign,
+        moon_house=lunar_return.moon_house,
+        lunar_ascendant=lunar_return.lunar_ascendant
+    )
+
+
+def _format_header(
+    return_date: Any,
+    end_date: Any,
+    moon_sign: str,
+    moon_house: int,
+    lunar_ascendant: str
+) -> Dict[str, Any]:
+    """Formate le header du rapport (factuel)"""
     # Mapping mois français
     MOIS_FR = {
         1: 'janvier', 2: 'février', 3: 'mars', 4: 'avril',
@@ -608,9 +670,9 @@ def _build_header(lunar_return: Any) -> Dict[str, Any]:
     return {
         'month': month_name,
         'dates': f"Du {start_str} au {end_str}",
-        'moon_sign': lunar_return.moon_sign or 'N/A',
-        'moon_house': lunar_return.moon_house,
-        'lunar_ascendant': lunar_return.lunar_ascendant or 'N/A'
+        'moon_sign': moon_sign or 'N/A',
+        'moon_house': moon_house,
+        'lunar_ascendant': lunar_ascendant or 'N/A'
     }
 
 
@@ -694,19 +756,11 @@ def _build_dominant_axes_enriched(lunar_return: Any) -> List[str]:
     for house in sorted(tight_houses)[:2]:
         activated.append(('aspect_activation', house))
 
-    # Ensure 2-3 axes total
-    if len(activated) < 2:
-        activated.append(('default', None))
-
-    activated = activated[:3]  # Max 3
+    # Max 3 axes (ne plus forcer 2 axes minimum - TICKET 3)
+    activated = activated[:3]
 
     # 2. Build enriched descriptions
     for i, (context_type, house_num) in enumerate(activated):
-        if house_num is None:
-            # Fallback axis (50 mots pour cohérence)
-            axes.append("Période centrée sur intégration principale et approfondie du cycle lunaire mensuel actuellement en cours, sans activation majeure ni dispersion sur axes secondaires ce mois-ci. Concrètement : focus unique et soutenu sur dynamique lunaire primaire, énergie concentrée et canalisée sur le domaine principal identifié ci-dessus. Mois d'approfondissement vertical plutôt que d'extension horizontale.")
-            continue
-
         # House name + domain
         house_label = HOUSE_AXES.get(house_num, "Domaine de vie")
         axis_text = f"Maison {house_num} : {house_label}. "
@@ -810,9 +864,12 @@ async def build_lunar_report_v4_async(
         logger.error(f"[LunarReportBuilder] ❌ Erreur extraction données lunar_return: {e}", exc_info=True)
         raise
 
-    # 1. HEADER (factuel)
+    # 1. HEADER (factuel) - TICKET 1: vraies dates du cycle
     logger.info(f"[LunarReportBuilder] 1. Construction header...")
-    header = _build_header(lunar_return)
+    if db is not None:
+        header = await _build_header_async(lunar_return, db, lunar_return_user_id)
+    else:
+        header = _build_header(lunar_return)
     logger.info(f"[LunarReportBuilder] ✅ Header construit")
 
     # 2. CLIMAT GÉNÉRAL (template enrichi v4.1 - existant)

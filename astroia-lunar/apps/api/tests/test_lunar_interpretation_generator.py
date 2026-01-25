@@ -712,14 +712,25 @@ async def test_logs_include_context(mock_lunar_return):
 # ==================== TESTS HELPER FUNCTIONS ====================
 
 @pytest.mark.asyncio
-async def test_build_input_context(mock_lunar_return):
+async def test_build_input_context():
     """
-    Test _build_input_context génère contexte complet
+    Test _build_input_context génère contexte complet avec primitives
     """
     from services.lunar_interpretation_generator import _build_input_context
 
     context = _build_input_context(
-        lunar_return=mock_lunar_return,
+        lunar_return_id=123,
+        user_id=1,
+        month='2026-01',
+        return_date=datetime(2026, 1, 15),
+        moon_sign='Aries',
+        moon_house=1,
+        lunar_ascendant='Leo',
+        aspects=[
+            {'first_planet': 'Moon', 'second_planet': 'Sun', 'aspect': 'Trine'}
+        ],
+        planets={},
+        houses={},
         subject='full',
         version=2,
         lang='fr'

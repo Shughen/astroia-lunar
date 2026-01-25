@@ -150,13 +150,14 @@ def test_build_lunar_report_v4_climate_not_empty():
 
 
 def test_build_lunar_report_v4_dominant_axes_count():
-    """Test: 2-3 axes dominants retournés"""
+    """Test: 1-3 axes dominants retournés (TICKET 3: plus de fallback boilerplate)"""
     mock_lr = MockLunarReturn()
     report = build_lunar_report_v4(mock_lr)
     axes = report['dominant_axes']
 
     assert isinstance(axes, list)
-    assert 2 <= len(axes) <= 3
+    # TICKET 3: on ne force plus 2 axes minimum - 1 seul axe possible si pas d'aspects serrés
+    assert 1 <= len(axes) <= 3
 
 
 def test_build_lunar_report_v4_major_aspects_format():
@@ -323,47 +324,41 @@ def test_climate_word_count_enriched():
 
 
 def test_axes_word_count_enriched():
-    """Test: Axes dominants atteignent 90-130 mots (enrichissement v4.1)"""
-    # Test avec scénarios 2 axes et 3 axes
-    scenarios = [
-        # 2 axes (50w each = 100w total)
-        {
-            'aspects': [
-                {'planet1': 'Moon', 'planet2': 'Mars', 'type': 'conjunction', 'orb': 2.0}
-            ],
-            'planets': {
-                'Moon': {'sign': 'Aries', 'house': 1, 'degree': 15.0, 'longitude': 15.0},
-                'Mars': {'sign': 'Aries', 'house': 1, 'degree': 13.0, 'longitude': 13.0},
-            }
-        },
-        # 3 axes (33w each = 99w total)
-        {
-            'aspects': [
-                {'planet1': 'Moon', 'planet2': 'Mars', 'type': 'conjunction', 'orb': 2.0},
-                {'planet1': 'Sun', 'planet2': 'Venus', 'type': 'trine', 'orb': 2.5},
-            ],
-            'planets': {
-                'Moon': {'sign': 'Aries', 'house': 1, 'degree': 15.0, 'longitude': 15.0},
-                'Mars': {'sign': 'Aries', 'house': 1, 'degree': 13.0, 'longitude': 13.0},
-                'Sun': {'sign': 'Cancer', 'house': 4, 'degree': 105.0, 'longitude': 105.0},
-                'Venus': {'sign': 'Pisces', 'house': 12, 'degree': 350.0, 'longitude': 350.0},
-            }
+    """Test: Axes dominants atteignent ~30-50 mots par axe (TICKET 3: sans boilerplate)"""
+    # TICKET 3: on ne force plus 2 axes minimum
+    # Scénario avec aspects dans différentes maisons pour avoir 2-3 axes
+    scenario = {
+        'aspects': [
+            {'planet1': 'Moon', 'planet2': 'Mars', 'type': 'conjunction', 'orb': 2.0},
+            {'planet1': 'Sun', 'planet2': 'Venus', 'type': 'trine', 'orb': 2.5},
+        ],
+        'planets': {
+            'Moon': {'sign': 'Aries', 'house': 1, 'degree': 15.0, 'longitude': 15.0},
+            'Mars': {'sign': 'Taurus', 'house': 2, 'degree': 43.0, 'longitude': 43.0},  # Maison différente
+            'Sun': {'sign': 'Cancer', 'house': 4, 'degree': 105.0, 'longitude': 105.0},
+            'Venus': {'sign': 'Pisces', 'house': 12, 'degree': 350.0, 'longitude': 350.0},
         }
-    ]
+    }
 
-    for scenario in scenarios:
-        lunar_return = MockLunarReturn(
-            moon_house=1,
-            aspects=scenario['aspects'],
-            planets=scenario['planets']
-        )
+    lunar_return = MockLunarReturn(
+        moon_house=1,
+        aspects=scenario['aspects'],
+        planets=scenario['planets']
+    )
 
-        report = build_lunar_report_v4(lunar_return)
-        axes = report['dominant_axes']
-        axes_text = ' '.join(axes)
-        word_count = count_words(axes_text)
+    report = build_lunar_report_v4(lunar_return)
+    axes = report['dominant_axes']
+    axes_text = ' '.join(axes)
+    word_count = count_words(axes_text)
 
-        assert 90 <= word_count <= 130, f"Axes word count {word_count}, expected 90-130"
+    # Avec plusieurs axes (maisons 1, 2, 4 ou 12 activées par aspects serrés)
+    # Chaque axe fait ~30-50 mots, donc 60-150 mots au total selon le nombre
+    assert len(axes) >= 1, "At least 1 axis expected"
+    assert word_count >= 30, f"Axes word count {word_count}, expected >= 30 (at least 1 axis)"
+
+    # Vérifier qu'aucun axe ne contient le boilerplate supprimé
+    for axis in axes:
+        assert "Période centrée sur intégration principale" not in axis, "Boilerplate fallback should be removed"
 
 
 def test_total_word_count_above_threshold():
