@@ -121,6 +121,50 @@ psql $DATABASE_URL -c "SELECT COUNT(*) FROM lunar_interpretation_templates;"  # 
 
 ---
 
+## 🔧 Command Dispatcher
+
+Système de commandes locales dans `.claude/commands/` pour charger du contexte ciblé sans scanner le repo.
+
+### Utilisation
+
+```bash
+./cmd <commande> [args...]     # Charge le contexte de la commande
+./cmd list                      # Liste toutes les commandes disponibles
+```
+
+**Règle** : Après `./cmd`, suivre les instructions du fichier chargé. Ne jamais scanner le repo.
+
+> **Approche BMAD-like** : Contexte ciblé + rôles spécialisés + contraintes = -90% tokens vs scan global.
+
+### Commandes Disponibles
+
+| Commande | Description |
+|----------|-------------|
+| `./cmd test` | Lancer les tests pytest |
+| `./cmd commit` | Commit avec conventions projet |
+| `./cmd health` | Vérifier santé système |
+| `./cmd lunar:debug` | Debugger lunar returns |
+| `./cmd lunar:context` | Charger architecture lunar |
+| `./cmd lunar:generation` | Debugger génération Claude |
+| `./cmd natal:debug` | Debugger natal charts |
+| `./cmd natal:context` | Charger architecture natal |
+| `./cmd api:route` | Créer nouvelle route FastAPI |
+| `./cmd api:service` | Créer nouveau service |
+| `./cmd db:migration` | Créer migration Alembic |
+| `./cmd mobile:context` | Contexte mobile (read-only) |
+
+### Exemples
+
+```bash
+./cmd lunar:debug timeout      # Debug timeouts Claude
+./cmd api:route notifications  # Créer route notifications
+./cmd test lunar               # Tests lunar uniquement
+```
+
+**Créer une commande** : voir `.claude/commands/_template.md`
+
+---
+
 ## 📚 Documentation Détaillée
 
 **Architecture & Historique** :

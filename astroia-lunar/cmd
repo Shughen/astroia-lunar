@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+# Command dispatcher wrapper
+# Loads .claude/commands/*.md for Claude Code context
+#
+# Usage: ./cmd <command> [args...]
+#
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "${SCRIPT_DIR}/.claude/hooks/cmd.sh" "$@"
