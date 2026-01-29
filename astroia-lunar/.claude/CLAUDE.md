@@ -224,16 +224,23 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
 - ✅ Journal multi-entrées par jour (comportement classique)
 - ✅ Navigation unifiée : /journal (écriture + historique)
 - ✅ Constantes LUNAR_GUIDANCE (8 phases × message + keywords)
+- ✅ **Corrections pré-publication v3.0** (6 tickets P0/P1)
+  - T3: Orthographe française ("confidentialité", "thème")
+  - T4: Déduplication autocomplétion lieu Nominatim
+  - T2: Déduplication phases lunaires calendrier
+  - T1: Harmonisation dates cycle lunaire (API end_date)
+  - T5: Indicateurs visuels phases (16px vs 12px)
+  - T6: Section VoC améliorée (orthographe + durée + multi-jours)
 
 **Derniers commits** :
 ```
+9dbd501 - fix(mobile): pre-publication corrections for Lunation v3.0
 b64eb0e - feat(mobile): improve bottom sheet with journal navigation and guidance
 569e5ec - feat(api): allow multiple journal entries per day
 e7b95b7 - feat(mobile): add daily features with SWR hooks and bottom sheet fix
 b77ef6b - docs(mobile): add screens documentation
-72553f7 - feat(mobile): add Lunation branding assets and screenshots
 ```
 
 ---
 
-**Dernière màj** : 2026-01-29 | **Version** : 7.1 (journal multi-entrées)
+**Dernière màj** : 2026-01-29 | **Version** : 7.2 (corrections pré-publication v3.0)
