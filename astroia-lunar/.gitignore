@@ -82,6 +82,7 @@ apps/mobile/google-service-account.json
 *.png
 !assets/**/*.png
 !docs/**/*.png
+!apps/mobile/assets/**/*.png
 
 # === BACKUPS & TEMP ===
 *_example*.json
