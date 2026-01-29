@@ -29,7 +29,7 @@ const LinearGradientComponent = LinearGradient || (({ colors, style, children, .
 
 // Interface locale pour l'affichage (conversion depuis JournalEntryType)
 interface DisplayJournalEntry {
-  id: string;
+  id: number; // ID backend pour suppression
   date: string;
   createdAtISO: string;
   text: string;
@@ -95,7 +95,7 @@ export default function JournalScreen() {
       const displayEntries: DisplayJournalEntry[] = apiEntries
         .slice(0, 7)
         .map((entry) => ({
-          id: entry.date, // Utiliser la date comme ID pour la clé React
+          id: entry.id, // ID backend pour suppression
           date: entry.date,
           createdAtISO: new Date(entry.createdAt).toISOString(),
           text: entry.text,
@@ -173,7 +173,7 @@ export default function JournalScreen() {
     }
   };
 
-  const deleteEntry = async (dateId: string) => {
+  const deleteEntry = async (entryId: number) => {
     haptics.warning(); // Feedback tactile pour action destructive
     Alert.alert(
       'Confirmer la suppression',
@@ -188,9 +188,9 @@ export default function JournalScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Supprimer via l'API en utilisant la date
+              // Supprimer via l'API en utilisant l'ID
               const { deleteJournalEntry } = await import('../services/journalService');
-              await deleteJournalEntry(dateId);
+              await deleteJournalEntry(entryId);
 
               // Recharger les entrées
               await loadEntries();

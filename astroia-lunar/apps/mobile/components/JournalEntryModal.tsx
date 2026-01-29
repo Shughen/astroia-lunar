@@ -114,6 +114,8 @@ export function JournalEntryModal({
   };
 
   const handleDelete = () => {
+    if (!existingEntry) return;
+
     Alert.alert(
       t('journal.delete'),
       t('journal.deleteConfirm'),
@@ -124,7 +126,7 @@ export function JournalEntryModal({
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteJournalEntry(targetDate);
+              await deleteJournalEntry(existingEntry.id);
               Alert.alert('✓', t('journal.deleted'));
               onClose();
             } catch (error) {

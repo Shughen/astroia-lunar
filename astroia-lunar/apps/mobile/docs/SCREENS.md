@@ -1,6 +1,6 @@
 # Lunation Mobile - Documentation des Ecrans
 
-**Version:** 3.1 (Daily Features 29/01/2026)
+**Version:** 3.3 (Journal simplifie 29/01/2026)
 
 ## Architecture de Navigation
 
@@ -142,7 +142,8 @@ app/
 │  ☐ Gratitude anticipee - Remerciez..│
 │  ☐ Preparation - Preparez...        │
 │                                     │
-│  [  Ecrire dans mon journal  ]      │  → JournalEntryModal
+│  [      Mon journal      ]          │  → /journal (ecriture + historique)
+│  [ Voir le rapport de janvier → ]   │  → /lunar/report
 │                                     │
 └─────────────────────────────────────┘
 ```
@@ -173,18 +174,22 @@ useImperativeHandle(ref, () => ({
 - `ProgressBar` - Jauge energie animee
 - `KeywordChip` - Badge mot-cle
 - `RitualCheckItem` - Checkbox rituel animee
-- `JournalEntryModal` - Modal ecriture journal
 
 **Donnees calculees** :
 | Donnee | Source |
 |--------|--------|
 | Phase francais | `getMoonPhaseFrench(phase)` |
 | Signe francais | `getZodiacSignFrench(sign)` |
-| Guidance | `getPhaseGuidance(phase)` |
-| Mots-cles | `PHASE_KEYWORDS[phase]` |
-| Rituels | `PHASE_RITUALS[phase]` |
+| Guidance + Mots-cles | `LUNAR_GUIDANCE[phase]` (depuis `constants/lunarGuidance.ts`) |
+| Rituels | `PHASE_RITUALS[phase]` (inline dans composant) |
 | Energies | `getHoroscopeMetrics(sign, phase, aspects)` |
 | Mansion | `useMansionToday()` API avec fallback hardcode |
+
+**Navigation** :
+| Bouton | Destination | Description |
+|--------|-------------|-------------|
+| Mon journal | `/journal` | Ecran journal complet (ecriture + historique) |
+| Voir le rapport | `/lunar/report` | Rapport lunaire mensuel |
 
 ---
 
@@ -450,4 +455,4 @@ index.tsx (Guards)
 
 ---
 
-*Derniere mise a jour : 29 janvier 2026 (Daily Features v3.1)*
+*Derniere mise a jour : 29 janvier 2026 (Journal simplifie v3.3)*

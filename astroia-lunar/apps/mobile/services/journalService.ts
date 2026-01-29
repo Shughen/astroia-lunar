@@ -15,6 +15,7 @@ import { journal as journalApi } from './api';
  */
 function mapBackendEntryToFrontend(backendEntry: any): JournalEntry {
   return {
+    id: backendEntry.id, // ID backend pour suppression
     date: backendEntry.date,
     text: backendEntry.note || '',
     createdAt: new Date(backendEntry.created_at).getTime(),
@@ -76,26 +77,11 @@ export async function saveJournalEntry(
 }
 
 /**
- * Supprime une entrée de journal
+ * Supprime une entrée de journal par son ID
  */
-export async function deleteJournalEntry(date: string): Promise<void> {
+export async function deleteJournalEntry(entryId: number): Promise<void> {
   try {
-    // D'abord récupérer l'entrée pour obtenir son ID backend
-    const result = await getJournalEntry(date);
-
-    if (!result.exists || !result.entry) {
-      console.warn('[JournalService] No entry found to delete for date:', date);
-      return;
-    }
-
-    // Récupérer l'ID backend via l'API
-    const response = await journalApi.getEntries({ limit: 1000 });
-    const entries = response.entries || [];
-    const matchingEntry = entries.find((e: any) => e.date === date);
-
-    if (matchingEntry && matchingEntry.id) {
-      await journalApi.deleteEntry(matchingEntry.id);
-    }
+    await journalApi.deleteEntry(entryId);
   } catch (error) {
     console.error('[JournalService] Error deleting entry:', error);
     throw error;
@@ -121,8 +107,8 @@ export async function getAllJournalEntries(): Promise<JournalEntry[]> {
     // Convertir toutes les entrées backend vers format frontend
     const frontendEntries = entries.map(mapBackendEntryToFrontend);
 
-    // Trier par date décroissante (plus récent en premier)
-    return frontendEntries.sort((a, b) => b.date.localeCompare(a.date));
+    // Trier par createdAt décroissant (plus récent en premier)
+    return frontendEntries.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.error('[JournalService] Error reading all entries:', error);
     return [];

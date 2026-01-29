@@ -8,6 +8,7 @@ import { MoonPhase } from './ritual';
  * Entrée de journal quotidienne
  */
 export interface JournalEntry {
+  id: number; // ID backend pour suppression
   date: string; // YYYY-MM-DD (date locale)
   text: string; // Texte libre utilisateur
   createdAt: number; // Timestamp de création

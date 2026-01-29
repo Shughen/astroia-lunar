@@ -1,18 +1,19 @@
 /**
  * TodayBottomSheet Component
- * Modal animée pour le rituel quotidien (fallback sans @gorhom/bottom-sheet)
+ * Modal animee pour le rituel quotidien (fallback sans @gorhom/bottom-sheet)
  *
  * Contenu:
  * - Header: date + phase lunaire
  * - VoC Alert (si actif)
- * - Guidance du jour + mots-cles
+ * - Guidance du jour + mots-cles (depuis constants/lunarGuidance.ts)
  * - Jauges energie
- * - Mansion lunaire (MVP hardcode)
+ * - Mansion lunaire (API ou fallback hardcode)
  * - Rituels suggerees (checkboxes)
- * - CTA Journal
+ * - CTA Journal (navigation /journal - ecriture + historique)
+ * - CTA Rapport mensuel (navigation /lunar/report)
  */
 
-import React, { forwardRef, useImperativeHandle, useMemo, useState, useCallback, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,10 +23,11 @@ import {
   Modal,
   Animated,
   Dimensions,
-  PanResponder,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../constants/theme';
+import { LUNAR_GUIDANCE } from '../constants/lunarGuidance';
 import { useLunar } from '../contexts/LunarProvider';
 import { LunarReturn } from '../services/api';
 import { MoonPhaseIcon } from './icons/MoonPhaseIcon';
@@ -33,29 +35,15 @@ import { ZodiacBadge } from './icons/ZodiacIcon';
 import { ProgressBar } from './ProgressBar';
 import { KeywordChip } from './KeywordChip';
 import { RitualCheckItem } from './RitualCheckItem';
-import { JournalEntryModal } from './JournalEntryModal';
 import {
   getMoonPhaseFrench,
   getZodiacSignFrench,
-  getPhaseGuidance,
   getHoroscopeMetrics,
 } from '../utils/horoscopeCalculations';
 import { haptics } from '../services/haptics';
 import type { MansionTodayResponse } from '../hooks/useLunarData';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Keywords par phase lunaire
-const PHASE_KEYWORDS: Record<string, string[]> = {
-  new_moon: ['Intention', 'Nouveaute', 'Potentiel'],
-  waxing_crescent: ['Action', 'Courage', 'Mouvement'],
-  first_quarter: ['Decision', 'Perseverance', 'Force'],
-  waxing_gibbous: ['Perfectionnement', 'Patience', 'Detail'],
-  full_moon: ['Accomplissement', 'Celebration', 'Liberation'],
-  waning_gibbous: ['Gratitude', 'Partage', 'Sagesse'],
-  last_quarter: ['Lacher-prise', 'Transformation', 'Bilan'],
-  waning_crescent: ['Repos', 'Introspection', 'Preparation'],
-};
 
 // Rituels par phase
 const PHASE_RITUALS: Record<string, Array<{ title: string; description: string }>> = {
@@ -135,10 +123,10 @@ export interface TodayBottomSheetRef {
 
 export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheetProps>(
   ({ vocStatus, lunarReturn, mansion: mansionProp }, ref) => {
+    const router = useRouter();
     const { current: lunarData } = useLunar();
     const [visible, setVisible] = useState(false);
     const [completedRituals, setCompletedRituals] = useState<Set<string>>(new Set());
-    const [journalModalVisible, setJournalModalVisible] = useState(false);
     const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
     // Expose methods to parent
@@ -179,10 +167,14 @@ export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheet
 
     const phaseFrench = getMoonPhaseFrench(moonPhase);
     const signFrench = getZodiacSignFrench(moonSign);
-    const guidance = getPhaseGuidance(moonPhase);
-    const keywords = PHASE_KEYWORDS[normalizedPhase] || PHASE_KEYWORDS.new_moon;
+    const lunarGuidance = LUNAR_GUIDANCE[normalizedPhase] || LUNAR_GUIDANCE.new_moon;
+    const guidance = lunarGuidance.message;
+    const keywords = lunarGuidance.keywords;
     const rituals = PHASE_RITUALS[normalizedPhase] || PHASE_RITUALS.new_moon;
     const metrics = getHoroscopeMetrics(moonSign, moonPhase, lunarReturn?.aspects);
+
+    // Nom du mois courant pour le CTA rapport
+    const currentMonthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
 
     // Mansion lunaire du jour - utilise API si disponible, sinon fallback hardcodé
     const mansion = mansionProp?.data?.mansion
@@ -228,7 +220,28 @@ export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheet
 
     const handleJournalPress = () => {
       haptics.light();
-      setJournalModalVisible(true);
+      // Fermer le sheet puis naviguer vers le journal
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        setVisible(false);
+        router.push('/journal');
+      });
+    };
+
+    const handleReportPress = () => {
+      haptics.light();
+      // Fermer le sheet puis naviguer
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        setVisible(false);
+        router.push('/lunar/report');
+      });
     };
 
     return (
@@ -357,7 +370,18 @@ export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheet
                       onPress={handleJournalPress}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.journalButtonText}>Ecrire dans mon journal</Text>
+                      <Text style={styles.journalButtonText}>Mon journal</Text>
+                    </TouchableOpacity>
+
+                    {/* Report CTA */}
+                    <TouchableOpacity
+                      style={styles.reportButton}
+                      onPress={handleReportPress}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.reportButtonText}>
+                        Voir le rapport de {currentMonthName} →
+                      </Text>
                     </TouchableOpacity>
 
                     {/* Bottom padding */}
@@ -368,15 +392,6 @@ export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheet
             </View>
           </TouchableWithoutFeedback>
         </Modal>
-
-        {/* Journal Modal */}
-        {lunarData && (
-          <JournalEntryModal
-            visible={journalModalVisible}
-            onClose={() => setJournalModalVisible(false)}
-            moonContext={lunarData.moon}
-          />
-        )}
       </>
     );
   }
@@ -544,6 +559,20 @@ const styles = StyleSheet.create({
   journalButtonText: {
     ...fonts.button,
     color: '#000000',
+    fontWeight: '600',
+  },
+  reportButton: {
+    backgroundColor: 'transparent',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  reportButtonText: {
+    ...fonts.button,
+    color: colors.accent,
     fontWeight: '600',
   },
 });
