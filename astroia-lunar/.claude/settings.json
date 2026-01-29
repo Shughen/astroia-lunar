@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "mcp__chrome-devtools__*",
+      "mcp__mobile-mcp__*"
+    ],
+    "deny": []
+  }
+}
