@@ -25,7 +25,8 @@
 - **Expo ~54**, React Native 0.81, Expo Router v6
 - **Zustand** (state) + **SWR** (data fetching) + **Axios** (HTTP)
 - **i18n** FR/EN support
-- **Tab Navigator** : 5 onglets (Home, Calendar, Horoscope, Rituals, Profile)
+- **Tab Navigator** : 3 onglets (Home, Calendar, Profile)
+- **Bottom Sheet** : Rituel quotidien (guidance, énergies, rituels, journal)
 - **Stack screens** : Lunar report, Natal chart, Transits, Journal
 - **Doc détaillée** : `apps/mobile/docs/SCREENS.md`
 
@@ -218,15 +219,21 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
 - ✅ Loading screen mobile animé
 - ✅ **100% Production Ready** 🎯
 
+**Sprint 7** : 🚀 **EN COURS** (29/01/2026)
+- ✅ Bottom sheet "Aujourd'hui" avec guidance lunaire par phase
+- ✅ Journal multi-entrées par jour (comportement classique)
+- ✅ Navigation unifiée : /journal (écriture + historique)
+- ✅ Constantes LUNAR_GUIDANCE (8 phases × message + keywords)
+
 **Derniers commits** :
 ```
-b94b626 - fix(mobile): erreur width animation React Native + màj CLAUDE.md
-72c12a8 - feat(mobile): loading screen animé + régénération Claude Opus 4.5
-21583f9 - feat(docs): guides déploiement production + monitoring complet
-f741412 - feat(lunar): switch Opus/Sonnet configurable
-7ad78b5 - feat(lunar): activer Prompt Caching Anthropic (-90% coûts)
+b64eb0e - feat(mobile): improve bottom sheet with journal navigation and guidance
+569e5ec - feat(api): allow multiple journal entries per day
+e7b95b7 - feat(mobile): add daily features with SWR hooks and bottom sheet fix
+b77ef6b - docs(mobile): add screens documentation
+72553f7 - feat(mobile): add Lunation branding assets and screenshots
 ```
 
 ---
 
-**Dernière màj** : 2026-01-24 | **Version** : 7.0 (refonte complète)
+**Dernière màj** : 2026-01-29 | **Version** : 7.1 (journal multi-entrées)
