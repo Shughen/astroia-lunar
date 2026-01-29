@@ -287,7 +287,7 @@ export default function ProfileScreen() {
             onPress={handleViewNatalChart}
             activeOpacity={0.8}
           >
-            <Text style={styles.natalCtaText}>Voir le theme complet</Text>
+            <Text style={styles.natalCtaText}>Voir le thème complet</Text>
           </TouchableOpacity>
         </View>
 

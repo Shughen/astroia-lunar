@@ -27,8 +27,8 @@ const DAY_SIZE = (SCREEN_WIDTH - spacing.lg * 2 - spacing.xs * 6) / 7;
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 const MONTH_NAMES = [
-  'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ];
 
 // Simple moon phase calculation (synodic month = 29.53 days)
@@ -39,13 +39,14 @@ function getMoonPhase(date: Date): { phase: string; emoji: string } {
   const daysSinceNew = (date.getTime() - knownNewMoon) / (1000 * 60 * 60 * 24);
   const currentCycleDay = ((daysSinceNew % lunarCycle) + lunarCycle) % lunarCycle;
 
+  // Chaque phase = 29.53/8 ≈ 3.69 jours (seuils équilibrés)
   if (currentCycleDay < 1.85) return { phase: 'new', emoji: '' };
-  if (currentCycleDay < 7.38) return { phase: 'waxing_crescent', emoji: '' };
+  if (currentCycleDay < 5.54) return { phase: 'waxing_crescent', emoji: '' };
   if (currentCycleDay < 9.23) return { phase: 'first_quarter', emoji: '' };
-  if (currentCycleDay < 14.77) return { phase: 'waxing_gibbous', emoji: '' };
-  if (currentCycleDay < 16.61) return { phase: 'full', emoji: '' };
-  if (currentCycleDay < 22.15) return { phase: 'waning_gibbous', emoji: '' };
-  if (currentCycleDay < 24.0) return { phase: 'last_quarter', emoji: '' };
+  if (currentCycleDay < 12.91) return { phase: 'waxing_gibbous', emoji: '' };
+  if (currentCycleDay < 16.60) return { phase: 'full', emoji: '' };
+  if (currentCycleDay < 20.29) return { phase: 'waning_gibbous', emoji: '' };
+  if (currentCycleDay < 23.97) return { phase: 'last_quarter', emoji: '' };
   return { phase: 'waning_crescent', emoji: '' };
 }
 

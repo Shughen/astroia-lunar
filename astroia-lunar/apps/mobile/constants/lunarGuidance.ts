@@ -14,31 +14,31 @@ export const LUNAR_GUIDANCE: Record<string, LunarGuidanceData> = {
     keywords: ['Intention', 'Commencement', 'Introspection'],
   },
   waxing_crescent: {
-    message: "L'elan est la. Fais un premier pas concret aujourd'hui.",
-    keywords: ['Action', 'Motivation', 'Clarte'],
+    message: "L'élan est là. Fais un premier pas concret aujourd'hui.",
+    keywords: ['Action', 'Motivation', 'Clarté'],
   },
   first_quarter: {
-    message: 'Des obstacles peuvent surgir. Ajuste ta trajectoire avec flexibilite.',
-    keywords: ['Decision', 'Perseverance', 'Adaptation'],
+    message: 'Des obstacles peuvent surgir. Ajuste ta trajectoire avec flexibilité.',
+    keywords: ['Décision', 'Persévérance', 'Adaptation'],
   },
   waxing_gibbous: {
-    message: 'Tout continue de murir. Tu peux affiner, sans forcer.',
-    keywords: ['Perfectionnement', 'Patience', 'Detail'],
+    message: 'Tout continue de mûrir. Tu peux affiner, sans forcer.',
+    keywords: ['Perfectionnement', 'Patience', 'Détail'],
   },
   full_moon: {
-    message: 'Illumination et culmination. Observe ce qui se revele.',
-    keywords: ['Revelation', 'Celebration', 'Gratitude'],
+    message: 'Illumination et culmination. Observe ce qui se révèle.',
+    keywords: ['Révélation', 'Célébration', 'Gratitude'],
   },
   waning_gibbous: {
     message: 'Temps de partager ce que tu as appris. Transmets.',
-    keywords: ['Partage', 'Enseignement', 'Generosite'],
+    keywords: ['Partage', 'Enseignement', 'Générosité'],
   },
   last_quarter: {
-    message: 'Lache ce qui ne te sert plus. Fais de la place.',
-    keywords: ['Liberation', 'Lacher-prise', 'Tri'],
+    message: 'Lâche ce qui ne te sert plus. Fais de la place.',
+    keywords: ['Libération', 'Lâcher-prise', 'Tri'],
   },
   waning_crescent: {
-    message: 'Repos et introspection. Prepare le prochain cycle.',
-    keywords: ['Repos', 'Reves', 'Bilan'],
+    message: 'Repos et introspection. Prépare le prochain cycle.',
+    keywords: ['Repos', 'Rêves', 'Bilan'],
   },
 };

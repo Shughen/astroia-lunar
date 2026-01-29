@@ -35,6 +35,7 @@ import { ZodiacBadge } from './icons/ZodiacIcon';
 import { ProgressBar } from './ProgressBar';
 import { KeywordChip } from './KeywordChip';
 import { RitualCheckItem } from './RitualCheckItem';
+import { TransitsWidget } from './TransitsWidget';
 import {
   getMoonPhaseFrench,
   getZodiacSignFrench,
@@ -48,53 +49,53 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Rituels par phase
 const PHASE_RITUALS: Record<string, Array<{ title: string; description: string }>> = {
   new_moon: [
-    { title: 'Meditation d\'intention', description: 'Visualisez vos objectifs du cycle' },
-    { title: 'Liste de souhaits', description: 'Ecrivez 3 intentions claires' },
-    { title: 'Nettoyage energetique', description: 'Renouvelez l\'energie de votre espace' },
+    { title: 'Méditation d\'intention', description: 'Visualisez vos objectifs du cycle' },
+    { title: 'Liste de souhaits', description: 'Écrivez 3 intentions claires' },
+    { title: 'Nettoyage énergétique', description: 'Renouvelez l\'énergie de votre espace' },
   ],
   waxing_crescent: [
-    { title: 'Premier pas', description: 'Une action concrete vers votre objectif' },
-    { title: 'Affirmations positives', description: 'Repetez 3 affirmations' },
+    { title: 'Premier pas', description: 'Une action concrète vers votre objectif' },
+    { title: 'Affirmations positives', description: 'Répétez 3 affirmations' },
     { title: 'Planification', description: 'Organisez votre semaine' },
   ],
   first_quarter: [
-    { title: 'Bilan intermediaire', description: 'Evaluez vos progres' },
-    { title: 'Action decisive', description: 'Prenez une decision repoussee' },
-    { title: 'Perseverance', description: 'Surmontez un obstacle' },
+    { title: 'Bilan intermédiaire', description: 'Évaluez vos progrès' },
+    { title: 'Action décisive', description: 'Prenez une décision repoussée' },
+    { title: 'Persévérance', description: 'Surmontez un obstacle' },
   ],
   waxing_gibbous: [
     { title: 'Perfectionnement', description: 'Affinez vos projets' },
-    { title: 'Gratitude anticipee', description: 'Remerciez pour ce qui se manifeste' },
-    { title: 'Preparation', description: 'Preparez la culmination' },
+    { title: 'Gratitude anticipée', description: 'Remerciez pour ce qui se manifeste' },
+    { title: 'Préparation', description: 'Préparez la culmination' },
   ],
   full_moon: [
-    { title: 'Celebration', description: 'Reconnaissez vos accomplissements' },
-    { title: 'Liberation', description: 'Laissez partir ce qui ne sert plus' },
-    { title: 'Bain de lune', description: 'Meditez sous la lune' },
+    { title: 'Célébration', description: 'Reconnaissez vos accomplissements' },
+    { title: 'Libération', description: 'Laissez partir ce qui ne sert plus' },
+    { title: 'Bain de lune', description: 'Méditez sous la lune' },
   ],
   waning_gibbous: [
     { title: 'Partage', description: 'Transmettez ce que vous avez appris' },
     { title: 'Gratitude', description: 'Listez 5 reconnaissances' },
-    { title: 'Reflexion', description: 'Analysez ce qui a fonctionne' },
+    { title: 'Réflexion', description: 'Analysez ce qui a fonctionné' },
   ],
   last_quarter: [
-    { title: 'Lacher-prise', description: 'Abandonnez une habitude limitante' },
-    { title: 'Tri et rangement', description: 'Desencombrez un espace' },
+    { title: 'Lâcher-prise', description: 'Abandonnez une habitude limitante' },
+    { title: 'Tri et rangement', description: 'Désencombrez un espace' },
     { title: 'Pardon', description: 'Pardonnez-vous ou quelqu\'un' },
   ],
   waning_crescent: [
     { title: 'Repos', description: 'Accordez-vous du temps' },
-    { title: 'Introspection', description: 'Meditez sur les lecons du cycle' },
-    { title: 'Reve lucide', description: 'Notez vos reves au reveil' },
+    { title: 'Introspection', description: 'Méditez sur les leçons du cycle' },
+    { title: 'Rêve lucide', description: 'Notez vos rêves au réveil' },
   ],
 };
 
 // Mansions lunaires (MVP hardcode)
 const LUNAR_MANSIONS = [
-  { number: 1, name: 'Al-Sharatain', meaning: 'Nouveaux departs' },
+  { number: 1, name: 'Al-Sharatain', meaning: 'Nouveaux départs' },
   { number: 2, name: 'Al-Butain', meaning: 'Richesse et abondance' },
   { number: 3, name: 'Al-Thurayya', meaning: 'Chance et fortune' },
-  { number: 4, name: 'Al-Dabaran', meaning: 'Courage et determination' },
+  { number: 4, name: 'Al-Dabaran', meaning: 'Courage et détermination' },
 ];
 
 function normalizePhase(phase: string | undefined): string {
@@ -352,7 +353,7 @@ export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheet
 
                     {/* Rituals */}
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Rituels suggeres</Text>
+                      <Text style={styles.sectionTitle}>Rituels suggérés</Text>
                       {rituals.map((ritual, index) => (
                         <RitualCheckItem
                           key={index}
@@ -362,6 +363,12 @@ export const TodayBottomSheet = forwardRef<TodayBottomSheetRef, TodayBottomSheet
                           onToggle={() => toggleRitual(ritual.title)}
                         />
                       ))}
+                    </View>
+
+                    {/* Transits du jour */}
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Tes transits du jour</Text>
+                      <TransitsWidget />
                     </View>
 
                     {/* Journal CTA */}
