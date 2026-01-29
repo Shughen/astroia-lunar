@@ -28,6 +28,11 @@ export const colors = {
   earth: '#8b7355',
   air: '#74c0fc',
   water: '#66d9ef',
+
+  // Void of Course (VoC)
+  vocWarning: '#f59e0b',
+  vocBg: 'rgba(245, 158, 11, 0.2)',
+  vocBorder: 'rgba(245, 158, 11, 0.4)',
 } as const;
 
 // Échelle de tailles typographiques (source unique)

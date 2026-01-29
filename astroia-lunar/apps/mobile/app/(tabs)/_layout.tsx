@@ -1,41 +1,46 @@
 /**
  * Tab Navigator Layout
- * 5 onglets: Accueil, Calendrier, Horoscope, Rituels, Profil
+ * 3 onglets: Mon Cycle, Calendrier, Profil
  */
 
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
-import Svg, { Path, Circle, G, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { colors } from '../../constants/theme';
 
 // Tab bar configuration
 const TAB_BAR_HEIGHT = 70;
 const ICON_SIZE = 24;
 
-// Icon components for each tab
-function HomeIcon({ color, focused }: { color: string; focused: boolean }) {
+// CycleIcon - Lune simple pour "Mon Cycle"
+function CycleIcon({ color, focused }: { color: string; focused: boolean }) {
   return (
     <Svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
+      {/* Crescent moon */}
       <Path
-        d="M12 3L4 9v12h5v-7h6v7h5V9l-8-6z"
+        d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
         stroke={color}
         strokeWidth={focused ? 2 : 1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill={focused ? `${color}20` : 'none'}
+        fill={focused ? `${color}30` : 'none'}
       />
-      {/* Moon crescent */}
-      <Path
-        d="M14 7c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
+      {/* Inner glow when focused */}
+      {focused && (
+        <Circle
+          cx="14"
+          cy="10"
+          r="2"
+          fill={color}
+          opacity={0.4}
+        />
+      )}
     </Svg>
   );
 }
 
+// CalendarIcon
 function CalendarIcon({ color, focused }: { color: string; focused: boolean }) {
   return (
     <Svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
@@ -57,51 +62,7 @@ function CalendarIcon({ color, focused }: { color: string; focused: boolean }) {
   );
 }
 
-function HoroscopeIcon({ color, focused }: { color: string; focused: boolean }) {
-  return (
-    <Svg width={ICON_SIZE + 4} height={ICON_SIZE + 4} viewBox="0 0 24 24" fill="none">
-      {/* Eye shape */}
-      <Path
-        d="M12 5C7 5 3 9 2 12c1 3 5 7 10 7s9-4 10-7c-1-3-5-7-10-7z"
-        stroke={color}
-        strokeWidth={focused ? 2 : 1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill={focused ? `${color}20` : 'none'}
-      />
-      {/* Inner circle / iris */}
-      <Circle
-        cx="12"
-        cy="12"
-        r="3"
-        stroke={color}
-        strokeWidth={1.5}
-        fill={focused ? color : 'none'}
-      />
-    </Svg>
-  );
-}
-
-function RitualsIcon({ color, focused }: { color: string; focused: boolean }) {
-  return (
-    <Svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
-      {/* Lightbulb shape */}
-      <Path
-        d="M12 2C8.5 2 6 4.5 6 8c0 2.5 1.5 4.5 3 5.5V16h6v-2.5c1.5-1 3-3 3-5.5 0-3.5-2.5-6-6-6z"
-        stroke={color}
-        strokeWidth={focused ? 2 : 1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill={focused ? `${color}20` : 'none'}
-      />
-      {/* Lightbulb base */}
-      <Path d="M9 19h6M9 22h6" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      {/* Inner glow */}
-      {focused && <Circle cx="12" cy="8" r="2" fill={color} opacity={0.5} />}
-    </Svg>
-  );
-}
-
+// ProfileIcon
 function ProfileIcon({ color, focused }: { color: string; focused: boolean }) {
   return (
     <Svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
@@ -141,8 +102,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color, focused }) => <HomeIcon color={color} focused={focused} />,
+          title: 'Mon Cycle',
+          tabBarIcon: ({ color, focused }) => <CycleIcon color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -150,20 +111,6 @@ export default function TabLayout() {
         options={{
           title: 'Calendrier',
           tabBarIcon: ({ color, focused }) => <CalendarIcon color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="horoscope"
-        options={{
-          title: 'Horoscope',
-          tabBarIcon: ({ color, focused }) => <HoroscopeIcon color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="rituals"
-        options={{
-          title: 'Rituels',
-          tabBarIcon: ({ color, focused }) => <RitualsIcon color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
