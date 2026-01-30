@@ -1,11 +1,11 @@
 {
   "total_aspects": 130,
-  "completed_batches": 6,
+  "completed_batches": 7,
   "total_batches": 10,
-  "aspects_inserted": 50,
-  "progress_percent": 38.5,
+  "aspects_inserted": 60,
+  "progress_percent": 46.2,
   "total_cost_usd": 0,
-  "last_batch_at": "2026-01-30T20:30:00Z",
+  "last_batch_at": "2026-01-30T20:45:00Z",
   "batches": [
     {
       "number": 1,
@@ -54,6 +54,14 @@
       "cost_usd": 0,
       "committed_at": "2026-01-30T20:30:00Z",
       "notes": "Pluto: transformation/pouvoir/profondeur, Moon-Mercury: émotions + communication. Intensité et clarté."
+    },
+    {
+      "number": 7,
+      "aspects": 10,
+      "pairs": ["moon-venus", "moon-mars"],
+      "cost_usd": 0,
+      "committed_at": "2026-01-30T20:45:00Z",
+      "notes": "Moon-Venus: besoins affectifs/douceur, Moon-Mars: émotions + action. Douceur vs intensité."
     }
   ]
 }
