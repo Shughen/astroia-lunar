@@ -90,6 +90,7 @@ export interface AspectV4 {
     why: string[];
     manifestation: string;
     advice?: string;
+    shadow?: string;  // v5: section "Attention" (piège à éviter)
   };
 }
 

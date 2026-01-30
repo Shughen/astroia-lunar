@@ -172,6 +172,14 @@ export const AspectDetailSheet: React.FC<AspectDetailSheetProps> = ({
                     <Text style={styles.adviceText}>{translateAstrologyText(aspect.copy.advice)}</Text>
                   </View>
                 )}
+
+                {/* Section 5: Shadow/Attention (v5 optionnel) */}
+                {aspect.copy.shadow && (
+                  <View style={[styles.section, styles.shadowSection]}>
+                    <Text style={styles.sectionTitle}>⚠️ Attention</Text>
+                    <Text style={styles.shadowText}>{translateAstrologyText(aspect.copy.shadow)}</Text>
+                  </View>
+                )}
               </>
             ) : (
               // Fallback si copy absent
@@ -308,6 +316,20 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.text,
     fontWeight: '500',
+  },
+
+  // Section Shadow/Attention (v5)
+  shadowSection: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)', // Amber warning
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+    paddingLeft: 12,
+  },
+  shadowText: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#fbbf24',
+    fontStyle: 'italic',
   },
 
   // Fallback (copy absent)

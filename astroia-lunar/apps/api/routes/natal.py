@@ -1,7 +1,7 @@
 """Routes pour thème natal"""
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from pydantic import BaseModel
@@ -53,11 +53,17 @@ async def calculate_natal_chart(
     data: NatalChartRequest,
     current_user: User = Depends(get_current_user),
     x_dev_user_id: Optional[str] = Header(default=None, alias="X-Dev-User-Id"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    aspect_version: int = Query(5, ge=2, le=5, description="Version des interprétations d'aspects (2=v4, 5=v5)")
 ):
     """
     Calcule le thème natal et le sauvegarde
     Si un thème existe déjà, il sera écrasé
+
+    Query params:
+    - aspect_version: Version des interprétations (défaut: 5)
+      - 5: V5 nouvelle génération (ton bienveillant, exemples concrets)
+      - 2: V4 professionnel (ton technique)
     """
     # Fallback birth_time à "12:00" (midi) si manquant (comme dans l'ancienne app)
     birth_time = data.time if data.time else "12:00"
@@ -514,15 +520,17 @@ async def calculate_natal_chart(
     houses = positions_data.get("houses", {})
     raw_aspects = positions_data.get("aspects", [])
 
-    # Enrichir aspects avec métadonnées + copy v4 (si version v4 activée)
+    # Enrichir aspects avec métadonnées + copy (version spécifiée via query param)
     aspects = raw_aspects
-    if settings.ASPECTS_VERSION == 4:
+    if settings.ASPECTS_VERSION >= 2 or aspect_version >= 2:
         try:
             from services.aspect_explanation_service import enrich_aspects_v4_async
-            aspects = await enrich_aspects_v4_async(raw_aspects, planets, db, limit=10)
-            logger.info(f"✅ Aspects enrichis v4: {len(aspects)} aspects avec copy")
+            # Utiliser aspect_version du query param (prioritaire) ou settings
+            version_to_use = aspect_version if aspect_version >= 2 else settings.ASPECTS_VERSION
+            aspects = await enrich_aspects_v4_async(raw_aspects, planets, db, limit=10, version=version_to_use)
+            logger.info(f"✅ Aspects enrichis (version={version_to_use}): {len(aspects)} aspects avec copy")
         except Exception as e:
-            logger.warning(f"⚠️ Erreur enrichissement aspects v4 (fallback raw aspects): {e}")
+            logger.warning(f"⚠️ Erreur enrichissement aspects (fallback raw aspects): {e}")
             aspects = raw_aspects
 
     # Stocker chart.id AVANT toute opération qui pourrait causer un rollback
@@ -622,9 +630,15 @@ async def calculate_natal_chart(
 @router.get("/natal-chart", response_model=NatalChartResponse)
 async def get_natal_chart(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    aspect_version: int = Query(5, ge=2, le=5, description="Version des interprétations d'aspects (2=v4, 5=v5)")
 ):
-    """Récupère le thème natal de l'utilisateur"""
+    """
+    Récupère le thème natal de l'utilisateur
+
+    Query params:
+    - aspect_version: Version des interprétations (défaut: 5)
+    """
     
     try:
         result = await db.execute(
@@ -653,15 +667,17 @@ async def get_natal_chart(
     houses = positions_data.get("houses", {})
     raw_aspects = positions_data.get("aspects", [])
 
-    # Enrichir aspects avec métadonnées + copy v4 (si version v4 activée)
+    # Enrichir aspects avec métadonnées + copy (version spécifiée via query param)
     aspects = raw_aspects
-    if settings.ASPECTS_VERSION == 4:
+    if settings.ASPECTS_VERSION >= 2 or aspect_version >= 2:
         try:
             from services.aspect_explanation_service import enrich_aspects_v4_async
-            aspects = await enrich_aspects_v4_async(raw_aspects, planets, db, limit=10)
-            logger.info(f"✅ Aspects enrichis v4: {len(aspects)} aspects avec copy")
+            # Utiliser aspect_version du query param (prioritaire) ou settings
+            version_to_use = aspect_version if aspect_version >= 2 else settings.ASPECTS_VERSION
+            aspects = await enrich_aspects_v4_async(raw_aspects, planets, db, limit=10, version=version_to_use)
+            logger.info(f"✅ Aspects enrichis (version={version_to_use}): {len(aspects)} aspects avec copy")
         except Exception as e:
-            logger.warning(f"⚠️ Erreur enrichissement aspects v4 (fallback raw aspects): {e}")
+            logger.warning(f"⚠️ Erreur enrichissement aspects (fallback raw aspects): {e}")
             aspects = raw_aspects
 
     # Construire la réponse avec Big3 extrait depuis positions

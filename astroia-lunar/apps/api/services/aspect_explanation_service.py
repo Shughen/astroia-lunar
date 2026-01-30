@@ -26,7 +26,7 @@ async def load_pregenerated_aspect_interpretation(
     planet2: str,
     aspect_type: str,
     db_session,
-    version: int = 2,
+    version: int = 5,  # Changé: default v5
     lang: str = 'fr'
 ) -> Optional[str]:
     """
@@ -72,9 +72,9 @@ async def load_pregenerated_aspect_interpretation(
 
 def parse_markdown_to_copy(markdown_content: str) -> Dict[str, Any]:
     """
-    Parse le markdown V2 en format copy {summary, why[], manifestation, advice}.
+    Parse le markdown V2/V5 en format copy {summary, why[], manifestation, advice, shadow}.
 
-    Format markdown attendu:
+    Format markdown V2 (ancien):
     ```
     # ☌ Conjonction Planet1 - Planet2
     **En une phrase :** Summary text
@@ -92,19 +92,41 @@ def parse_markdown_to_copy(markdown_content: str) -> Dict[str, Any]:
     Advice text
     ```
 
+    Format markdown V5 (nouveau):
+    ```
+    # ☌ Conjonction Planet1 - Planet2
+    **En une phrase :** Summary text
+
+    ## L'énergie de cet aspect
+    Energy text
+
+    ## Manifestations concrètes
+    - Manifestation 1
+    - Manifestation 2
+    - Manifestation 3
+
+    ## Conseil pratique
+    Advice text
+
+    ## Attention
+    Shadow text
+    ```
+
     Returns:
         {
             'summary': str,
-            'why': [str, str],  # potentiel + défi
+            'why': [str, str],  # potentiel + défi (v2) ou énergie (v5)
             'manifestation': str,
-            'advice': str|None
+            'advice': str|None,
+            'shadow': str|None  # v5 uniquement
         }
     """
     copy = {
         'summary': '',
         'why': [],
         'manifestation': '',
-        'advice': None
+        'advice': None,
+        'shadow': None  # Nouveau champ v5
     }
 
     if not markdown_content:
@@ -118,14 +140,29 @@ def parse_markdown_to_copy(markdown_content: str) -> Dict[str, Any]:
     # Extraire "L'énergie de cet aspect"
     match = re.search(r"##\s*L'[eé]nergie de cet aspect\s*\n(.+?)(?:\n##|$)", markdown_content, re.DOTALL)
     if match:
-        copy['manifestation'] = match.group(1).strip()
+        energy_text = match.group(1).strip()
+        # Pour v5, séparer en bullets pour why
+        sentences = energy_text.split('. ')
+        copy['why'] = [s.strip() + ('.' if not s.endswith('.') else '') for s in sentences[:2] if s.strip()]
+        # Garder le texte complet pour manifestation (sera enrichi avec Manifestations concrètes)
+        copy['manifestation'] = energy_text
 
-    # Extraire "Ton potentiel"
+    # Extraire "Manifestations concrètes" (v5)
+    match = re.search(r"##\s*Manifestations concr[eè]tes\s*\n(.+?)(?:\n##|$)", markdown_content, re.DOTALL)
+    if match:
+        manifestations = match.group(1).strip()
+        # Concaténer avec l'énergie si elle existe
+        if copy['manifestation']:
+            copy['manifestation'] += "\n\n" + manifestations
+        else:
+            copy['manifestation'] = manifestations
+
+    # Extraire "Ton potentiel" (v2 fallback)
     match = re.search(r"##\s*Ton potentiel\s*\n(.+?)(?:\n##|$)", markdown_content, re.DOTALL)
     if match:
         copy['why'].append(match.group(1).strip())
 
-    # Extraire "Ton défi"
+    # Extraire "Ton défi" (v2 fallback)
     match = re.search(r"##\s*Ton d[eé]fi\s*\n(.+?)(?:\n##|$)", markdown_content, re.DOTALL)
     if match:
         copy['why'].append(match.group(1).strip())
@@ -134,6 +171,11 @@ def parse_markdown_to_copy(markdown_content: str) -> Dict[str, Any]:
     match = re.search(r"##\s*Conseil pratique\s*\n(.+?)(?:\n##|$)", markdown_content, re.DOTALL)
     if match:
         copy['advice'] = match.group(1).strip()
+
+    # Extraire "Attention" (v5)
+    match = re.search(r"##\s*Attention\s*\n(.+?)(?:\n##|$)", markdown_content, re.DOTALL)
+    if match:
+        copy['shadow'] = match.group(1).strip()
 
     return copy
 
@@ -754,7 +796,8 @@ async def enrich_aspects_v4_async(
     aspects: List[Dict[str, Any]],
     planets_data: Dict[str, Any],
     db_session,
-    limit: int = 10
+    limit: int = 10,
+    version: int = 5  # Nouveau: version des interprétations (5=v5, 2=v4, etc.)
 ) -> List[Dict[str, Any]]:
     """
     Version async de enrich_aspects_v4 qui charge les interprétations depuis la DB.
@@ -765,7 +808,7 @@ async def enrich_aspects_v4_async(
     3. Limiter à N aspects (default: 10)
     4. Pour chaque aspect:
        - Calculer métadonnées (expectedAngle, actualAngle, placements)
-       - Charger copy depuis DB (fallback templates si non trouvé)
+       - Charger copy depuis DB version spécifiée (fallback templates si non trouvé)
        - Ajouter ID unique (hash stable)
 
     Args:
@@ -773,11 +816,12 @@ async def enrich_aspects_v4_async(
         planets_data: Dict des planètes avec positions (sign, house, longitude)
         db_session: Session async SQLAlchemy
         limit: Nombre max d'aspects à retourner (default: 10)
+        version: Version des interprétations (5=v5 nouvelle génération, 2=v4 professionnel)
 
     Returns:
         Liste d'aspects enrichis avec copy depuis DB ou templates
     """
-    logger.info(f"[AspectExplanation] Enrichissement aspects v4 async (DB-first) - {len(aspects)} aspects bruts")
+    logger.info(f"[AspectExplanation] Enrichissement aspects async (DB-first, version={version}) - {len(aspects)} aspects bruts")
 
     # 1. Filtrer v4
     filtered_aspects = filter_major_aspects_v4(aspects)
@@ -800,9 +844,9 @@ async def enrich_aspects_v4_async(
             # Calculer métadonnées
             metadata = calculate_aspect_metadata(aspect, planets_data)
 
-            # Essayer de charger depuis DB
+            # Essayer de charger depuis DB (version spécifiée)
             markdown_content = await load_pregenerated_aspect_interpretation(
-                planet1, planet2, aspect_type, db_session
+                planet1, planet2, aspect_type, db_session, version=version
             )
 
             if markdown_content:

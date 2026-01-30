@@ -9,17 +9,17 @@ Ce document retrace l'historique des commits et l'évolution du projet.
 ### Dernier commit
 
 ```
-b94b626 - fix(mobile): erreur width animation React Native + màj CLAUDE.md
+(local) - feat(api): aspect interpretations v5 - backend & mobile ready
 ```
 
 ### 5 derniers commits
 
 ```
-b94b626 - fix(mobile): erreur width animation React Native + màj CLAUDE.md
-72c12a8 - feat(mobile): loading screen animé + régénération Claude Opus 4.5
-410341f - feat(docs): guides production ready complets
-2bff77f - docs(claude): Sprint 6 TERMINÉ - Activation génération Claude Opus 4.5
-21583f9 - feat(docs): guides déploiement production + monitoring complet
+(local) - feat(api): aspect interpretations v5 - backend & mobile ready
+b622f30 - docs(api): document app crash fix and DB setup for DEV_AUTH_BYPASS
+d9f311f - fix(api): correct user_id type handling after UUID→INTEGER migration
+996f62c - feat(api): auto-calculate transits when generating new lunar report
+d5ceb3b - fix(api): accept integer user_id in transits overview endpoint
 ```
 
 ### Commits Sprint 6 (Janvier 2026)
@@ -32,9 +32,84 @@ f741412 - feat(lunar): switch Opus/Sonnet configurable
 7ad78b5 - feat(lunar): activer Prompt Caching Anthropic (-90% coûts)
 ```
 
+### Commits Sprint 7 (Janvier 2026)
+
+```
+b622f30 - docs(api): document app crash fix and DB setup for DEV_AUTH_BYPASS
+d9f311f - fix(api): correct user_id type handling after UUID→INTEGER migration
+996f62c - feat(api): auto-calculate transits when generating new lunar report
+d5ceb3b - fix(api): accept integer user_id in transits overview endpoint
+00702dc - fix(mobile): correct French typo 'Detail' → 'Détail' in waxing gibbous keywords
+5ba7b4c - docs(mobile): add app screenshots for Opus 4.5 validation
+33f3a58 - fix(api,mobile): corrections pré-publication Lunation v3.0 (T1+T3)
+85486fa - fix(mobile): prioritize locale-relevant locations in onboarding autocomplete
+9dbd501 - fix(mobile): pre-publication corrections for Lunation v3.0
+```
+
+### Commits Sprint 8 (Janvier 2026) - Refonte Aspects v5
+
+```
+(local) - feat(api): aspect interpretations v5 - backend & mobile ready
+(local) - test(api): add 6 unit tests for aspect v5 parser (6/6 passing)
+(local) - feat(mobile): add shadow section in AspectDetailSheet with amber warning
+(local) - feat(api): add version parameter to aspect enrichment service
+(local) - feat(scripts): add batch generation/validation/insertion scripts
+```
+
 ---
 
 ## 📊 Timeline par Sprint
+
+### Sprint 8 Timeline (En cours) 🔥
+
+- **Début** : 30/01/2026 09h00
+- **Status** : 🔄 **BACKEND & MOBILE READY** - En attente génération batches
+- **Objectif** : Refonte 130 aspects prioritaires avec Claude Opus 4.5 (v4→v5)
+- **Budget estimé** : $10-15 USD
+- **Scope** : 10 batches (3 avec A/B test, 7 version A uniquement)
+
+**Problème v4** :
+- Textes identiques : "Symbiose puissante, intensité garantie" répété 3×
+- Langage technique : "fusion fonctionnelle", "indissociation"
+- Conseils non actionnables : "Observer les contextes où..."
+- Note Claude Opus 4.5 : 8/20 qualité actuelle
+
+**Réalisations** :
+- ✅ Backend v5 complet (parser markdown + versioning + query param)
+- ✅ Mobile v5 complet (interface TypeScript + section "Attention" amber warning)
+- ✅ Scripts génération/validation/insertion (3 scripts Python)
+- ✅ Tests unitaires : 6/6 passés ✨
+- ✅ Infrastructure : `data/batches/`, `progress.json`
+- ✅ Documentation : `ASPECT_REFONTE_V5.md`
+- ⏳ Génération batches : 0/10 (prêt à lancer)
+
+**Format v5** :
+```
+🌟 Brief (accroche émotionnelle 50-80 chars)
+💡 Insight (explication simple, 2-3 phrases)
+📋 Concret (3 bullet points vie réelle)
+✨ Conseil (action actionnable, 1-2 phrases)
+⚠️ Attention (piège à éviter, 1 phrase) ← NOUVEAU
+```
+
+**Fichiers modifiés** :
+- Backend : `aspect_explanation_service.py`, `routes/natal.py`, `tests/test_aspect_explanation_v5.py`
+- Mobile : `types/api.ts`, `components/AspectDetailSheet.tsx`
+- Scripts : `generate_aspect_batch.py`, `validate_aspect_batch.py`, `insert_aspect_batch.py`
+
+### Sprint 7 Timeline (Terminé) ✅
+
+- **Début** : 29/01/2026
+- **Fin** : 30/01/2026
+- **Status** : ✅ **SPRINT 7 COMPLET** (Corrections pré-publication v3.0 + hotfixes)
+
+**Réalisations Sprint 7** :
+- Bottom sheet "Aujourd'hui" avec guidance lunaire
+- Journal multi-entrées par jour
+- Corrections pré-publication v3.0 (6 tickets P0/P1)
+- Fix crash app (user_id UUID→INTEGER)
+- Fix transits auto-calculés lors génération lunar report
+- Fix typo français mobile
 
 ### Sprint 6 Timeline (Terminé) ✅
 

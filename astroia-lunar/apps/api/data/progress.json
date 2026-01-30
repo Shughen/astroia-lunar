@@ -1,0 +1,19 @@
+{
+  "total_aspects": 130,
+  "completed_batches": 1,
+  "total_batches": 10,
+  "aspects_inserted": 10,
+  "progress_percent": 7.7,
+  "total_cost_usd": 0,
+  "last_batch_at": "2026-01-30T15:00:00Z",
+  "batches": [
+    {
+      "number": 1,
+      "aspects": 10,
+      "pairs": ["sun-venus", "sun-mars"],
+      "cost_usd": 0,
+      "committed_at": "2026-01-30T15:00:00Z",
+      "notes": "Généré manuellement dans Claude Code - Version A hybride"
+    }
+  ]
+}

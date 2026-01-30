@@ -219,7 +219,7 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
 - ✅ Loading screen mobile animé
 - ✅ **100% Production Ready** 🎯
 
-**Sprint 7** : 🚀 **EN COURS** (29/01/2026)
+**Sprint 7** : 🚀 **EN COURS** (30/01/2026)
 - ✅ Bottom sheet "Aujourd'hui" avec guidance lunaire par phase
 - ✅ Journal multi-entrées par jour (comportement classique)
 - ✅ Navigation unifiée : /journal (écriture + historique)
@@ -231,16 +231,43 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
   - T1: Harmonisation dates cycle lunaire (API end_date)
   - T5: Indicateurs visuels phases (16px vs 12px)
   - T6: Section VoC améliorée (orthographe + durée + multi-jours)
+- ✅ **Correctifs post-publication** (30/01/2026)
+  - Fix crash app lors affichage thème natal (user_id UUID→INTEGER)
+  - Fix transits auto-calculés lors génération lunar report
+  - Fix typo français "Détail" keywords mobile
+  - Doc setup DEV_AUTH_BYPASS pour tests
+
+**Sprint 8** : 🔥 **EN COURS** - Refonte Aspects v5 (30/01/2026)
+- ✅ **Backend v5 complet**
+  - Parser markdown v5 avec section "Attention" → `shadow`
+  - Paramètre `version=5` par défaut dans `aspect_explanation_service.py`
+  - Query param `aspect_version` dans `/api/natal-chart` (POST & GET)
+  - Tests unitaires : 6/6 passés ✨
+- ✅ **Mobile v5 complet**
+  - Interface TypeScript : `shadow?: string` dans `AspectV4`
+  - Section "⚠️ Attention" avec style amber warning
+  - Affichage conditionnel (rétro-compatible v4)
+- ✅ **Infrastructure génération**
+  - Script `generate_aspect_batch.py` : Génération A/B avec Claude Opus 4.5
+  - Script `validate_aspect_batch.py` : Validation qualité (longueurs, jargon)
+  - Script `insert_aspect_batch.py` : Insertion BD avec upsert + tracking
+  - Fichier `data/progress.json` : 0/130 aspects (prêt pour génération)
+- ⏳ **Génération batches** : 0/10 batches (130 aspects à générer)
+
+**Objectif Sprint 8** :
+- Réécrire 130 aspects prioritaires avec Claude Opus 4.5
+- Format v5 : Brief + Insight + Concret + Conseil + Attention (vs v4 technique)
+- Budget : $10-15 USD | Scope : Luminaires (Sun, Moon) + Relations (Venus, Mars)
 
 **Derniers commits** :
 ```
-9dbd501 - fix(mobile): pre-publication corrections for Lunation v3.0
-b64eb0e - feat(mobile): improve bottom sheet with journal navigation and guidance
-569e5ec - feat(api): allow multiple journal entries per day
-e7b95b7 - feat(mobile): add daily features with SWR hooks and bottom sheet fix
-b77ef6b - docs(mobile): add screens documentation
+b622f30 - docs(api): document app crash fix and DB setup for DEV_AUTH_BYPASS
+d9f311f - fix(api): correct user_id type handling after UUID→INTEGER migration
+996f62c - feat(api): auto-calculate transits when generating new lunar report
+d5ceb3b - fix(api): accept integer user_id in transits overview endpoint
+00702dc - fix(mobile): correct French typo 'Detail' → 'Détail' in waxing gibbous keywords
 ```
 
 ---
 
-**Dernière màj** : 2026-01-29 | **Version** : 7.2 (corrections pré-publication v3.0)
+**Dernière màj** : 2026-01-30 | **Version** : 8.0 (refonte aspects v5 - backend ready)

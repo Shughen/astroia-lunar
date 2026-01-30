@@ -1,0 +1,11 @@
+{
+  "batch_number": 1,
+  "generated_at": "2026-01-30T13:49:39.161308",
+  "pairs": [
+    "sun-venus",
+    "sun-mars"
+  ],
+  "aspects": [],
+  "cost_usd": 0,
+  "total_tokens": 0
+}
