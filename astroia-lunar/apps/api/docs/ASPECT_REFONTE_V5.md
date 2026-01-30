@@ -2,9 +2,10 @@
 
 **Date** : 2026-01-30
 **Sprint** : 8
-**Statut** : Backend & Mobile ready, génération en attente
+**Statut** : Backend & Mobile ready, génération en cours (20/130 aspects)
 **Scope** : 130 aspects prioritaires (90%+ couverture cas réels)
-**Budget** : $10-15 USD
+**Méthode** : Génération manuelle avec Claude Code (pas d'API)
+**Budget** : $0 USD (gratuit via Claude Code)
 
 ---
 
@@ -208,42 +209,63 @@ python scripts/insert_aspect_batch.py \
 
 ## 📊 Plan de Génération
 
+### Méthode : Génération manuelle avec Claude Code
+
+**IMPORTANT** : Les interprétations sont générées **directement dans Claude Code** (pas d'appel API Anthropic).
+
+Pourquoi ?
+- ✅ **Pas de coût API** ($0 USD vs $10-15 estimés)
+- ✅ **Contrôle qualité total** (révision humaine immédiate)
+- ✅ **Pas de limite de tokens** (compte Claude Pro)
+- ✅ **Itération rapide** (ajustements en temps réel)
+
 ### Scope Optimisé : 130 aspects (10 batches)
 
 **Batches prioritaires avec A/B test** (1-3) : 35 aspects
-- Batch 1 : sun-venus, sun-mars (10 aspects, $0.80)
-- Batch 2 : venus-mars, sun-jupiter (10 aspects, $0.80)
-- Batch 3 : moon-uranus, saturn-uranus, sun-moon (15 aspects, $1.20)
+- Batch 1 : sun-venus, sun-mars (10 aspects) ✅ FAIT
+- Batch 2 : venus-mars, sun-jupiter (10 aspects) ✅ FAIT
+- Batch 3 : moon-uranus, saturn-uranus, sun-moon (15 aspects)
 
 **Batches fréquents version A uniquement** (4-10) : 95 aspects
-- Batch 4-5 : Aspects solaires restants (30 aspects, $2.40)
-- Batch 6-8 : Aspects lunaires (35 aspects, $2.80)
-- Batch 9-10 : Venus/Mars avec planètes extérieures (30 aspects, $2.40)
+- Batch 4-5 : Aspects solaires restants (30 aspects)
+- Batch 6-8 : Aspects lunaires (35 aspects)
+- Batch 9-10 : Venus/Mars avec planètes extérieures (30 aspects)
 
-**Total** : 130 aspects, $10.40 USD estimé
+**Total** : 130 aspects, $0 USD (génération Claude Code)
 
-### Workflow par Batch
+### Workflow par Batch (Méthode Manuelle)
 
 ```bash
-# 1. Générer
-python scripts/generate_aspect_batch.py --batch-number 1 --pairs "sun,venus" "sun,mars" --ab-test
+# 1. Générer avec Claude Code
+# Demander à Claude Code de générer les 10 aspects du batch
+# (ex: "Génère les 10 aspects pour venus-mars et sun-jupiter")
 
-# 2. Valider
-python scripts/validate_aspect_batch.py --input data/batches/batch_01.json --strict
+# 2. Créer script d'insertion direct
+# Claude Code crée un script Python avec les 10 aspects en dur
 
-# 3. Sélection A/B manuelle (éditer JSON)
+# 3. Insérer en BD
+python scripts/insert_batch_XX_direct.py
 
-# 4. Insérer en BD
-python scripts/insert_aspect_batch.py --batch-file data/batches/batch_01.json
-
-# 5. Vérifier
+# 4. Vérifier
 psql $DATABASE_URL -c "SELECT COUNT(*) FROM pregenerated_natal_aspects WHERE version=5;"
 
+# 5. Mettre à jour progress.json
+# Tracking manuel de la progression
+
 # 6. Commit
-git add data/batches/batch_01.json
-git commit -m "feat(api): add aspect interpretations batch 1/10 - sun combos P0"
+git add scripts/insert_batch_XX_direct.py data/progress.json
+git commit -m "feat(api): add aspect interpretations batch X/10 - [paires]"
 git push origin main
 ```
+
+### Scripts Automatiques (Non utilisés)
+
+Les scripts `generate_aspect_batch.py`, `validate_aspect_batch.py`, et `insert_aspect_batch.py` ont été créés mais **ne sont pas utilisés** car la génération manuelle dans Claude Code est plus rapide et gratuite.
+
+Ces scripts restent disponibles pour :
+- Documentation de la logique de génération
+- Génération future en masse (si nécessaire)
+- Référence pour les prompts A/B
 
 ---
 

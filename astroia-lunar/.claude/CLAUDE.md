@@ -219,7 +219,7 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
 - ✅ Loading screen mobile animé
 - ✅ **100% Production Ready** 🎯
 
-**Sprint 7** : 🚀 **EN COURS** (30/01/2026)
+**Sprint 7** : ✅ **TERMINÉ** (30/01/2026)
 - ✅ Bottom sheet "Aujourd'hui" avec guidance lunaire par phase
 - ✅ Journal multi-entrées par jour (comportement classique)
 - ✅ Navigation unifiée : /journal (écriture + historique)
@@ -231,11 +231,6 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
   - T1: Harmonisation dates cycle lunaire (API end_date)
   - T5: Indicateurs visuels phases (16px vs 12px)
   - T6: Section VoC améliorée (orthographe + durée + multi-jours)
-- ✅ **Correctifs post-publication** (30/01/2026)
-  - Fix crash app lors affichage thème natal (user_id UUID→INTEGER)
-  - Fix transits auto-calculés lors génération lunar report
-  - Fix typo français "Détail" keywords mobile
-  - Doc setup DEV_AUTH_BYPASS pour tests
 
 **Sprint 8** : 🔥 **EN COURS** - Refonte Aspects v5 (30/01/2026)
 - ✅ **Backend v5 complet**
@@ -247,8 +242,15 @@ Système de commandes locales dans `.claude/commands/` pour charger du contexte 
   - Interface TypeScript : `shadow?: string` dans `AspectV4`
   - Section "⚠️ Attention" avec style amber warning
   - Affichage conditionnel (rétro-compatible v4)
-- ✅ **Infrastructure génération**
-  - Script `generate_aspect_batch.py` : Génération A/B avec Claude Opus 4.5
+- ✅ **Génération aspects (méthode manuelle Claude Code, $0 API)**
+  - Batch 1 terminé : sun-venus, sun-mars (10 aspects insérés)
+  - Batch 2 généré : venus-mars, sun-jupiter (10 aspects prêts)
+  - Batches 3-10 : 110 aspects restants
+- ✅ **Correctifs post-publication** (30/01/2026)
+  - Fix crash app lors affichage thème natal (user_id UUID→INTEGER)
+  - Fix transits auto-calculés lors génération lunar report
+  - Fix typo français "Détail" keywords mobile
+  - Doc setup DEV_AUTH_BYPASS pour tests
   - Script `validate_aspect_batch.py` : Validation qualité (longueurs, jargon)
   - Script `insert_aspect_batch.py` : Insertion BD avec upsert + tracking
   - Fichier `data/progress.json` : 0/130 aspects (prêt pour génération)
@@ -270,4 +272,4 @@ d5ceb3b - fix(api): accept integer user_id in transits overview endpoint
 
 ---
 
-**Dernière màj** : 2026-01-30 | **Version** : 8.0 (refonte aspects v5 - backend ready)
+**Dernière màj** : 2026-01-30 | **Version** : 8.0 (refonte aspects v5 - génération manuelle en cours, 20/130 aspects)
