@@ -336,12 +336,16 @@ export const natalChart = {
     place_name: string;
     // timezone supprimé - sera auto-détecté par le backend depuis lat/lon
   }) => {
-    const response = await apiClient.post('/api/natal-chart', data);
+    const response = await apiClient.post('/api/natal-chart', data, {
+      params: { aspect_version: 5 }
+    });
     return response.data;
   },
 
   get: async () => {
-    const response = await apiClient.get('/api/natal-chart');
+    const response = await apiClient.get('/api/natal-chart', {
+      params: { aspect_version: 5 }
+    });
     return response.data;
   },
 
