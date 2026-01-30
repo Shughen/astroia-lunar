@@ -165,7 +165,7 @@ export const AspectDetailSheet: React.FC<AspectDetailSheetProps> = ({
                 {/* Section 3: Manifestation (tone v4 professionnel) */}
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>🌟 Manifestations concrètes</Text>
-                  <Markdown style={markdownStyles}>
+                  <Markdown style={markdownStyles as any}>
                     {translateAstrologyText(aspect.copy.manifestation)}
                   </Markdown>
                 </View>
@@ -174,7 +174,7 @@ export const AspectDetailSheet: React.FC<AspectDetailSheetProps> = ({
                 {aspect.copy.advice && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>💡 Conseil pratique</Text>
-                    <Markdown style={markdownStyles}>
+                    <Markdown style={markdownStyles as any}>
                       {translateAstrologyText(aspect.copy.advice)}
                     </Markdown>
                   </View>
@@ -184,7 +184,7 @@ export const AspectDetailSheet: React.FC<AspectDetailSheetProps> = ({
                 {aspect.copy.shadow && (
                   <View style={[styles.section, styles.shadowSection]}>
                     <Text style={styles.sectionTitle}>⚠️ Attention</Text>
-                    <Markdown style={markdownStyles}>
+                    <Markdown style={markdownStyles as any}>
                       {translateAstrologyText(aspect.copy.shadow)}
                     </Markdown>
                   </View>
@@ -378,7 +378,7 @@ const markdownStyles = {
     lineHeight: 24,
   },
   strong: {
-    fontWeight: 'bold',
+    fontWeight: '700' as const,
     color: colors.text,
   },
   bullet_list: {

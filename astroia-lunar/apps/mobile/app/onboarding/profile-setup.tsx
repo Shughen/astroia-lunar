@@ -179,7 +179,7 @@ export default function ProfileSetupScreen() {
 
     // Validation
     if (!name.trim()) {
-      Alert.alert('Nom requis', 'Merci d'entrer ton prénom');
+      Alert.alert('Nom requis', "Merci d'entrer ton prénom");
       return;
     }
 
@@ -198,7 +198,7 @@ export default function ProfileSetupScreen() {
     }
 
     if (!birthTime.trim()) {
-      Alert.alert('Heure requise', 'Merci d'entrer ton heure de naissance');
+      Alert.alert('Heure requise', "Merci d'entrer ton heure de naissance");
       return;
     }
 
