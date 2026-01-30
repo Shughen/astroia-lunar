@@ -51,6 +51,7 @@ export const AspectDetailSheet: React.FC<AspectDetailSheetProps> = ({
     opposition: '☍',
     square: '□',
     trine: '△',
+    sextile: '⚹',
   };
 
   const aspectNamesFR: Record<string, string> = {
@@ -58,6 +59,7 @@ export const AspectDetailSheet: React.FC<AspectDetailSheetProps> = ({
     opposition: 'Opposition',
     square: 'Carré',
     trine: 'Trigone',
+    sextile: 'Sextile',
   };
 
   const aspectSymbol = aspectSymbols[aspect.type] || '○';

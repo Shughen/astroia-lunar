@@ -61,15 +61,9 @@ export function TransitsWidget() {
     );
   }
 
+  // Masquer complètement le widget si pas de transits (UX plus propre)
   if (!majorAspects || majorAspects.length === 0) {
-    return (
-      <View style={styles.card}>
-        <View style={styles.header}>
-          <Text style={styles.title}>⭐ Transits du Mois</Text>
-        </View>
-        <Text style={styles.emptyText}>Aucun transit majeur ce mois-ci</Text>
-      </View>
-    );
+    return null;
   }
 
   return (
