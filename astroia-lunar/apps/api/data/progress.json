@@ -1,11 +1,11 @@
 {
   "total_aspects": 130,
-  "completed_batches": 8,
+  "completed_batches": 9,
   "total_batches": 10,
-  "aspects_inserted": 70,
-  "progress_percent": 53.8,
+  "aspects_inserted": 80,
+  "progress_percent": 61.5,
   "total_cost_usd": 0,
-  "last_batch_at": "2026-01-30T21:00:00Z",
+  "last_batch_at": "2026-01-30T21:15:00Z",
   "batches": [
     {
       "number": 1,
@@ -70,6 +70,14 @@
       "cost_usd": 0,
       "committed_at": "2026-01-30T21:00:00Z",
       "notes": "Moon-Jupiter: expansion/optimisme, Moon-Saturn: limites/maturité. Ouverture vs protection."
+    },
+    {
+      "number": 9,
+      "aspects": 10,
+      "pairs": ["moon-neptune", "moon-pluto"],
+      "cost_usd": 0,
+      "committed_at": "2026-01-30T21:15:00Z",
+      "notes": "Moon-Neptune: dissolution/imaginaire, Moon-Pluto: intensité/transformation. Sensibilité extrême."
     }
   ]
 }
