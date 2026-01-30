@@ -51,12 +51,12 @@ const PHASE_RITUALS: Record<string, Array<{ title: string; description: string }
   new_moon: [
     { title: 'Méditation d\'intention', description: 'Visualisez vos objectifs du cycle' },
     { title: 'Liste de souhaits', description: 'Écrivez 3 intentions claires' },
-    { title: 'Nettoyage énergétique', description: 'Renouvelez l\'énergie de votre espace' },
+    { title: 'Nettoyage énergétique', description: 'Renouvelle l\'énergie de ton espace' },
   ],
   waxing_crescent: [
-    { title: 'Premier pas', description: 'Une action concrète vers votre objectif' },
+    { title: 'Premier pas', description: 'Une action concrète vers ton objectif' },
     { title: 'Affirmations positives', description: 'Répétez 3 affirmations' },
-    { title: 'Planification', description: 'Organisez votre semaine' },
+    { title: 'Planification', description: 'Organise ta semaine' },
   ],
   first_quarter: [
     { title: 'Bilan intermédiaire', description: 'Évaluez vos progrès' },
@@ -74,17 +74,17 @@ const PHASE_RITUALS: Record<string, Array<{ title: string; description: string }
     { title: 'Bain de lune', description: 'Méditez sous la lune' },
   ],
   waning_gibbous: [
-    { title: 'Partage', description: 'Transmettez ce que vous avez appris' },
+    { title: 'Partage', description: 'Transmets ce que tu as appris' },
     { title: 'Gratitude', description: 'Listez 5 reconnaissances' },
     { title: 'Réflexion', description: 'Analysez ce qui a fonctionné' },
   ],
   last_quarter: [
     { title: 'Lâcher-prise', description: 'Abandonnez une habitude limitante' },
     { title: 'Tri et rangement', description: 'Désencombrez un espace' },
-    { title: 'Pardon', description: 'Pardonnez-vous ou quelqu\'un' },
+    { title: 'Pardon', description: 'Pardonne-toi ou quelqu\'un' },
   ],
   waning_crescent: [
-    { title: 'Repos', description: 'Accordez-vous du temps' },
+    { title: 'Repos', description: 'Accorde-toi du temps' },
     { title: 'Introspection', description: 'Méditez sur les leçons du cycle' },
     { title: 'Rêve lucide', description: 'Notez vos rêves au réveil' },
   ],

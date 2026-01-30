@@ -30,61 +30,61 @@ INSIGHT_TEMPLATES = {
     ("Aries", "Nouvelle Lune"): [
         {
             "title": "Nouveau Départ Ardent",
-            "text": "La Nouvelle Lune en Bélier marque un moment propice aux initiatives audacieuses. Votre énergie est à son pic pour démarrer de nouveaux projets avec courage et détermination.",
+            "text": "La Nouvelle Lune en Bélier marque un moment propice aux initiatives audacieuses. Ta énergie est à son pic pour démarrer de nouveaux projets avec courage et détermination.",
             "keywords": ["initiative", "courage", "action", "nouveau départ"]
         },
         {
             "title": "Étincelle d'Innovation",
-            "text": "Cette phase lunaire amplifie votre désir de conquête. C'est le moment idéal pour oser sortir de votre zone de confort et embrasser le changement avec confiance.",
+            "text": "Cette phase lunaire amplifie ton désir de conquête. C'est le moment idéal pour oser sortir de ta zone de confort et embrasser le changement avec confiance.",
             "keywords": ["innovation", "audace", "conquête", "transformation"]
         },
     ],
     ("Aries", "Premier Croissant"): [
         {
             "title": "Momentum Croissant",
-            "text": "L'énergie du Bélier s'intensifie progressivement. Vos projets prennent de l'ampleur — maintenez votre cap avec persévérance et confiance en vos capacités.",
+            "text": "L'énergie du Bélier s'intensifie progressivement. Tes projets prennent de l'ampleur — maintenez ton cap avec persévérance et confiance en tes capacités.",
             "keywords": ["croissance", "persévérance", "momentum", "confiance"]
         },
     ],
     ("Aries", "Premier Quartier"): [
         {
             "title": "Défi Constructif",
-            "text": "Le Premier Quartier en Bélier vous invite à surmonter les obstacles avec détermination. Les défis actuels sont des opportunités de prouver votre force intérieure.",
+            "text": "Le Premier Quartier en Bélier t'invite à surmonter les obstacles avec détermination. Les défis actuels sont des opportunités de prouver ta force intérieure.",
             "keywords": ["défi", "détermination", "force", "dépassement"]
         },
     ],
     ("Aries", "Lune Gibbeuse"): [
         {
             "title": "Affinement Passionné",
-            "text": "Vos efforts prennent forme. C'est le moment d'ajuster vos stratégies avec précision tout en gardant votre flamme créative intacte.",
+            "text": "Tes efforts prennent forme. C'est le moment d'ajuster tes stratégies avec précision tout en gardant ta flamme créative intacte.",
             "keywords": ["affinement", "stratégie", "créativité", "perfectionnement"]
         },
     ],
     ("Aries", "Pleine Lune"): [
         {
             "title": "Culmination Éclatante",
-            "text": "La Pleine Lune en Bélier révèle les fruits de votre audace. Célébrez vos victoires et reconnaissez la puissance de votre volonté manifeste.",
+            "text": "La Pleine Lune en Bélier révèle les fruits de ta audace. Célébrez tes victoires et reconnais la puissance de ta volonté manifeste.",
             "keywords": ["culmination", "victoire", "révélation", "accomplissement"]
         },
     ],
     ("Aries", "Lune Disseminante"): [
         {
             "title": "Partage de Sagesse",
-            "text": "Transmettez votre expérience et votre force aux autres. Votre courage inspire ceux qui vous entourent — partagez vos apprentissages.",
+            "text": "Transmettez ta expérience et ta force aux autres. Ton courage inspire ceux qui t'entourent — partagez tes apprentissages.",
             "keywords": ["partage", "inspiration", "transmission", "sagesse"]
         },
     ],
     ("Aries", "Dernier Quartier"): [
         {
             "title": "Libération Active",
-            "text": "Laissez partir ce qui ne vous sert plus avec courage. Cette phase vous aide à vous défaire des anciens schémas pour faire place au renouveau.",
+            "text": "Laisse partir ce qui ne te sert plus avec courage. Cette phase t'aide à te défaire des anciens schémas pour faire place au renouveau.",
             "keywords": ["libération", "lâcher-prise", "renouveau", "transformation"]
         },
     ],
     ("Aries", "Dernier Croissant"): [
         {
             "title": "Repos du Guerrier",
-            "text": "Avant le prochain cycle, accordez-vous une pause bien méritée. Rechargez votre énergie en préparation des nouvelles aventures à venir.",
+            "text": "Avant le prochain cycle, accorde-toi une pause bien méritée. Rechargez ta énergie en préparation des nouvelles aventures à venir.",
             "keywords": ["repos", "régénération", "préparation", "introspection"]
         },
     ],
@@ -93,56 +93,56 @@ INSIGHT_TEMPLATES = {
     ("Taurus", "Nouvelle Lune"): [
         {
             "title": "Fondations Solides",
-            "text": "La Nouvelle Lune en Taureau favorise la construction durable. Posez des bases stables pour vos projets matériels et relationnels avec patience et pragmatisme.",
+            "text": "La Nouvelle Lune en Taureau favorise la construction durable. Pose des bases stables pour tes projets matériels et relationnels avec patience et pragmatisme.",
             "keywords": ["stabilité", "construction", "patience", "fondations"]
         },
     ],
     ("Taurus", "Premier Croissant"): [
         {
             "title": "Croissance Graduelle",
-            "text": "Comme la nature, vos projets croissent à leur rythme. Cultivez-les avec soin et constance — la richesse se bâtit pas à pas.",
+            "text": "Comme la nature, tes projets croissent à leur rythme. Cultive-les avec soin et constance — la richesse se bâtit pas à pas.",
             "keywords": ["croissance", "constance", "cultivation", "patience"]
         },
     ],
     ("Taurus", "Premier Quartier"): [
         {
             "title": "Persévérance Fructueuse",
-            "text": "Les obstacles matériels se présentent, mais votre ténacité fera la différence. Restez ancré dans vos valeurs et poursuivez votre chemin.",
+            "text": "Les obstacles matériels se présentent, mais ta ténacité fera la différence. Reste ancré dans tes valeurs et poursuivez ton chemin.",
             "keywords": ["persévérance", "ténacité", "valeurs", "ancrage"]
         },
     ],
     ("Taurus", "Lune Gibbeuse"): [
         {
             "title": "Raffinement Sensoriel",
-            "text": "Perfectionnez vos créations avec attention aux détails. La beauté et la qualité sont à votre portée — prenez le temps de soigner chaque aspect.",
+            "text": "Perfectionnez tes créations avec attention aux détails. La beauté et la qualité sont à ta portée — prends le temps de soigner chaque aspect.",
             "keywords": ["raffinement", "qualité", "beauté", "attention"]
         },
     ],
     ("Taurus", "Pleine Lune"): [
         {
             "title": "Récolte Abondante",
-            "text": "La Pleine Lune en Taureau révèle l'abondance que vous avez cultivée. Célébrez la richesse matérielle et émotionnelle de votre vie.",
+            "text": "La Pleine Lune en Taureau révèle l'abondance que tu as cultivée. Célébrez la richesse matérielle et émotionnelle de ta vie.",
             "keywords": ["abondance", "récolte", "richesse", "gratitude"]
         },
     ],
     ("Taurus", "Lune Disseminante"): [
         {
             "title": "Générosité Terrestre",
-            "text": "Partagez votre prospérité avec générosité. Votre stabilité peut devenir un refuge pour ceux qui en ont besoin.",
+            "text": "Partagez ta prospérité avec générosité. Ta stabilité peut devenir un refuge pour ceux qui en ont besoin.",
             "keywords": ["générosité", "partage", "stabilité", "soutien"]
         },
     ],
     ("Taurus", "Dernier Quartier"): [
         {
             "title": "Simplification Nécessaire",
-            "text": "Allégez-vous du superflu. Revenez à l'essentiel et libérez-vous des possessions ou attachements qui vous pèsent.",
+            "text": "Allège-toi du superflu. Reviens à l'essentiel et libère-toi des possessions ou attachements qui te pèsent.",
             "keywords": ["simplification", "essentiel", "libération", "détachement"]
         },
     ],
     ("Taurus", "Dernier Croissant"): [
         {
             "title": "Repos Réparateur",
-            "text": "Reconnectez-vous à la terre et à votre corps. Cette phase invite au repos profond et à la régénération de vos ressources intérieures.",
+            "text": "Reconnecte-toi à la terre et à ton corps. Cette phase invite au repos profond et à la régénération de tes ressources intérieures.",
             "keywords": ["repos", "régénération", "ancrage", "reconnexion"]
         },
     ],
@@ -151,56 +151,56 @@ INSIGHT_TEMPLATES = {
     ("Gemini", "Nouvelle Lune"): [
         {
             "title": "Curiosité Éveillée",
-            "text": "La Nouvelle Lune en Gémeaux stimule votre soif d'apprentissage. Explorez de nouvelles idées, connectez-vous aux autres et laissez votre esprit vagabonder.",
+            "text": "La Nouvelle Lune en Gémeaux stimule ta soif d'apprentissage. Explore de nouvelles idées, connecte-toi aux autres et laissez ton esprit vagabonder.",
             "keywords": ["curiosité", "apprentissage", "communication", "exploration"]
         },
     ],
     ("Gemini", "Premier Croissant"): [
         {
             "title": "Connexions Fécondes",
-            "text": "Vos échanges se multiplient et s'enrichissent. Cultivez les conversations stimulantes qui nourrissent votre intellect et élargissent votre perspective.",
+            "text": "Tes échanges se multiplient et s'enrichissent. Cultive les conversations stimulantes qui nourrissent ton intellect et élargissent ta perspective.",
             "keywords": ["connexion", "échange", "intellect", "dialogue"]
         },
     ],
     ("Gemini", "Premier Quartier"): [
         {
             "title": "Adaptation Agile",
-            "text": "Face aux défis, votre flexibilité mentale est votre atout. Trouvez des solutions créatives et adaptez-vous avec légèreté aux circonstances.",
+            "text": "Face aux défis, ta flexibilité mentale est ton atout. Trouve des solutions créatives et adapte-toi avec légèreté aux circonstances.",
             "keywords": ["adaptation", "flexibilité", "créativité", "agilité"]
         },
     ],
     ("Gemini", "Lune Gibbeuse"): [
         {
             "title": "Synthèse Brillante",
-            "text": "Rassemblez les informations dispersées pour créer une vision cohérente. Votre capacité à faire des liens révèle des insights précieux.",
+            "text": "Rassemble les informations dispersées pour créer une vision cohérente. Ta capacité à faire des liens révèle des insights précieux.",
             "keywords": ["synthèse", "cohérence", "intelligence", "clarté"]
         },
     ],
     ("Gemini", "Pleine Lune"): [
         {
             "title": "Révélation Intellectuelle",
-            "text": "La Pleine Lune en Gémeaux illumine votre esprit. Des vérités cachées émergent à travers les mots et les échanges — écoutez attentivement.",
+            "text": "La Pleine Lune en Gémeaux illumine ton esprit. Des vérités cachées émergent à travers les mots et les échanges — écoutez attentivement.",
             "keywords": ["révélation", "vérité", "lucidité", "compréhension"]
         },
     ],
     ("Gemini", "Lune Disseminante"): [
         {
             "title": "Transmission de Savoirs",
-            "text": "Partagez vos connaissances avec générosité. Votre rôle de messager est valorisé — enseignez, écrivez, communiquez.",
+            "text": "Partagez tes connaissances avec générosité. Ton rôle de messager est valorisé — enseignez, écrivez, communiquez.",
             "keywords": ["transmission", "enseignement", "communication", "partage"]
         },
     ],
     ("Gemini", "Dernier Quartier"): [
         {
             "title": "Silence Régénérateur",
-            "text": "Après tant d'échanges, le silence devient nécessaire. Laissez votre mental se reposer et libérez-vous du bavardage intérieur.",
+            "text": "Après tant d'échanges, le silence devient nécessaire. Laissez ton mental se reposer et libère-toi du bavardage intérieur.",
             "keywords": ["silence", "repos mental", "clarté", "libération"]
         },
     ],
     ("Gemini", "Dernier Croissant"): [
         {
             "title": "Introspection Ludique",
-            "text": "Explorez votre monde intérieur avec la même curiosité que vous portez au monde extérieur. Que révèlent vos pensées les plus profondes ?",
+            "text": "Explore ton monde intérieur avec la même curiosité que tu portes au monde extérieur. Que révèlent tes pensées les plus profondes ?",
             "keywords": ["introspection", "curiosité", "profondeur", "réflexion"]
         },
     ],
@@ -209,56 +209,56 @@ INSIGHT_TEMPLATES = {
     ("Cancer", "Nouvelle Lune"): [
         {
             "title": "Nid Émotionnel",
-            "text": "La Nouvelle Lune en Cancer vous invite à créer un sanctuaire intérieur. Honorez vos émotions et nourrissez ce qui vous fait vous sentir en sécurité.",
+            "text": "La Nouvelle Lune en Cancer t'invite à créer un sanctuaire intérieur. Honorez tes émotions et nourris ce qui te fait te sentir en sécurité.",
             "keywords": ["sécurité", "émotions", "foyer", "nurturing"]
         },
     ],
     ("Cancer", "Premier Croissant"): [
         {
             "title": "Racines Profondes",
-            "text": "Vos fondations émotionnelles se renforcent. Cultivez vos liens familiaux et vos traditions — elles sont votre source de force.",
+            "text": "Tes fondations émotionnelles se renforcent. Cultivez tes liens familiaux et tes traditions — elles sont ta source de force.",
             "keywords": ["racines", "famille", "traditions", "fondations"]
         },
     ],
     ("Cancer", "Premier Quartier"): [
         {
             "title": "Protection Sage",
-            "text": "Défendez vos frontières émotionnelles avec douceur mais fermeté. Votre sensibilité est un don, pas une faiblesse — protégez-la.",
+            "text": "Défendez tes frontières émotionnelles avec douceur mais fermeté. Ta sensibilité est un don, pas une faiblesse — protège-la.",
             "keywords": ["protection", "frontières", "sensibilité", "sagesse"]
         },
     ],
     ("Cancer", "Lune Gibbeuse"): [
         {
             "title": "Maturité Affective",
-            "text": "Vos relations atteignent un niveau de profondeur et de compréhension mutuelle. Peaufinez vos liens avec empathie et authenticité.",
+            "text": "Tes relations atteignent un niveau de profondeur et de compréhension mutuelle. Peaufinez tes liens avec empathie et authenticité.",
             "keywords": ["maturité", "profondeur", "empathie", "authenticité"]
         },
     ],
     ("Cancer", "Pleine Lune"): [
         {
             "title": "Marée Émotionnelle",
-            "text": "La Pleine Lune en Cancer révèle l'intensité de vos sentiments. Accueillez cette vague émotionnelle — elle porte des messages importants.",
+            "text": "La Pleine Lune en Cancer révèle l'intensité de tes sentiments. Accueille cette vague émotionnelle — elle porte des messages importants.",
             "keywords": ["émotions", "intensité", "révélation", "accueil"]
         },
     ],
     ("Cancer", "Lune Disseminante"): [
         {
             "title": "Soin Partagé",
-            "text": "Votre capacité à prendre soin des autres brille. Offrez votre soutien émotionnel avec générosité tout en préservant votre propre énergie.",
+            "text": "Ta capacité à prendre soin des autres brille. Offrez ton soutien émotionnel avec générosité tout en préservant ta propre énergie.",
             "keywords": ["soin", "soutien", "générosité", "équilibre"]
         },
     ],
     ("Cancer", "Dernier Quartier"): [
         {
             "title": "Libération Douce",
-            "text": "Laissez partir les douleurs anciennes avec compassion. Le pardon — envers vous et les autres — ouvre la voie à la guérison.",
+            "text": "Laisse partir les douleurs anciennes avec compassion. Le pardon — envers toi et les autres — ouvre la voie à la guérison.",
             "keywords": ["libération", "pardon", "guérison", "compassion"]
         },
     ],
     ("Cancer", "Dernier Croissant"): [
         {
             "title": "Cocon Intérieur",
-            "text": "Retirez-vous dans votre sanctuaire personnel. Cette phase appelle au repos émotionnel et à la reconnexion avec votre essence.",
+            "text": "Retire-toi dans ton sanctuaire personnel. Cette phase appelle au repos émotionnel et à la reconnexion avec ta essence.",
             "keywords": ["repos", "sanctuaire", "reconnexion", "essence"]
         },
     ],
@@ -267,56 +267,56 @@ INSIGHT_TEMPLATES = {
     ("Leo", "Nouvelle Lune"): [
         {
             "title": "Flamme Créative",
-            "text": "La Nouvelle Lune en Lion allume votre feu intérieur. Osez briller, créer et exprimer votre unicité avec confiance et authenticité.",
+            "text": "La Nouvelle Lune en Lion allume ton feu intérieur. Ose briller, créer et exprimer ta unicité avec confiance et authenticité.",
             "keywords": ["créativité", "authenticité", "expression", "confiance"]
         },
     ],
     ("Leo", "Premier Croissant"): [
         {
             "title": "Éclat Grandissant",
-            "text": "Votre lumière s'intensifie progressivement. Continuez à cultiver votre singularité et à partager vos talents avec générosité.",
+            "text": "Ta lumière s'intensifie progressivement. Continue à cultiver ta singularité et à partager tes talents avec générosité.",
             "keywords": ["éclat", "talents", "générosité", "croissance"]
         },
     ],
     ("Leo", "Premier Quartier"): [
         {
             "title": "Courage Royal",
-            "text": "Face aux obstacles, votre dignité naturelle vous guide. Relevez les défis avec noblesse et rappelez-vous de votre valeur intrinsèque.",
+            "text": "Face aux obstacles, ta dignité naturelle te guide. Relève les défis avec noblesse et rappelle-toi de ta valeur intrinsèque.",
             "keywords": ["courage", "dignité", "valeur", "noblesse"]
         },
     ],
     ("Leo", "Lune Gibbeuse"): [
         {
             "title": "Perfectionnement Artistique",
-            "text": "Peaufinez vos créations avec le soin d'un artisan. Chaque détail compte pour magnifier l'œuvre que vous êtes en train de manifester.",
+            "text": "Peaufinez tes créations avec le soin d'un artisan. Chaque détail compte pour magnifier l'œuvre que tu es en train de manifester.",
             "keywords": ["perfectionnement", "art", "manifestation", "excellence"]
         },
     ],
     ("Leo", "Pleine Lune"): [
         {
             "title": "Apogée Solaire",
-            "text": "La Pleine Lune en Lion couronne vos efforts créatifs. Célébrez votre rayonnement et la reconnaissance que vous méritez pleinement.",
+            "text": "La Pleine Lune en Lion couronne tes efforts créatifs. Célébrez ton rayonnement et la reconnaissance que tu mérites pleinement.",
             "keywords": ["apogée", "célébration", "rayonnement", "reconnaissance"]
         },
     ],
     ("Leo", "Lune Disseminante"): [
         {
             "title": "Inspiration Contagieuse",
-            "text": "Votre lumière inspire les autres à embrasser leur propre grandeur. Continuez à être un phare de créativité et d'encouragement.",
+            "text": "Ta lumière inspire les autres à embrasser leur propre grandeur. Continue à être un phare de créativité et d'encouragement.",
             "keywords": ["inspiration", "leadership", "encouragement", "lumière"]
         },
     ],
     ("Leo", "Dernier Quartier"): [
         {
             "title": "Humilité Dorée",
-            "text": "Même les rois doivent se reposer. Libérez-vous du besoin de toujours briller et acceptez la beauté de la vulnérabilité.",
+            "text": "Même les rois doivent se reposer. Libère-toi du besoin de toujours briller et accepte la beauté de la vulnérabilité.",
             "keywords": ["humilité", "repos", "vulnérabilité", "acceptation"]
         },
     ],
     ("Leo", "Dernier Croissant"): [
         {
             "title": "Retraite Majestueuse",
-            "text": "Avant le nouveau cycle, retirez-vous pour recharger votre flamme créative. Le repos n'est pas une faiblesse mais une force.",
+            "text": "Avant le nouveau cycle, retire-toi pour recharger ta flamme créative. Le repos n'est pas une faiblesse mais une force.",
             "keywords": ["retraite", "régénération", "force intérieure", "préparation"]
         },
     ],
@@ -325,49 +325,49 @@ INSIGHT_TEMPLATES = {
     ("Virgo", "Nouvelle Lune"): [
         {
             "title": "Perfection Pratique",
-            "text": "La Nouvelle Lune en Vierge favorise l'organisation et le raffinement. Mettez de l'ordre dans votre vie avec discernement et efficacité.",
+            "text": "La Nouvelle Lune en Vierge favorise l'organisation et le raffinement. Mets de l'ordre dans ta vie avec discernement et efficacité.",
             "keywords": ["organisation", "discernement", "efficacité", "raffinement"]
         },
     ],
     ("Virgo", "Premier Croissant"): [
         {
             "title": "Amélioration Continue",
-            "text": "Chaque petit pas compte. Vos efforts méthodiques portent leurs fruits — continuez à perfectionner vos systèmes et routines.",
+            "text": "Chaque petit pas compte. Tes efforts méthodiques portent leurs fruits — continuez à perfectionner tes systèmes et routines.",
             "keywords": ["amélioration", "méthode", "progrès", "routine"]
         },
     ],
     ("Virgo", "Premier Quartier"): [
         {
             "title": "Analyse Constructive",
-            "text": "Les obstacles révèlent les points à améliorer. Utilisez votre esprit analytique pour trouver des solutions pragmatiques et efficaces.",
+            "text": "Les obstacles révèlent les points à améliorer. Utilisez ton esprit analytique pour trouver des solutions pragmatiques et efficaces.",
             "keywords": ["analyse", "solutions", "pragmatisme", "amélioration"]
         },
     ],
     ("Virgo", "Lune Gibbeuse"): [
         {
             "title": "Excellence Humble",
-            "text": "Votre attention aux détails atteint son sommet. Peaufinez votre travail avec humilité et fierté — la qualité parle d'elle-même.",
+            "text": "Ton attention aux détails atteint son sommet. Peaufinez ton travail avec humilité et fierté — la qualité parle d'elle-même.",
             "keywords": ["excellence", "détails", "qualité", "humilité"]
         },
     ],
     ("Virgo", "Pleine Lune"): [
         {
             "title": "Service Accompli",
-            "text": "La Pleine Lune en Vierge révèle l'impact de votre utilité. Célébrez votre contribution et reconnaissez la valeur de votre service.",
+            "text": "La Pleine Lune en Vierge révèle l'impact de ta utilité. Célébrez ta contribution et reconnais la valeur de ton service.",
             "keywords": ["service", "utilité", "contribution", "accomplissement"]
         },
     ],
     ("Virgo", "Lune Disseminante"): [
         {
             "title": "Transmission de Savoir-faire",
-            "text": "Partagez vos compétences et votre expertise avec ceux qui cherchent à apprendre. Votre précision est un don précieux.",
+            "text": "Partagez tes compétences et ta expertise avec ceux qui cherchent à apprendre. Ta précision est un don précieux.",
             "keywords": ["transmission", "expertise", "enseignement", "précision"]
         },
     ],
     ("Virgo", "Dernier Quartier"): [
         {
             "title": "Lâcher le Contrôle",
-            "text": "Acceptez que l'imperfection fasse partie de la vie. Libérez-vous du besoin de tout maîtriser et accueillez le flux naturel.",
+            "text": "Acceptez que l'imperfection fasse partie de la vie. Libère-toi du besoin de tout maîtriser et accueillez le flux naturel.",
             "keywords": ["lâcher-prise", "acceptation", "imperfection", "fluidité"]
         },
     ],
@@ -383,21 +383,21 @@ INSIGHT_TEMPLATES = {
     ("Libra", "Nouvelle Lune"): [
         {
             "title": "Harmonie Naissante",
-            "text": "La Nouvelle Lune en Balance vous invite à cultiver l'équilibre. Créez de la beauté et de l'harmonie dans vos relations et votre environnement.",
+            "text": "La Nouvelle Lune en Balance t'invite à cultiver l'équilibre. Créez de la beauté et de l'harmonie dans tes relations et ton environnement.",
             "keywords": ["harmonie", "équilibre", "beauté", "relations"]
         },
     ],
     ("Libra", "Premier Croissant"): [
         {
             "title": "Connexions Élégantes",
-            "text": "Vos relations se développent avec grâce. Tissez des liens basés sur le respect mutuel et l'appréciation de la différence.",
+            "text": "Tes relations se développent avec grâce. Tissez des liens basés sur le respect mutuel et l'appréciation de la différence.",
             "keywords": ["connexions", "grâce", "respect", "appréciation"]
         },
     ],
     ("Libra", "Premier Quartier"): [
         {
             "title": "Justice Équilibrée",
-            "text": "Des tensions relationnelles demandent de la diplomatie. Trouvez le juste milieu entre vos besoins et ceux des autres avec sagesse.",
+            "text": "Des tensions relationnelles demandent de la diplomatie. Trouvez le juste milieu entre tes besoins et ceux des autres avec sagesse.",
             "keywords": ["justice", "diplomatie", "équilibre", "sagesse"]
         },
     ],
@@ -411,28 +411,28 @@ INSIGHT_TEMPLATES = {
     ("Libra", "Pleine Lune"): [
         {
             "title": "Miroir de l'Âme",
-            "text": "La Pleine Lune en Balance révèle la vérité de vos relations. Ce que vous voyez chez l'autre reflète une partie de vous-même.",
+            "text": "La Pleine Lune en Balance révèle la vérité de tes relations. Ce que tu vois chez l'autre reflète une partie de toi-même.",
             "keywords": ["miroir", "vérité", "relations", "révélation"]
         },
     ],
     ("Libra", "Lune Disseminante"): [
         {
             "title": "Médiation Bienveillante",
-            "text": "Votre capacité à créer des ponts entre les gens brille. Offrez votre perspective équilibrée pour résoudre les conflits avec grâce.",
+            "text": "Ta capacité à créer des ponts entre les gens brille. Offrez ta perspective équilibrée pour résoudre les conflits avec grâce.",
             "keywords": ["médiation", "ponts", "paix", "équilibre"]
         },
     ],
     ("Libra", "Dernier Quartier"): [
         {
             "title": "Solitude Nécessaire",
-            "text": "Après tant d'attention aux autres, retrouvez votre centre. La solitude temporaire restaure votre équilibre intérieur.",
+            "text": "Après tant d'attention aux autres, retrouvez ton centre. La solitude temporaire restaure ton équilibre intérieur.",
             "keywords": ["solitude", "centre", "restauration", "intériorité"]
         },
     ],
     ("Libra", "Dernier Croissant"): [
         {
             "title": "Paix Intérieure",
-            "text": "Cultivez l'harmonie en vous-même avant de la chercher à l'extérieur. Cette phase invite à la réconciliation avec vos propres paradoxes.",
+            "text": "Cultivez l'harmonie en toi-même avant de la chercher à l'extérieur. Cette phase invite à la réconciliation avec tes propres paradoxes.",
             "keywords": ["paix", "harmonie intérieure", "réconciliation", "acceptation"]
         },
     ],
@@ -441,28 +441,28 @@ INSIGHT_TEMPLATES = {
     ("Scorpio", "Nouvelle Lune"): [
         {
             "title": "Transformation Profonde",
-            "text": "La Nouvelle Lune en Scorpion initie une métamorphose puissante. Plongez dans vos profondeurs et embrassez le pouvoir de la régénération.",
+            "text": "La Nouvelle Lune en Scorpion initie une métamorphose puissante. Plongez dans tes profondeurs et embrasse le pouvoir de la régénération.",
             "keywords": ["transformation", "profondeur", "régénération", "pouvoir"]
         },
     ],
     ("Scorpio", "Premier Croissant"): [
         {
             "title": "Intensité Croissante",
-            "text": "Vos émotions et perceptions s'approfondissent. Explorez les vérités cachées avec courage et honnêteté radicale.",
+            "text": "Tes émotions et perceptions s'approfondissent. Explorez les vérités cachées avec courage et honnêteté radicale.",
             "keywords": ["intensité", "vérité", "courage", "profondeur"]
         },
     ],
     ("Scorpio", "Premier Quartier"): [
         {
             "title": "Confrontation Nécessaire",
-            "text": "Les ombres demandent à être affrontées. Votre bravoure émotionnelle transforme les peurs en force authentique.",
+            "text": "Les ombres demandent à être affrontées. Ta bravoure émotionnelle transforme les peurs en force authentique.",
             "keywords": ["confrontation", "ombres", "bravoure", "transformation"]
         },
     ],
     ("Scorpio", "Lune Gibbeuse"): [
         {
             "title": "Alchimie Intérieure",
-            "text": "Le processus de transformation atteint son intensité maximale. Comme le phénix, vous renaissez de vos propres cendres.",
+            "text": "Le processus de transformation atteint son intensité maximale. Comme le phénix, tu renais de tes propres cendres.",
             "keywords": ["alchimie", "renaissance", "phénix", "intensité"]
         },
     ],
@@ -476,14 +476,14 @@ INSIGHT_TEMPLATES = {
     ("Scorpio", "Lune Disseminante"): [
         {
             "title": "Guérison Partagée",
-            "text": "Votre capacité à transmuter la douleur en sagesse aide les autres. Partagez votre force issue des épreuves traversées.",
+            "text": "Ta capacité à transmuter la douleur en sagesse aide les autres. Partagez ta force issue des épreuves traversées.",
             "keywords": ["guérison", "sagesse", "transmutation", "force"]
         },
     ],
     ("Scorpio", "Dernier Quartier"): [
         {
             "title": "Mort Symbolique",
-            "text": "Laissez mourir ce qui doit partir. Cette libération profonde fait place à la renaissance — acceptez la fin comme un nouveau commencement.",
+            "text": "Laissez mourir ce qui doit partir. Cette libération profonde fait place à la renaissance — accepte la fin comme un nouveau commencement.",
             "keywords": ["libération", "mort symbolique", "renaissance", "acceptation"]
         },
     ],
@@ -499,56 +499,56 @@ INSIGHT_TEMPLATES = {
     ("Sagittarius", "Nouvelle Lune"): [
         {
             "title": "Horizon Infini",
-            "text": "La Nouvelle Lune en Sagittaire élargit votre vision. Osez explorer de nouveaux territoires physiques, mentaux et spirituels.",
+            "text": "La Nouvelle Lune en Sagittaire élargit ta vision. Osez explorer de nouveaux territoires physiques, mentaux et spirituels.",
             "keywords": ["exploration", "vision", "expansion", "aventure"]
         },
     ],
     ("Sagittarius", "Premier Croissant"): [
         {
             "title": "Quête de Sens",
-            "text": "Votre soif de compréhension grandit. Suivez votre curiosité philosophique et laissez-vous guider par la quête de vérité.",
+            "text": "Ta soif de compréhension grandit. Suivez ton curiosité philosophique et laissez-te guider par la quête de vérité.",
             "keywords": ["quête", "sens", "philosophie", "vérité"]
         },
     ],
     ("Sagittarius", "Premier Quartier"): [
         {
             "title": "Optimisme Éprouvé",
-            "text": "Les défis testent votre foi, mais votre optimisme naturel trouve des opportunités là où d'autres voient des obstacles.",
+            "text": "Les défis testent ton foi, mais ton optimisme naturel trouve des opportunités là où d'autres voient des obstacles.",
             "keywords": ["optimisme", "foi", "opportunités", "résilience"]
         },
     ],
     ("Sagittarius", "Lune Gibbeuse"): [
         {
             "title": "Sagesse Grandissante",
-            "text": "Vos explorations portent leurs fruits. Intégrez les leçons apprises et affinez votre compréhension du grand tableau.",
+            "text": "Tes explorations portent leurs fruits. Intègre les leçons apprises et affinez ton compréhension du grand tableau.",
             "keywords": ["sagesse", "intégration", "compréhension", "vision"]
         },
     ],
     ("Sagittarius", "Pleine Lune"): [
         {
             "title": "Illumination Joyeuse",
-            "text": "La Pleine Lune en Sagittaire révèle le sens profond de votre parcours. Célébrez la sagesse acquise avec gratitude et enthousiasme.",
+            "text": "La Pleine Lune en Sagittaire révèle le sens profond de ton parcours. Célébrez la sagesse acquise avec gratitude et enthousiasme.",
             "keywords": ["illumination", "sens", "gratitude", "joie"]
         },
     ],
     ("Sagittarius", "Lune Disseminante"): [
         {
             "title": "Enseignement Inspirant",
-            "text": "Partagez votre philosophie et votre vision avec générosité. Votre enthousiasme allume des flammes d'inspiration chez les autres.",
+            "text": "Partagez ton philosophie et ta vision avec générosité. Ton enthousiasme allume des flammes d'inspiration chez les autres.",
             "keywords": ["enseignement", "inspiration", "partage", "enthousiasme"]
         },
     ],
     ("Sagittarius", "Dernier Quartier"): [
         {
             "title": "Libération des Dogmes",
-            "text": "Laissez partir les croyances rigides qui limitent votre expansion. La vraie sagesse embrasse le mystère et l'inconnu.",
+            "text": "Laisse partir les croyances rigides qui limitent ton expansion. La vraie sagesse embrasse le mystère et l'inconnu.",
             "keywords": ["libération", "croyances", "mystère", "ouverture"]
         },
     ],
     ("Sagittarius", "Dernier Croissant"): [
         {
             "title": "Préparation Nomade",
-            "text": "Avant la prochaine aventure, prenez le temps de vous recentrer. Le voyageur sage sait quand se reposer.",
+            "text": "Avant la prochaine aventure, prends le temps de te recentrer. Le voyageur sage sait quand se reposer.",
             "keywords": ["préparation", "repos", "recentrage", "sagesse"]
         },
     ],
@@ -557,56 +557,56 @@ INSIGHT_TEMPLATES = {
     ("Capricorn", "Nouvelle Lune"): [
         {
             "title": "Ambition Structurée",
-            "text": "La Nouvelle Lune en Capricorne vous invite à bâtir durablement. Définissez vos objectifs à long terme avec pragmatisme et détermination.",
+            "text": "La Nouvelle Lune en Capricorne t'invite à bâtir durablement. Définissez tes objectifs à long terme avec pragmatisme et détermination.",
             "keywords": ["ambition", "structure", "objectifs", "détermination"]
         },
     ],
     ("Capricorn", "Premier Croissant"): [
         {
             "title": "Ascension Méthodique",
-            "text": "Grimpez votre montagne pas à pas. Chaque effort discipliné vous rapproche du sommet — la patience est votre alliée.",
+            "text": "Grimpe ta montagne pas à pas. Chaque effort discipliné te rapproche du sommet — la patience est ton alliée.",
             "keywords": ["ascension", "discipline", "patience", "méthode"]
         },
     ],
     ("Capricorn", "Premier Quartier"): [
         {
             "title": "Responsabilité Mature",
-            "text": "Les défis révèlent votre capacité à assumer vos responsabilités. Votre maturité et votre endurance font la différence.",
+            "text": "Les défis révèlent ta capacité à assumer tes responsabilités. Ta maturité et ton endurance font la différence.",
             "keywords": ["responsabilité", "maturité", "endurance", "force"]
         },
     ],
     ("Capricorn", "Lune Gibbeuse"): [
         {
             "title": "Excellence Professionnelle",
-            "text": "Votre travail acharné porte ses fruits. Peaufinez vos réalisations avec le professionnalisme qui vous caractérise.",
+            "text": "Ton travail acharné porte ses fruits. Peaufine tes réalisations avec le professionnalisme qui te caractérise.",
             "keywords": ["excellence", "professionnalisme", "réalisation", "qualité"]
         },
     ],
     ("Capricorn", "Pleine Lune"): [
         {
             "title": "Sommet Atteint",
-            "text": "La Pleine Lune en Capricorne couronne vos efforts. Contemplez le chemin parcouru et célébrez votre réussite méritée.",
+            "text": "La Pleine Lune en Capricorne couronne tes efforts. Contemplez le chemin parcouru et célébrez ton réussite méritée.",
             "keywords": ["sommet", "réussite", "accomplissement", "contemplation"]
         },
     ],
     ("Capricorn", "Lune Disseminante"): [
         {
             "title": "Mentorat Sage",
-            "text": "Votre expérience et votre sagesse guident les plus jeunes. Partagez vos leçons de vie avec générosité et humilité.",
+            "text": "Ta expérience et ta sagesse guident les plus jeunes. Partagez tes leçons de vie avec générosité et humilité.",
             "keywords": ["mentorat", "sagesse", "expérience", "guidance"]
         },
     ],
     ("Capricorn", "Dernier Quartier"): [
         {
             "title": "Libération du Fardeau",
-            "text": "Même les épaules les plus fortes méritent du répit. Déposez les responsabilités inutiles et allégez votre charge.",
+            "text": "Même les épaules les plus fortes méritent du répit. Déposez les responsabilités inutiles et allégez ton charge.",
             "keywords": ["libération", "répit", "allègement", "repos"]
         },
     ],
     ("Capricorn", "Dernier Croissant"): [
         {
             "title": "Repos de l'Architecte",
-            "text": "Avant de construire à nouveau, rechargez votre énergie. La solitude restauratrice prépare vos prochaines créations.",
+            "text": "Avant de construire à nouveau, rechargez ta énergie. La solitude restauratrice prépare tes prochaines créations.",
             "keywords": ["repos", "restauration", "préparation", "solitude"]
         },
     ],
@@ -615,56 +615,56 @@ INSIGHT_TEMPLATES = {
     ("Aquarius", "Nouvelle Lune"): [
         {
             "title": "Vision Innovante",
-            "text": "La Nouvelle Lune en Verseau libère votre génie créatif. Osez penser différemment et imaginer des futurs alternatifs audacieux.",
+            "text": "La Nouvelle Lune en Verseau libère ton génie créatif. Osez penser différemment et imaginer des futurs alternatifs audacieux.",
             "keywords": ["innovation", "vision", "créativité", "futur"]
         },
     ],
     ("Aquarius", "Premier Croissant"): [
         {
             "title": "Communauté Éveillée",
-            "text": "Vos idées progressistes trouvent écho dans votre tribu. Connectez-vous à ceux qui partagent votre vision d'un monde meilleur.",
+            "text": "Tes idées progressistes trouvent écho dans ta tribu. Connecte-toi à ceux qui partagent ta vision d'un monde meilleur.",
             "keywords": ["communauté", "progressisme", "connexion", "vision"]
         },
     ],
     ("Aquarius", "Premier Quartier"): [
         {
             "title": "Rébellion Constructive",
-            "text": "Face aux résistances, votre originalité devient une force révolutionnaire. Défiez le statu quo avec intelligence et compassion.",
+            "text": "Face aux résistances, ton originalité devient une force révolutionnaire. Défiez le statu quo avec intelligence et compassion.",
             "keywords": ["rébellion", "originalité", "révolution", "intelligence"]
         },
     ],
     ("Aquarius", "Lune Gibbeuse"): [
         {
             "title": "Perfection Technologique",
-            "text": "Affinez vos systèmes et innovations. Votre approche rationnelle crée des solutions élégantes aux problèmes complexes.",
+            "text": "Affinez tes systèmes et innovations. Ton approche rationnelle crée des solutions élégantes aux problèmes complexes.",
             "keywords": ["technologie", "systèmes", "solutions", "élégance"]
         },
     ],
     ("Aquarius", "Pleine Lune"): [
         {
             "title": "Révélation Collective",
-            "text": "La Pleine Lune en Verseau illumine la conscience collective. Vos intuitions visionnaires révèlent des vérités universelles.",
+            "text": "La Pleine Lune en Verseau illumine la conscience collective. Tes intuitions visionnaires révèlent des vérités universelles.",
             "keywords": ["révélation", "collectif", "intuition", "universel"]
         },
     ],
     ("Aquarius", "Lune Disseminante"): [
         {
             "title": "Activation du Réseau",
-            "text": "Partagez vos découvertes avec la communauté. Votre capacité à connecter les esprits catalyse le changement collectif.",
+            "text": "Partagez tes découvertes avec la communauté. Ta capacité à connecter les esprits catalyse le changement collectif.",
             "keywords": ["réseau", "partage", "connexion", "changement"]
         },
     ],
     ("Aquarius", "Dernier Quartier"): [
         {
             "title": "Libération du Système",
-            "text": "Détachez-vous des structures mentales rigides. L'innovation véritable naît de la liberté de penser au-delà des limites.",
+            "text": "Détache-toi des structures mentales rigides. L'innovation véritable naît de la liberté de penser au-delà des limites.",
             "keywords": ["libération", "liberté", "innovation", "détachement"]
         },
     ],
     ("Aquarius", "Dernier Croissant"): [
         {
             "title": "Repos du Visionnaire",
-            "text": "Même les esprits les plus brillants ont besoin de silence. Rechargez votre génie créatif dans la solitude réflexive.",
+            "text": "Même les esprits les plus brillants ont besoin de silence. Rechargez ton génie créatif dans la solitude réflexive.",
             "keywords": ["repos", "silence", "réflexion", "recharge"]
         },
     ],
@@ -673,28 +673,28 @@ INSIGHT_TEMPLATES = {
     ("Pisces", "Nouvelle Lune"): [
         {
             "title": "Océan de Possibles",
-            "text": "La Nouvelle Lune en Poissons dissout les frontières. Plongez dans votre imagination et laissez l'intuition guider votre chemin.",
+            "text": "La Nouvelle Lune en Poissons dissout les frontières. Plongez dans ton imagination et laissez l'intuition guider ton chemin.",
             "keywords": ["imagination", "intuition", "possibilités", "fluidité"]
         },
     ],
     ("Pisces", "Premier Croissant"): [
         {
             "title": "Connexion Spirituelle",
-            "text": "Votre sensibilité spirituelle s'approfondit. Cultivez votre lien avec le sacré à travers la méditation, l'art ou la nature.",
+            "text": "Ta sensibilité spirituelle s'approfondit. Cultivez ton lien avec le sacré à travers la méditation, l'art ou la nature.",
             "keywords": ["spiritualité", "connexion", "sacré", "sensibilité"]
         },
     ],
     ("Pisces", "Premier Quartier"): [
         {
             "title": "Compassion en Action",
-            "text": "Les défis révèlent votre capacité d'empathie profonde. Votre compassion devient une force de guérison pour vous et les autres.",
+            "text": "Les défis révèlent ta capacité d'empathie profonde. Ta compassion devient une force de guérison pour toi et les autres.",
             "keywords": ["compassion", "empathie", "guérison", "force"]
         },
     ],
     ("Pisces", "Lune Gibbeuse"): [
         {
             "title": "Raffinement Artistique",
-            "text": "Votre créativité atteint des sommets subtils. Chaque œuvre est imprégnée d'une qualité éthérée et transcendante.",
+            "text": "Ta créativité atteint des sommets subtils. Chaque œuvre est imprégnée d'une qualité éthérée et transcendante.",
             "keywords": ["créativité", "art", "subtilité", "transcendance"]
         },
     ],
@@ -708,14 +708,14 @@ INSIGHT_TEMPLATES = {
     ("Pisces", "Lune Disseminante"): [
         {
             "title": "Guérison Universelle",
-            "text": "Votre énergie curative rayonne au-delà de vous. Partagez votre don de compassion et d'acceptation inconditionnelle.",
+            "text": "Ton énergie curative rayonne au-delà de toi. Partage ton don de compassion et d'acceptation inconditionnelle.",
             "keywords": ["guérison", "compassion", "acceptation", "don"]
         },
     ],
     ("Pisces", "Dernier Quartier"): [
         {
             "title": "Dissolution Sacrée",
-            "text": "Laissez partir les illusions et les attachements qui vous retiennent. Dans le lâcher-prise total, vous trouvez la liberté véritable.",
+            "text": "Laisse partir les illusions et les attachements qui te retiennent. Dans le lâcher-prise total, tu trouves la liberté véritable.",
             "keywords": ["dissolution", "lâcher-prise", "liberté", "illusions"]
         },
     ],

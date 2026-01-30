@@ -179,12 +179,12 @@ export default function ProfileSetupScreen() {
 
     // Validation
     if (!name.trim()) {
-      Alert.alert('Nom requis', 'Veuillez entrer votre prénom');
+      Alert.alert('Nom requis', 'Merci d'entrer ton prénom');
       return;
     }
 
     if (!placeInput.trim()) {
-      Alert.alert('Lieu requis', 'Veuillez entrer votre lieu de naissance');
+      Alert.alert('Lieu requis', 'Merci d\'entrer ton lieu de naissance');
       return;
     }
 
@@ -192,13 +192,13 @@ export default function ProfileSetupScreen() {
     if (!selectedPlace) {
       Alert.alert(
         'Ville requise',
-        'Veuillez choisir une ville dans la liste de suggestions'
+        'Merci de choisir une ville dans la liste de suggestions'
       );
       return;
     }
 
     if (!birthTime.trim()) {
-      Alert.alert('Heure requise', 'Veuillez entrer votre heure de naissance');
+      Alert.alert('Heure requise', 'Merci d'entrer ton heure de naissance');
       return;
     }
 

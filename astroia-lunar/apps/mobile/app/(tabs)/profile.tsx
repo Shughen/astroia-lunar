@@ -152,7 +152,7 @@ export default function ProfileScreen() {
       if (!success && value) {
         Alert.alert(
           'Permission requise',
-          'Veuillez autoriser les notifications dans les paramètres de votre appareil.',
+          'Merci d\'autoriser les notifications dans les paramètres de ton appareil.',
           [
             { text: 'Annuler', style: 'cancel' },
             {
@@ -170,7 +170,7 @@ export default function ProfileScreen() {
       }
     } catch (error) {
       console.error('[Profile] Error toggling notifications:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue. Veuillez réessayer.');
+      Alert.alert('Erreur', 'Une erreur est survenue. Merci de réessayer.');
     } finally {
       setIsTogglingNotifications(false);
     }
@@ -178,7 +178,7 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     haptics.medium();
-    Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
+    Alert.alert('Déconnexion', 'Es-tu sûr de vouloir te déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Déconnexion',
@@ -397,8 +397,8 @@ export default function ProfileScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Lunation v2.0</Text>
-          <Text style={styles.footerText}>Votre rituel lunaire quotidien</Text>
+          <Text style={styles.footerText}>Lunation v3.0</Text>
+          <Text style={styles.footerText}>Ton rituel lunaire quotidien</Text>
         </View>
       </ScrollView>
     </LinearGradientComponent>

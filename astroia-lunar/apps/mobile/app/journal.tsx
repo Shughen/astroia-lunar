@@ -104,7 +104,7 @@ export default function JournalScreen() {
       setEntries(displayEntries);
     } catch (error) {
       console.error('[JOURNAL] Erreur chargement:', error);
-      Alert.alert('Erreur', 'Impossible de charger vos entrées. Vérifiez votre connexion.');
+      Alert.alert('Erreur', 'Impossible de charger tes entrées. Vérifie ta connexion.');
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export default function JournalScreen() {
     }
 
     if (!currentText.trim()) {
-      Alert.alert('Attention', 'Veuillez écrire quelque chose avant de sauvegarder');
+      Alert.alert('Attention', 'Merci d\'écrire quelque chose avant de sauvegarder');
       return;
     }
 
@@ -146,7 +146,7 @@ export default function JournalScreen() {
 
       Alert.alert(
         '✅ Sauvegardé',
-        'Votre entrée a été enregistrée avec succès',
+        'Ton entrée a été enregistrée avec succès',
         [
           {
             text: 'Continuer',
@@ -166,7 +166,7 @@ export default function JournalScreen() {
     } catch (error) {
       console.error('[JOURNAL] Erreur sauvegarde:', error);
       haptics.error();
-      Alert.alert('Erreur', 'Impossible de sauvegarder votre entrée. Vérifiez votre connexion.');
+      Alert.alert('Erreur', 'Impossible de sauvegarder ton entrée. Vérifie ta connexion.');
     } finally {
       savingLockRef.current = false;
       setSaving(false);
@@ -177,7 +177,7 @@ export default function JournalScreen() {
     haptics.warning(); // Feedback tactile pour action destructive
     Alert.alert(
       'Confirmer la suppression',
-      'Voulez-vous vraiment supprimer cette entrée ?',
+      'Veux-tu vraiment supprimer cette entrée ?',
       [
         {
           text: 'Annuler',
@@ -196,7 +196,7 @@ export default function JournalScreen() {
               await loadEntries();
             } catch (error) {
               console.error('[JOURNAL] Erreur suppression:', error);
-              Alert.alert('Erreur', 'Impossible de supprimer cette entrée. Vérifiez votre connexion.');
+              Alert.alert('Erreur', 'Impossible de supprimer cette entrée. Vérifie ta connexion.');
             }
           },
         },
@@ -259,7 +259,7 @@ export default function JournalScreen() {
           </View>
           <Text style={styles.title}>📖 Journal Quotidien</Text>
           <Text style={styles.subtitle}>
-            Un espace pour votre rituel quotidien
+            Un espace pour ton rituel quotidien
           </Text>
         </View>
 
@@ -278,7 +278,7 @@ export default function JournalScreen() {
             style={styles.textInput}
             value={currentText}
             onChangeText={setCurrentText}
-            placeholder="Comment vous sentez-vous aujourd'hui ?"
+            placeholder="Comment te sens-tu aujourd'hui ?"
             placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={6}
@@ -314,7 +314,7 @@ export default function JournalScreen() {
                 Aucune entrée pour le moment
               </Text>
               <Text style={styles.emptyHint}>
-                Écrivez votre première entrée pour commencer !
+                Écris ta première entrée pour commencer !
               </Text>
             </View>
           ) : (
