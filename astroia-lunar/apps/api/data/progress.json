@@ -1,11 +1,11 @@
 {
   "total_aspects": 130,
-  "completed_batches": 7,
+  "completed_batches": 8,
   "total_batches": 10,
-  "aspects_inserted": 60,
-  "progress_percent": 46.2,
+  "aspects_inserted": 70,
+  "progress_percent": 53.8,
   "total_cost_usd": 0,
-  "last_batch_at": "2026-01-30T20:45:00Z",
+  "last_batch_at": "2026-01-30T21:00:00Z",
   "batches": [
     {
       "number": 1,
@@ -62,6 +62,14 @@
       "cost_usd": 0,
       "committed_at": "2026-01-30T20:45:00Z",
       "notes": "Moon-Venus: besoins affectifs/douceur, Moon-Mars: émotions + action. Douceur vs intensité."
+    },
+    {
+      "number": 8,
+      "aspects": 10,
+      "pairs": ["moon-jupiter", "moon-saturn"],
+      "cost_usd": 0,
+      "committed_at": "2026-01-30T21:00:00Z",
+      "notes": "Moon-Jupiter: expansion/optimisme, Moon-Saturn: limites/maturité. Ouverture vs protection."
     }
   ]
 }
