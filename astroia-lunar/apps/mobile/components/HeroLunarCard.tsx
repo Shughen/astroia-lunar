@@ -160,6 +160,7 @@ export function HeroLunarCard({ lunarReturn, loading, onPress }: HeroLunarCardPr
       ]}
     >
       <Pressable
+        testID="current-lunar-card"
         onPress={handlePress}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >

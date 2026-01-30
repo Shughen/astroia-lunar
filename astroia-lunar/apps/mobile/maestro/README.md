@@ -245,9 +245,55 @@ Ajouter des délais dans le flow:
 - [x] Test Void of Course details
 - [x] Test création d'entrée journal
 - [x] Test transits majeurs overview
+- [x] **Capture complète des screenshots (22+ écrans) pour publication**
 - [ ] Test timeline lunaire (12 mois)
 - [ ] Test notifications (si simulateur le permet)
 - [ ] Tests de régression complets
+
+## Capture des Screenshots
+
+Un flow dédié permet de capturer automatiquement tous les écrans de l'application pour publication sur Google Play Store.
+
+### Flow de Capture
+
+**Fichier** : `maestro/flows/capture-all-screens.yaml`
+
+Capture automatiquement :
+- 1 écran authentification
+- 7 écrans onboarding
+- 3 écrans tabs (Home, Calendar, Profile)
+- 11 écrans secondaires (rapports, VoC, transits, journal, natal chart, settings)
+- 2 écrans modals (bottom sheet)
+- 2 écrans debug (optionnels)
+
+**Total** : 22-26 screenshots selon configuration
+
+### Utilisation
+
+```bash
+# Workflow complet (recommandé)
+npm run screenshots:full
+
+# Capture uniquement
+npm run screenshots:capture
+
+# Organisation uniquement
+npm run screenshots:organize
+
+# Validation IA uniquement
+npm run screenshots:validate
+```
+
+### Documentation Complète
+
+Voir `docs/SCREENSHOTS_WORKFLOW.md` pour :
+- Prérequis détaillés
+- Installation
+- Guide d'utilisation complet
+- Architecture des scripts
+- Validation avec Claude Opus 4.5
+- Troubleshooting
+- FAQ
 
 ## Ressources
 

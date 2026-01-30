@@ -1,0 +1,51 @@
+appId: com.shughen85.astroialunar
+---
+# Flow étendu: tabs + rapport lunaire + bottom sheet
+
+- launchApp
+- waitForAnimationToEnd
+
+# Home (déjà affiché)
+- takeScreenshot: 12-home
+
+# Lunar Report (tap sur hero card)
+- tapOn:
+    point: "50%,35%"
+- waitForAnimationToEnd
+- takeScreenshot: 15-lunar-report-top
+- scroll
+- takeScreenshot: 16-lunar-report-bottom
+- back
+- waitForAnimationToEnd
+
+# Calendar tab
+- tapOn:
+    point: "50%,95%"
+- waitForAnimationToEnd
+- takeScreenshot: 13-calendar
+
+# Profile tab
+- tapOn:
+    point: "83%,95%"
+- waitForAnimationToEnd
+- takeScreenshot: 14-profile
+
+# Retour Home pour bottom sheet
+- tapOn:
+    point: "17%,95%"
+- waitForAnimationToEnd
+
+# Bottom Sheet Aujourd'hui (tap sur TodayMiniCard)
+- tapOn:
+    point: "50%,75%"
+- waitForAnimationToEnd
+- takeScreenshot: 23-bottom-sheet-top
+- scroll
+- takeScreenshot: 24-bottom-sheet-bottom
+# Fermer en tapant hors du sheet
+- tapOn:
+    point: "50%,10%"
+- waitForAnimationToEnd
+
+# Screenshot final
+- takeScreenshot: 26-final-home

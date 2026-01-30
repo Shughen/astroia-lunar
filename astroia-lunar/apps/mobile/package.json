@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run test",
     "check:i18n": "node scripts/check-i18n.js",
-    "e2e": "maestro test maestro/flows/"
+    "e2e": "maestro test maestro/flows/",
+    "screenshots": "maestro test --test-output-dir screenshots maestro/flows/capture-all-screens.yaml && cp screenshots/screenshots/*.png screenshots/ && echo '✅ 8 screenshots dans screenshots/' && ls -lh screenshots/*.png"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

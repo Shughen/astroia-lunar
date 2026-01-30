@@ -50,6 +50,7 @@ export function NatalMiniCard({ onPress }: NatalMiniCardProps) {
 
   return (
     <TouchableOpacity
+      testID="natal-mini-card"
       style={styles.container}
       onPress={handlePress}
       activeOpacity={0.7}

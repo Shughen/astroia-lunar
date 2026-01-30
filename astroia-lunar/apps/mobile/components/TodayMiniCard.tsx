@@ -32,6 +32,7 @@ export function TodayMiniCard({ moonPhase, moonSign, onPress }: TodayMiniCardPro
 
   return (
     <TouchableOpacity
+      testID="today-mini-card"
       style={styles.container}
       onPress={handlePress}
       activeOpacity={0.7}

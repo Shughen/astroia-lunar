@@ -247,9 +247,49 @@ uvicorn main:app --reload --port 8000
 ## Documentation Supplementaire
 
 - `docs/SCREENS.md` - Documentation detaillee des ecrans
+- `docs/SCREENSHOTS_WORKFLOW.md` - **Guide capture et validation screenshots** 📸
+- `maestro/README.md` - Tests E2E avec Maestro
 - `../api/docs/ARCHITECTURE.md` - Architecture complete
 - `../.claude/CLAUDE.md` - Instructions projet
 
 ---
 
-**Derniere mise a jour:** 2026-01-29 (Refonte 3 tabs)
+## Capture de Screenshots pour Publication
+
+Un workflow automatise permet de capturer et valider tous les ecrans pour publication sur Google Play Store.
+
+### Quick Start
+
+```bash
+# Workflow complet (capture + organisation + validation IA)
+npm run screenshots:full
+
+# Etapes separees
+npm run screenshots:capture     # Capture Maestro uniquement
+npm run screenshots:organize    # Organisation et renommage
+npm run screenshots:validate    # Validation avec Claude Opus 4.5
+```
+
+### Caracteristiques
+
+- ✅ **22+ ecrans captures** automatiquement (auth, onboarding, tabs, stacks, modals)
+- ✅ **Navigation intelligente** avec Maestro (skip sections deja completes)
+- ✅ **Organisation automatique** avec convention de nommage (`01-auth.png`, `12-home.png`, etc.)
+- ✅ **Validation IA** avec Claude Opus 4.5 (contenu, lisibilite, coherence design, accessibilite)
+- ✅ **Rapport detaille** avec feedback et suggestions d'amelioration
+- ⚡ **~10-15 minutes** par session complete
+- 💰 **~$1.50** par validation complete (Claude Opus 4.5)
+
+### Documentation Complete
+
+Voir `docs/SCREENSHOTS_WORKFLOW.md` pour :
+- Prerequis (backend, emulateur, Maestro)
+- Guide d'installation
+- Architecture des scripts
+- Criteres de validation IA
+- Troubleshooting
+- FAQ
+
+---
+
+**Derniere mise a jour:** 2026-01-30 (Ajout workflow screenshots)
