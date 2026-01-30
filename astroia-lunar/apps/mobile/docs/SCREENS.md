@@ -79,7 +79,7 @@ app/
 │                                     │
 │ ┌─────────────────────────────────┐ │
 │ │ NatalMiniCard          ▶        │ │
-│ │ Mon theme natal                 │──► tab Profil
+│ │ Mon thème natal                 │──► tab Profil
 │ └─────────────────────────────────┘ │
 └─────────────────────────────────────┘
 ```
@@ -88,7 +88,7 @@ app/
 - `VocBanner` - Banniere amber Void of Course (conditionnelle)
 - `HeroLunarCard` - Hero card 60% ecran revolution lunaire
 - `TodayMiniCard` - Mini card phase du jour → ouvre bottom sheet
-- `NatalMiniCard` - Raccourci vers theme natal
+- `NatalMiniCard` - Raccourci vers thème natal
 - `TodayBottomSheet` - Modal slide-up avec rituel complet
 
 **Donnees** :
@@ -268,7 +268,7 @@ useImperativeHandle(ref, () => ({
 │  │Sagitt. │                        │
 │  └────────┘                        │
 │                                     │
-│  [   Voir theme complet   ] ────────┼──► /natal-chart
+│  [   Voir thème complet   ] ────────┼──► /natal-chart
 │                                     │
 │  PARAMETRES                         │
 │  ┌─────────────────────────────────┐│
@@ -285,7 +285,7 @@ useImperativeHandle(ref, () => ({
 2. **Mon Theme Natal** (nouveau v3.0)
    - Big 3 : Soleil, Lune, Ascendant
    - Grille 4 planetes : Mercure, Venus, Mars, Jupiter
-   - CTA vers theme complet
+   - CTA vers thème complet
 3. **Parametres** - Notifications, langue
 4. **Actions** - Deconnexion
 
@@ -336,7 +336,7 @@ useImperativeHandle(ref, () => ({
 ```tsx
 <NatalMiniCard onPress={() => router.push('/(tabs)/profile')} />
 ```
-- Raccourci vers theme natal
+- Raccourci vers thème natal
 - Icone roue astrologique
 - Chevron right
 

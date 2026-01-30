@@ -254,7 +254,7 @@ Apres le build :
 Lunation est votre guide d'astrologie lunaire personnalise.
 
 FONCTIONNALITES :
-- Revolutions lunaires personnalisees basees sur votre theme natal
+- Revolutions lunaires personnalisees basees sur votre thème natal
 - Interpretations IA de qualite professionnelle
 - Suivi des transits planetaires
 - Position actuelle de la Lune

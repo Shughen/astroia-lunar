@@ -1094,11 +1094,32 @@ async def get_current_lunar_return(
 
         logger.info(f"[corr={correlation_id}] ✅ Révolution lunaire trouvée: {lunar_return.month} (return_date={lunar_return.return_date})")
 
+        # Calculer end_date : chercher le prochain LunarReturn (TICKET T1)
+        result_next = await db.execute(
+            select(LunarReturn)
+            .where(
+                LunarReturn.user_id == user_id,
+                LunarReturn.return_date > lunar_return.return_date
+            )
+            .order_by(LunarReturn.return_date.asc())
+            .limit(1)
+        )
+        next_return = result_next.scalar_one_or_none()
+
+        if next_return:
+            end_date = next_return.return_date
+            logger.debug(f"[corr={correlation_id}] Prochain cycle trouvé: end_date={end_date}")
+        else:
+            # Fallback si pas de prochain return : +27 jours (durée moyenne cycle lunaire)
+            end_date = lunar_return.return_date + timedelta(days=27)
+            logger.debug(f"[corr={correlation_id}] Pas de prochain cycle, fallback +27j: end_date={end_date}")
+
         # Convertir en dict pour retourner avec response_model
         return {
             "id": lunar_return.id,
             "month": lunar_return.month,
             "return_date": lunar_return.return_date,
+            "end_date": end_date,  # Nouvelle propriété pour cohérence avec rapport
             "lunar_ascendant": lunar_return.lunar_ascendant,
             "moon_house": lunar_return.moon_house,
             "moon_sign": lunar_return.moon_sign,

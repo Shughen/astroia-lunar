@@ -80,7 +80,7 @@ Home Screen
 │   └── Tap → ouvre TodayBottomSheet
 │
 ├── NatalMiniCard
-│   └── "Mon theme natal"
+│   └── "Mon thème natal"
 │   └── Tap → tab Profil
 │
 └── TodayBottomSheet (Modal slide-up)
@@ -102,7 +102,7 @@ Profile Screen
 ├── Section "Mon Theme Natal"
 │   ├── Big 3 (Soleil, Lune, Ascendant)
 │   ├── Grille 4 planetes (Mercure, Venus, Mars, Jupiter)
-│   └── CTA "Voir theme complet" → /natal-chart
+│   └── CTA "Voir thème complet" → /natal-chart
 │
 └── Settings
     ├── Notifications
@@ -130,7 +130,7 @@ Calendar Screen
 | `VocBanner` | `components/VocBanner.tsx` | Banniere amber Void of Course |
 | `HeroLunarCard` | `components/HeroLunarCard.tsx` | Hero card 60% ecran revolution lunaire |
 | `TodayMiniCard` | `components/TodayMiniCard.tsx` | Mini card pour ouvrir bottom sheet |
-| `NatalMiniCard` | `components/NatalMiniCard.tsx` | Raccourci vers theme natal |
+| `NatalMiniCard` | `components/NatalMiniCard.tsx` | Raccourci vers thème natal |
 | `TodayBottomSheet` | `components/TodayBottomSheet.tsx` | Modal slide-up rituel quotidien |
 | `RitualCheckItem` | `components/RitualCheckItem.tsx` | Checkbox animee pour rituels |
 
