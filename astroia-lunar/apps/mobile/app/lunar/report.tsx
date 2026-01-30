@@ -326,9 +326,14 @@ export default function LunarReportScreen() {
             }}
           >
             <View style={styles.aspectHeader}>
-              <Text style={styles.aspectPlanets}>
-                {tPlanet(aspect.planet1)} {getAspectSymbol(aspect.type)} {tPlanet(aspect.planet2)}
-              </Text>
+              <View style={styles.aspectPlanetsRow}>
+                <Text style={styles.aspectPlanets}>
+                  {tPlanet(aspect.planet1)} {getAspectSymbol(aspect.type)} {tPlanet(aspect.planet2)}
+                </Text>
+                {aspect.copy?.shadow && (
+                  <Text style={styles.shadowBadge}>⚠️</Text>
+                )}
+              </View>
               <Text style={styles.aspectOrb}>
                 {Math.abs(aspect.orb).toFixed(1)}°
               </Text>
@@ -679,10 +684,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  aspectPlanetsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
   aspectPlanets: {
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  shadowBadge: {
+    fontSize: 16,
+    marginLeft: 4,
   },
   aspectOrb: {
     fontSize: 14,

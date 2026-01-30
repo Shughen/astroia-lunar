@@ -407,9 +407,14 @@ export default function NatalChartResultScreen() {
                         disabled={!isEnriched}
                       >
                         <View style={styles.aspectContent}>
-                          <Text style={styles.aspectText}>
-                            {aspectText.replace(/ \(orbe [^)]+\)/, '')}  {/* Enlever l'orbe du texte principal */}
-                          </Text>
+                          <View style={styles.aspectTextRow}>
+                            <Text style={styles.aspectText}>
+                              {aspectText.replace(/ \(orbe [^)]+\)/, '')}  {/* Enlever l'orbe du texte principal */}
+                            </Text>
+                            {aspect.copy?.shadow && (
+                              <Text style={styles.shadowBadge}>⚠️</Text>
+                            )}
+                          </View>
                           {orb !== null && (
                             <Text style={styles.aspectOrb}>
                               Orbe: {orb.toFixed(1).replace('.', ',')}°  {/* Distance à l'aspect exact */}
@@ -620,10 +625,20 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     flex: 1,
   },
+  aspectTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: spacing.xs,
+  },
   aspectText: {
     ...fonts.body,
     color: colors.text,
-    marginBottom: spacing.xs,
+    flex: 1,
+  },
+  shadowBadge: {
+    fontSize: 16,
+    marginLeft: 4,
   },
   aspectOrb: {
     ...fonts.bodySmall,
