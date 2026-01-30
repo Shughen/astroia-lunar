@@ -1,11 +1,11 @@
 {
   "total_aspects": 130,
-  "completed_batches": 9,
+  "completed_batches": 10,
   "total_batches": 10,
-  "aspects_inserted": 80,
-  "progress_percent": 61.5,
+  "aspects_inserted": 90,
+  "progress_percent": 69.2,
   "total_cost_usd": 0,
-  "last_batch_at": "2026-01-30T21:15:00Z",
+  "last_batch_at": "2026-01-30T21:30:00Z",
   "batches": [
     {
       "number": 1,
@@ -78,6 +78,14 @@
       "cost_usd": 0,
       "committed_at": "2026-01-30T21:15:00Z",
       "notes": "Moon-Neptune: dissolution/imaginaire, Moon-Pluto: intensité/transformation. Sensibilité extrême."
+    },
+    {
+      "number": 10,
+      "aspects": 10,
+      "pairs": ["venus-jupiter", "venus-saturn"],
+      "cost_usd": 0,
+      "committed_at": "2026-01-30T21:30:00Z",
+      "notes": "Venus-Jupiter: expansion affective, Venus-Saturn: amour structuré. DERNIER BATCH - 90 aspects prioritaires complétés."
     }
   ]
 }
