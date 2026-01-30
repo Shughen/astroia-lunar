@@ -43,6 +43,42 @@ Solution :
 Impact total : 35-75% amélioration performance globale
 ```
 
+### ✅ RÉSOLU : App crash 409 "Natal requis" + UUID→INTEGER migration (30/01/2026)
+
+```
+Symptôme : App mobile crash au démarrage avec erreur 409 "Thème natal requis"
+          + Endpoint transits retourne 500 au lieu de données
+
+Causes multiples :
+1. Utilisateur DEV_AUTH_BYPASS (id=1) n'existait pas en DB
+2. Table transits_overview.user_id en UUID au lieu de INTEGER
+3. Code utilise User.uuid inexistant (doit être User.id)
+4. Migration Alembic 7737e03699e5 non appliquée correctement
+
+Solutions appliquées :
+1. Création utilisateur de test (id=1) avec vraies données de naissance
+   - Date: 15 avril 1989, Heure: 17h55
+   - Lieu: Livry-Gargan, Seine-Saint-Denis, France
+
+2. Migration manuelle transits_overview.user_id UUID→INTEGER
+   psql: ALTER TABLE transits_overview DROP COLUMN user_id CASCADE;
+         ALTER TABLE transits_overview ADD COLUMN user_id INTEGER NOT NULL;
+         ADD CONSTRAINT fk_transits_overview_user_id FOREIGN KEY (user_id) REFERENCES users(id)
+
+3. Code fixes (commits d5ceb3b, 996f62c, d9f311f)
+   - transits.py: Accept integer user_id, removed UUID conversion logic
+   - lunar.py: Use user_obj.id instead of user_obj.uuid for auto-calculation
+
+4. Génération natal chart via API
+   curl POST /api/natal-chart avec données réelles
+
+Résultat :
+✅ App démarre sans crash
+✅ Endpoint transits/overview retourne 404 (attendu) au lieu de 500
+✅ Lunar returns chargent correctement
+✅ Auto-calcul transits lors de génération lunar report
+```
+
 ---
 
 ## ⚠️ Problèmes Courants
