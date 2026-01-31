@@ -165,7 +165,7 @@ export default function LunarMonthScreen() {
         {/* Date précise */}
         {lunarReturn.return_date && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>📅 Date de la révolution</Text>
+            <Text style={styles.cardTitle}>📅 Date de ta révolution</Text>
             <Text style={styles.dateText}>{formatDate(lunarReturn.return_date)}</Text>
           </View>
         )}
@@ -192,7 +192,7 @@ export default function LunarMonthScreen() {
         {/* Ascendant lunaire */}
         {lunarReturn.lunar_ascendant && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>⬆️ Ascendant de la révolution</Text>
+            <Text style={styles.cardTitle}>⬆️ Ascendant de ta révolution</Text>
             <Text style={styles.infoValue}>{tSign(lunarReturn.lunar_ascendant)}</Text>
           </View>
         )}

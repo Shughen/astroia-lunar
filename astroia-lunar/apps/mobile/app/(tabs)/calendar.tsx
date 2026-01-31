@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
 import { haptics } from '../../services/haptics';
 import { MoonPhaseIcon } from '../../components/icons/MoonPhaseIcon';
+import { getPhaseSign } from '../../data/moonPhaseSigns2026';
 
 // Fallback si LinearGradient n'est pas disponible
 const LinearGradientComponent = LinearGradient || (({ colors: bgColors, style, children, ...props }: any) => {
@@ -110,21 +111,21 @@ const EXACT_PHASES: Record<string, string> = {
   '2027-07-04': 'new', '2027-08-02': 'new', '2027-09-01': 'new',
   '2027-09-30': 'new', '2027-10-30': 'new', '2027-11-28': 'new',
   '2027-12-28': 'new',
-  // Premiers Quartiers 2026
-  '2026-01-10': 'first_quarter', '2026-02-09': 'first_quarter',
-  '2026-03-11': 'first_quarter', '2026-04-10': 'first_quarter',
-  '2026-05-09': 'first_quarter', '2026-06-07': 'first_quarter',
-  '2026-07-07': 'first_quarter', '2026-08-05': 'first_quarter',
-  '2026-09-04': 'first_quarter', '2026-10-03': 'first_quarter',
-  '2026-11-02': 'first_quarter', '2026-12-01': 'first_quarter',
-  '2026-12-31': 'first_quarter',
-  // Derniers Quartiers 2026
-  '2026-01-25': 'last_quarter', '2026-02-24': 'last_quarter',
-  '2026-03-25': 'last_quarter', '2026-04-24': 'last_quarter',
-  '2026-05-23': 'last_quarter', '2026-06-22': 'last_quarter',
-  '2026-07-21': 'last_quarter', '2026-08-20': 'last_quarter',
-  '2026-09-18': 'last_quarter', '2026-10-18': 'last_quarter',
-  '2026-11-17': 'last_quarter', '2026-12-16': 'last_quarter',
+  // Premiers Quartiers 2026 (dates corrigees)
+  '2026-01-26': 'first_quarter', '2026-02-24': 'first_quarter',
+  '2026-03-25': 'first_quarter', '2026-04-24': 'first_quarter',
+  '2026-05-23': 'first_quarter', '2026-06-21': 'first_quarter',
+  '2026-07-21': 'first_quarter', '2026-08-20': 'first_quarter',
+  '2026-09-18': 'first_quarter', '2026-10-18': 'first_quarter',
+  '2026-11-17': 'first_quarter', '2026-12-17': 'first_quarter',
+  // Derniers Quartiers 2026 (dates corrigees)
+  '2026-01-10': 'last_quarter', '2026-02-09': 'last_quarter',
+  '2026-03-11': 'last_quarter', '2026-04-10': 'last_quarter',
+  '2026-05-09': 'last_quarter', '2026-06-08': 'last_quarter',
+  '2026-07-07': 'last_quarter', '2026-08-06': 'last_quarter',
+  '2026-09-04': 'last_quarter', '2026-10-03': 'last_quarter',
+  '2026-11-01': 'last_quarter', '2026-12-01': 'last_quarter',
+  '2026-12-30': 'last_quarter',
 };
 
 // Calcul des phases lunaires avec dates exactes + fallback approximatif
@@ -457,6 +458,7 @@ export default function CalendarScreen() {
                     {day.moonPhase.phase === 'full' && 'Pleine Lune'}
                     {day.moonPhase.phase === 'first_quarter' && '1er Quartier'}
                     {day.moonPhase.phase === 'last_quarter' && 'Dernier Quartier'}
+                    {' '}{getPhaseSign(`${day.date.getFullYear()}-${String(day.date.getMonth() + 1).padStart(2, '0')}-${String(day.date.getDate()).padStart(2, '0')}`)}
                   </Text>
                 </View>
               );
