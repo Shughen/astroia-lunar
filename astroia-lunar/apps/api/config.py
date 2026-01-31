@@ -119,7 +119,7 @@ class Settings(BaseSettings):
         return data
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=".env" if __import__('os').getenv('ENVIRONMENT') != 'production' else None,
         case_sensitive=True,
         extra='ignore'  # Ignorer variables EXPO_PUBLIC_* du mobile dans .env racine
     )
