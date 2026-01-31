@@ -71,38 +71,43 @@ async def lifespan(app: FastAPI):
     else:
         logger.info(f"[corr={correlation_id}] 🔒 Route DEV /api/lunar-returns/dev/purge désactivée (ALLOW_DEV_PURGE non défini ou false)")
     
-    # Schema sanity check au démarrage
-    try:
-        from database import AsyncSessionLocal
-        from utils.schema_sanity_check import check_schema_sanity
-        
-        async with AsyncSessionLocal() as db:
-            is_valid, errors = await check_schema_sanity(db, correlation_id)
-            
-            if not is_valid:
-                error_summary = "\n".join([f"  - {err['message']}" for err in errors])
-                error_msg = (
-                    f"[corr={correlation_id}] ❌ SCHEMA SANITY CHECK FAILED au démarrage:\n{error_summary}\n"
-                    f"Action requise: Exécuter les migrations SQL nécessaires. "
-                    f"Voir apps/api/scripts/sql/inspect_core_schema.sql pour diagnostiquer."
-                )
-                logger.error(error_msg)
-                
-                # Fail-fast en dev, warn seulement en prod
-                if settings.APP_ENV == "development":
-                    logger.error(f"[corr={correlation_id}] 🛑 Arrêt du serveur (dev mode fail-fast)")
-                    raise RuntimeError(f"Schema sanity check failed: {error_summary}")
-            else:
-                logger.info(f"[corr={correlation_id}] ✅ Schema sanity check OK au démarrage")
-    except RuntimeError:
-        # Re-raise RuntimeError (fail-fast en dev)
-        raise
-    except Exception as e:
-        # Pour toute autre erreur (DB indisponible, etc.), on log mais on continue
-        logger.warning(
-            f"[corr={correlation_id}] ⚠️ Impossible de vérifier le schéma au démarrage: {e}. "
-            f"Le serveur continue mais le schéma n'a pas été validé."
-        )
+    # Schema sanity check au démarrage (skip si SKIP_SCHEMA_CHECK=true ou en production)
+    skip_schema_check = os.getenv("SKIP_SCHEMA_CHECK", "").lower() in ("1", "true", "yes", "on")
+
+    if skip_schema_check:
+        logger.info(f"[corr={correlation_id}] ⏭️  Schema sanity check skipped (SKIP_SCHEMA_CHECK=true)")
+    else:
+        try:
+            from database import AsyncSessionLocal
+            from utils.schema_sanity_check import check_schema_sanity
+
+            async with AsyncSessionLocal() as db:
+                is_valid, errors = await check_schema_sanity(db, correlation_id)
+
+                if not is_valid:
+                    error_summary = "\n".join([f"  - {err['message']}" for err in errors])
+                    error_msg = (
+                        f"[corr={correlation_id}] ❌ SCHEMA SANITY CHECK FAILED au démarrage:\n{error_summary}\n"
+                        f"Action requise: Exécuter les migrations SQL nécessaires. "
+                        f"Voir apps/api/scripts/sql/inspect_core_schema.sql pour diagnostiquer."
+                    )
+                    logger.error(error_msg)
+
+                    # Fail-fast en dev, warn seulement en prod
+                    if settings.APP_ENV == "development":
+                        logger.error(f"[corr={correlation_id}] 🛑 Arrêt du serveur (dev mode fail-fast)")
+                        raise RuntimeError(f"Schema sanity check failed: {error_summary}")
+                else:
+                    logger.info(f"[corr={correlation_id}] ✅ Schema sanity check OK au démarrage")
+        except RuntimeError:
+            # Re-raise RuntimeError (fail-fast en dev)
+            raise
+        except Exception as e:
+            # Pour toute autre erreur (DB indisponible, etc.), on log mais on continue
+            logger.warning(
+                f"[corr={correlation_id}] ⚠️ Impossible de vérifier le schéma au démarrage: {e}. "
+                f"Le serveur continue mais le schéma n'a pas été validé."
+            )
     
     # NOTE: Tables créées via Alembic migrations, pas create_all
     # En dev, utiliser : alembic upgrade head
