@@ -6,7 +6,7 @@ interface LunarInterpretationLoaderProps {
 }
 
 export default function LunarInterpretationLoader({
-  message = "Génération de ton interprétation lunaire..."
+  message = "🌙 Lecture de ton ciel en cours..."
 }: LunarInterpretationLoaderProps) {
   // Animation pour le sablier (rotation)
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -190,7 +190,7 @@ export default function LunarInterpretationLoader({
 
       {/* Texte secondaire */}
       <Text style={styles.secondaryText}>
-        Claude Opus 4.5 analyse ton cycle lunaire
+        Les étoiles murmurent...
       </Text>
     </View>
   );

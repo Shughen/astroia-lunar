@@ -264,6 +264,19 @@ export default function SettingsScreen() {
         </View>
       )}
 
+      {/* À propos */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>À propos</Text>
+
+        <TouchableOpacity
+          style={styles.aboutRow}
+          onPress={() => router.push('/about')}
+        >
+          <Text style={styles.aboutLabel}>❓ FAQ</Text>
+          <Text style={styles.aboutArrow}>→</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Lunation v3.0</Text>
@@ -399,6 +412,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  aboutLabel: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  aboutArrow: {
+    fontSize: 18,
+    color: '#8B7BF7',
   },
   footer: {
     padding: 20,
