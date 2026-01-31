@@ -1,6 +1,9 @@
 /**
  * Écran détail d'un mois lunaire
  * Route dynamique : /lunar-month/[month]
+ *
+ * Affiche le rapport enrichi identique à /lunar/report.tsx
+ * avec titre dynamique (ex: "Janvier 2026")
  */
 
 import React, { useState, useEffect } from 'react';
@@ -10,23 +13,49 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, spacing, borderRadius } from '../../constants/theme';
-import { lunarReturns, LunarReturn } from '../../services/api';
-import { tPlanet, tSign } from '../../i18n/astro.format';
+import apiClient, { lunarReturns } from '../../services/api';
+import { tPlanet } from '../../i18n/astro.format';
 import { MarkdownText } from '../../components/MarkdownText';
-import { translateAstrologyText } from '../../utils/astrologyTranslations';
+import { translateAstrologyText, translateZodiacSign } from '../../utils/astrologyTranslations';
 import { trackLunarReturnViewed, trackScreenView } from '../../services/analytics';
+import { AspectDetailSheet } from '../../components/AspectDetailSheet';
+import { AnimatedCard } from '../../components/AnimatedCard';
+import LunarInterpretationLoader from '../../components/LunarInterpretationLoader';
+import { haptics } from '../../services/haptics';
+import type { AspectV4 } from '../../types/api';
+
+// Interface pour le rapport enrichi (identique à report.tsx)
+interface LunarReport {
+  lunar_return_id: number;
+  header: {
+    month: string;
+    dates: string;
+    moon_sign: string;
+    moon_house: number;
+    lunar_ascendant: string;
+  };
+  general_climate: string;
+  dominant_axes: string[];
+  major_aspects: AspectV4[];
+  lunar_interpretation?: {
+    climate: string | null;
+    focus: string | null;
+    approach: string | null;
+    full: string | null;
+  };
+}
 
 export default function LunarMonthScreen() {
   const router = useRouter();
   const { month } = useLocalSearchParams<{ month: string }>();
   const [loading, setLoading] = useState(true);
-  const [lunarReturn, setLunarReturn] = useState<LunarReturn | null>(null);
+  const [report, setReport] = useState<LunarReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAspect, setSelectedAspect] = useState<AspectV4 | null>(null);
 
   useEffect(() => {
     if (month) {
@@ -41,8 +70,16 @@ export default function LunarMonthScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await lunarReturns.getByMonth(month as string);
-      setLunarReturn(data);
+
+      // Étape 1: Récupérer LunarReturn basique pour avoir l'ID
+      const basicData = await lunarReturns.getByMonth(month as string);
+      if (!basicData?.id) {
+        throw new Error('Cycle lunaire non trouvé');
+      }
+
+      // Étape 2: Appeler l'API du rapport enrichi
+      const response = await apiClient.get(`/api/lunar-returns/${basicData.id}/report`);
+      setReport(response.data);
     } catch (err: any) {
       console.error('[LunarMonth] Erreur chargement:', err);
       setError(err.response?.data?.detail || err.message || 'Erreur lors du chargement');
@@ -71,29 +108,117 @@ export default function LunarMonthScreen() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateString;
+  // Symbole pour les aspects
+  const getAspectSymbol = (type: string): string => {
+    const symbols: { [key: string]: string } = {
+      conjunction: '☌',
+      opposition: '☍',
+      square: '□',
+      trine: '△',
+      sextile: '⚹',
+    };
+    return symbols[type.toLowerCase()] || type;
+  };
+
+  // Header avec infos du cycle
+  const renderHeader = () => {
+    if (!report) return null;
+
+    const { dates, moon_sign, moon_house, lunar_ascendant } = report.header;
+    const translatedMoonSign = translateZodiacSign(moon_sign);
+    const translatedAscendant = translateZodiacSign(lunar_ascendant);
+
+    return (
+      <AnimatedCard style={styles.headerCard} delay={0} duration={500}>
+        <Text style={styles.dates}>{dates}</Text>
+
+        <View style={styles.headerInfoGrid}>
+          <View style={styles.headerInfoItem}>
+            <Text style={styles.headerLabel}>Lune en</Text>
+            <Text style={styles.headerValue}>
+              {translatedMoonSign} (Maison {moon_house})
+            </Text>
+          </View>
+
+          <View style={styles.headerInfoItem}>
+            <Text style={styles.headerLabel}>Ascendant lunaire</Text>
+            <Text style={styles.headerValue}>{translatedAscendant}</Text>
+          </View>
+        </View>
+      </AnimatedCard>
+    );
+  };
+
+  // Section climat général
+  const renderClimate = () => {
+    if (!report) return null;
+
+    // Priorité : lunar_interpretation.full (IA) > general_climate (templates)
+    const climateText = report.lunar_interpretation?.full || report.general_climate;
+    if (!climateText) return null;
+
+    const translatedClimate = translateAstrologyText(climateText);
+
+    return (
+      <AnimatedCard style={styles.card} delay={100} duration={500}>
+        <Text style={styles.cardTitle}>🌙 Climat général du mois</Text>
+        <MarkdownText style={styles.climateText}>{translatedClimate}</MarkdownText>
+      </AnimatedCard>
+    );
+  };
+
+  // Section aspects majeurs cliquables
+  const renderAspects = () => {
+    if (!report || !report.major_aspects || report.major_aspects.length === 0) {
+      return null;
     }
+
+    return (
+      <AnimatedCard style={styles.card} delay={200} duration={500}>
+        <Text style={styles.cardTitle}>⭐ Aspects majeurs du cycle</Text>
+        <Text style={styles.aspectsSubtitle}>
+          {report.major_aspects.length} aspect{report.major_aspects.length > 1 ? 's' : ''} identifié{report.major_aspects.length > 1 ? 's' : ''}
+        </Text>
+
+        {report.major_aspects.map((aspect, index) => (
+          <TouchableOpacity
+            key={aspect.id || index}
+            style={styles.aspectRow}
+            onPress={() => {
+              haptics.light();
+              setSelectedAspect(aspect);
+            }}
+          >
+            <View style={styles.aspectHeader}>
+              <View style={styles.aspectPlanetsRow}>
+                <Text style={styles.aspectPlanets}>
+                  {tPlanet(aspect.planet1)} {getAspectSymbol(aspect.type)} {tPlanet(aspect.planet2)}
+                </Text>
+                {aspect.copy?.shadow && (
+                  <Text style={styles.shadowBadge}>⚠️</Text>
+                )}
+              </View>
+              <Text style={styles.aspectOrb}>
+                {Math.abs(aspect.orb).toFixed(1)}°
+              </Text>
+            </View>
+
+            {aspect.copy?.summary && (
+              <Text style={styles.aspectSummary} numberOfLines={2}>
+                {translateAstrologyText(aspect.copy.summary)}
+              </Text>
+            )}
+
+            <Text style={styles.aspectCTA}>Voir détails →</Text>
+          </TouchableOpacity>
+        ))}
+      </AnimatedCard>
+    );
   };
 
   if (loading) {
     return (
-      <LinearGradient colors={colors.darkBg} style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.loadingText}>Chargement du mois lunaire...</Text>
-        </View>
-      </LinearGradient>
+      <LunarInterpretationLoader message="Chargement de ton cycle lunaire..." />
     );
   }
 
@@ -121,7 +246,7 @@ export default function LunarMonthScreen() {
     );
   }
 
-  if (!lunarReturn) {
+  if (!report) {
     return (
       <LinearGradient colors={colors.darkBg} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -148,96 +273,44 @@ export default function LunarMonthScreen() {
   }
 
   return (
-    <LinearGradient colors={colors.darkBg} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          >
-            <Text style={styles.backText}>← Retour</Text>
-          </TouchableOpacity>
+    <>
+      <LinearGradient colors={colors.darkBg} style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Header avec titre dynamique */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
+              <Text style={styles.backText}>← Retour</Text>
+            </TouchableOpacity>
 
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>🌙 Révolution Lunaire</Text>
-            <Text style={styles.monthText}>{formatMonth(month)}</Text>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>🌙 Révolution Lunaire</Text>
+              <Text style={styles.monthText}>{formatMonth(month)}</Text>
+            </View>
           </View>
-        </View>
 
-        {/* Date précise */}
-        {lunarReturn.return_date && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>📅 Date de ta révolution</Text>
-            <Text style={styles.dateText}>{formatDate(lunarReturn.return_date)}</Text>
-          </View>
-        )}
+          {/* Sections enrichies (identiques à report.tsx) */}
+          {renderHeader()}
+          {renderClimate()}
+          {renderAspects()}
 
-        {/* Position lunaire */}
-        {(lunarReturn.moon_sign || lunarReturn.moon_house) && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>🌙 Position de la Lune</Text>
-            {lunarReturn.moon_sign && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Signe :</Text>
-                <Text style={styles.infoValue}>{tSign(lunarReturn.moon_sign)}</Text>
-              </View>
-            )}
-            {lunarReturn.moon_house && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Maison :</Text>
-                <Text style={styles.infoValue}>Maison {lunarReturn.moon_house}</Text>
-              </View>
-            )}
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>✨ Généré spécialement pour toi</Text>
           </View>
-        )}
+        </ScrollView>
+      </LinearGradient>
 
-        {/* Ascendant lunaire */}
-        {lunarReturn.lunar_ascendant && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>⬆️ Ascendant de ta révolution</Text>
-            <Text style={styles.infoValue}>{tSign(lunarReturn.lunar_ascendant)}</Text>
-          </View>
-        )}
-
-        {/* Aspects principaux */}
-        {lunarReturn.aspects && lunarReturn.aspects.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>⭐ Aspects principaux</Text>
-            {lunarReturn.aspects.slice(0, 5).map((aspect: any, index: number) => (
-              <View key={index} style={styles.aspectRow}>
-                <Text style={styles.aspectText}>
-                  {aspect.planet1 && tPlanet(aspect.planet1)}
-                  {aspect.type && ` ${aspect.type} `}
-                  {aspect.planet2 && tPlanet(aspect.planet2)}
-                  {aspect.orb !== undefined && ` (orbe: ${Math.abs(aspect.orb).toFixed(1)}°)`}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Interprétation */}
-        {lunarReturn.interpretation && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>💡 Interprétation</Text>
-            <MarkdownText style={styles.interpretationText}>
-              {translateAstrologyText(lunarReturn.interpretation)}
-            </MarkdownText>
-          </View>
-        )}
-
-        {/* Empty state si pas de données */}
-        {!lunarReturn.moon_sign && !lunarReturn.aspects?.length && !lunarReturn.interpretation && (
-          <View style={styles.emptyDataCard}>
-            <Text style={styles.emptyDataText}>
-              Les détails de cette révolution lunaire seront disponibles prochainement
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-    </LinearGradient>
+      {/* Bottom sheet pour détail aspect */}
+      <AspectDetailSheet
+        aspect={selectedAspect}
+        visible={!!selectedAspect}
+        onClose={() => setSelectedAspect(null)}
+      />
+    </>
   );
 }
 
@@ -248,16 +321,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing.lg,
     paddingTop: 60,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    ...fonts.body,
-    color: colors.text,
-    marginTop: spacing.md,
   },
   header: {
     marginBottom: spacing.xl,
@@ -282,56 +345,126 @@ const styles = StyleSheet.create({
     ...fonts.h2,
     color: colors.gold,
   },
+  // Header card (infos cycle)
+  headerCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  dates: {
+    fontSize: 16,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  headerInfoGrid: {
+    gap: spacing.md,
+  },
+  headerInfoItem: {
+    backgroundColor: 'rgba(10, 14, 39, 0.6)',
+    padding: spacing.md,
+    borderRadius: borderRadius.sm,
+  },
+  headerLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  headerValue: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  // Card générique
   card: {
     backgroundColor: colors.cardBg,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 123, 247, 0.3)',
   },
   cardTitle: {
     ...fonts.h3,
     color: colors.accent,
     marginBottom: spacing.md,
   },
-  dateText: {
-    ...fonts.body,
+  // Climat
+  climateText: {
+    fontSize: 15,
     color: colors.text,
-    fontSize: 16,
+    lineHeight: 24,
   },
-  infoRow: {
+  // Aspects
+  aspectsSubtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  aspectRow: {
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: 'rgba(10, 14, 39, 0.6)',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 123, 247, 0.2)',
+  },
+  aspectHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  infoLabel: {
-    ...fonts.body,
-    color: colors.textMuted,
-    fontSize: 14,
+  aspectPlanetsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
   },
-  infoValue: {
-    ...fonts.body,
-    color: colors.text,
+  aspectPlanets: {
     fontSize: 16,
+    color: colors.text,
     fontWeight: '600',
   },
-  aspectRow: {
-    backgroundColor: 'rgba(139, 123, 247, 0.1)',
-    padding: spacing.sm,
-    borderRadius: borderRadius.sm,
-    marginBottom: spacing.xs,
+  shadowBadge: {
+    fontSize: 16,
+    marginLeft: 4,
   },
-  aspectText: {
-    ...fonts.body,
-    color: colors.text,
+  aspectOrb: {
     fontSize: 14,
+    color: colors.accent,
+    fontWeight: '600',
   },
-  interpretationText: {
-    ...fonts.body,
-    color: colors.text,
-    fontSize: 15,
-    lineHeight: 22,
+  aspectSummary: {
+    fontSize: 14,
+    color: colors.textMuted,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
   },
+  aspectCTA: {
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  // Footer
+  footer: {
+    padding: spacing.lg,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(139, 123, 247, 0.2)',
+  },
+  footerText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  // Empty state
   emptyContainer: {
     alignItems: 'center',
     marginTop: 60,
@@ -352,19 +485,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  emptyDataCard: {
-    backgroundColor: colors.cardBg,
-    borderRadius: borderRadius.md,
-    padding: spacing.xl,
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  emptyDataText: {
-    ...fonts.body,
-    color: colors.textMuted,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
+  // Error state
   errorContainer: {
     alignItems: 'center',
     marginTop: 60,
